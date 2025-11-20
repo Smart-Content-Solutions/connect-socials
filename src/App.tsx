@@ -8,9 +8,9 @@ import { TooltipProvider } from "./components/ui/tooltip";
 // External Libraries
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useUser, SignIn, SignUp } from "@clerk/clerk-react";
+import { useUser } from "@clerk/clerk-react";
 
-// Base Pages
+// Pages
 import Layout from "./pages/base44/Layout";
 import Home from "./pages/base44/Home";
 import About from "./pages/base44/About";
@@ -23,7 +23,6 @@ import StarterPlan from "./pages/base44/StarterPlan";
 import ProPlan from "./pages/base44/ProPlan";
 import StripeCheckout from "./pages/base44/StripeCheckout";
 
-// Dashboard Pages
 import Dashboard from "./pages/base44/Dashboard";
 import LeadsTool from "./pages/base44/LeadsTool";
 import SocialMediaTool from "./pages/base44/SocialMediaTool";
@@ -31,18 +30,18 @@ import EmailCampaignTool from "./pages/base44/EmailCampaignTool";
 import AnalyticsTool from "./pages/base44/AnalyticsTool";
 import AccountSettings from "./pages/base44/AccountSettings";
 
-// LinkedIn Pages
 import LinkedInCallback from "./pages/linkedin/callback";
 import CreatePost from "./pages/linkedin/create-post";
 
-// Misc
 import NotFound from "./pages/NotFound";
+
+// *** FIXED Login & Signup imports ***
+import Login from "./pages/Login";
+import SignupPage from "./pages/SignupPage";
 
 const queryClient = new QueryClient();
 
-/**
- * Protected Route Handler
- */
+/* Protected Route */
 const ProtectedRoute = ({ children }) => {
   const { isSignedIn, isLoaded } = useUser();
 
@@ -68,7 +67,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
 
-          {/* PUBLIC WEBSITE */}
+          {/* PUBLIC PAGES */}
           <Route path="/" element={<Layout><Home /></Layout>} />
           <Route path="/home" element={<Layout><Home /></Layout>} />
           <Route path="/about" element={<Layout><About /></Layout>} />
@@ -81,18 +80,11 @@ const App = () => (
           <Route path="/pro" element={<Layout><ProPlan /></Layout>} />
           <Route path="/checkout" element={<Layout><StripeCheckout /></Layout>} />
 
-          {/* AUTH ROUTES — FIXED */}
-          <Route
-            path="/login"
-            element={<SignIn routing="path" signUpUrl="/sign-up" />}
-          />
+          {/* FIXED AUTH ROUTES */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/sign-up/*" element={<SignupPage />} />
 
-          <Route
-            path="/sign-up/*"
-            element={<SignUp routing="path" signInUrl="/login" />}
-          />
-
-          {/* DASHBOARD (PROTECTED) */}
+          {/* PROTECTED DASHBOARD */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/leads" element={<ProtectedRoute><LeadsTool /></ProtectedRoute>} />
           <Route path="/social" element={<ProtectedRoute><SocialMediaTool /></ProtectedRoute>} />
@@ -100,18 +92,11 @@ const App = () => (
           <Route path="/analytics" element={<ProtectedRoute><AnalyticsTool /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
 
-          {/* LINKEDIN (PROTECTED) */}
-          <Route
-            path="/linkedin/callback"
-            element={<ProtectedRoute><LinkedInCallback /></ProtectedRoute>}
-          />
+          {/* LINKEDIN */}
+          <Route path="/linkedin/callback" element={<ProtectedRoute><LinkedInCallback /></ProtectedRoute>} />
+          <Route path="/linkedin/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
 
-          <Route
-            path="/linkedin/create-post"
-            element={<ProtectedRoute><CreatePost /></ProtectedRoute>}
-          />
-
-          {/* FALLBACK */}
+          {/* NOT FOUND */}
           <Route path="*" element={<NotFound />} />
 
         </Routes>
