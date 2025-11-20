@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
-import { getLinkedInAuthData } from "../../utils/linkedinAuth";
+import { getLinkedInAuthData } from "../../utils/linkedinOAuth";
 
 export default function CreatePost() {
   const navigate = useNavigate();
