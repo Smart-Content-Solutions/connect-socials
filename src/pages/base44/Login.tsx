@@ -5,20 +5,19 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
       <SignIn
         routing="path"
-        path="/login"
+        path="/login"           // <-- REQUIRED!!!
         signUpUrl="/sign-up"
+        afterSignInUrl="/dashboard"
+        afterSignUpUrl="/dashboard"
         appearance={{
           elements: {
             socialButtonsBlockButton: "bg-white shadow-md p-3 rounded-lg",
             formButtonPrimary: "bg-blue-600 hover:bg-blue-700 text-white",
           },
           layout: {
-            socialButtonsVariant: "iconButton", // icon only
+            socialButtonsVariant: "iconButton",
           },
         }}
-        // Only GOOGLE
-        afterSignInUrl="/dashboard"
-        afterSignUpUrl="/dashboard"
         preferredSignInStrategy="oauth_google"
       />
     </div>
