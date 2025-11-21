@@ -37,6 +37,14 @@ type Platform = {
   bgColor?: string;
 };
 
+type LinkedInEntity = {
+  urn: string; // urn:li:person:... or urn:li:organization:...
+  id: string; // numeric id for org or person id
+  name: string;
+  logo?: string | null;
+  type: "person" | "organization";
+};
+
 const ALL_PLATFORMS: Platform[] = [
   { id: "facebook", name: "Facebook", icon: Facebook, color: "text-blue-600", bgColor: "bg-blue-50" },
   { id: "instagram", name: "Instagram", icon: Instagram, color: "text-pink-600", bgColor: "bg-pink-50" },
@@ -74,6 +82,10 @@ export default function SocialMediaTool(): JSX.Element {
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  // LinkedIn entities (personal + organizations)
+  const [linkedinEntities, setLinkedinEntities] = useState<LinkedInEntity[]>([]);
+  const [showLinkedinEntities, setShowLinkedinEntities] = useState(true);
+
   // CONNECTED PLATFORM DETECTION
   const CONNECTED = {
     linkedin: !!linkedin,
@@ -90,6 +102,56 @@ export default function SocialMediaTool(): JSX.Element {
     mastodon: false
   };
 
+  // Populate LinkedIn entities from saved auth data
+  useEffect(() => {
+    if (!linkedin) {
+      setLinkedinEntities([]);
+      return;
+    }
+
+    const entities: LinkedInEntity[] = [];
+
+    // Person
+    // linkedin.linkedin_user_id might be a full urn or an id; normalize to urn.
+    let personUrn = String(linkedin.linkedin_user_id || "");
+    if (personUrn && !personUrn.startsWith("urn:li:person:")) {
+      personUrn = `urn:li:person:${personUrn}`;
+    }
+    if (personUrn) {
+      entities.push({
+        urn: personUrn,
+        id: (personUrn.split(":").pop() as string) || "",
+        name: `${linkedin.firstName || ""} ${linkedin.lastName || ""}`.trim() || "Personal Profile",
+        logo: linkedin.profilePicture || null,
+        type: "person"
+      });
+    }
+
+    // Organizations (from oauth response / stored auth)
+    const orgs = (linkedin.organizations || linkedin.company_pages || []) as any[];
+    if (Array.isArray(orgs)) {
+      orgs.forEach((o) => {
+        // o expected shape: { org_urn, org_id, name, logo }
+        const urn = o.org_urn || o.provider_org_urn || (o.org_id ? `urn:li:organization:${o.org_id}` : null);
+        const id = o.org_id || (urn ? urn.split(":").pop() : "");
+        const name = o.name || o.localizedName || `Company ${id}`;
+        const logo = o.logo || (o.logoV2 && o.logoV2["original~"]?.elements?.[0]?.identifiers?.[0]?.identifier) || null;
+
+        if (urn) {
+          entities.push({
+            urn,
+            id,
+            name,
+            logo,
+            type: "organization"
+          });
+        }
+      });
+    }
+
+    setLinkedinEntities(entities);
+  }, [linkedin]);
+
   // IMAGE UPLOAD
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -101,17 +163,36 @@ export default function SocialMediaTool(): JSX.Element {
     }
   };
 
-  // BLOCK DISCONNECTED PLATFORMS
+  // Helper: whether a given urn or platform id is selected
+  const isSelected = (idOrUrn: string) => selectedPlatforms.includes(idOrUrn);
+
+  // BLOCK DISCONNECTED PLATFORMS / SELECT ENTITIES
   const togglePlatform = (id: string) => {
+    // LinkedIn entities are URNs (start with 'urn:li:')
+    if (id.startsWith("urn:li:")) {
+      if (!CONNECTED.linkedin) {
+        setErrorMsg("LinkedIn is not connected. Please connect LinkedIn first.");
+        return;
+      }
+      setSelectedPlatforms((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+      return;
+    }
+
+    // Non-linkedin: block if not connected (existing behavior)
     if (!CONNECTED[id]) {
       setErrorMsg(`${ALL_PLATFORMS.find((p) => p.id === id)?.name} is not connected. Please connect first.`);
       return;
     }
 
-    setSelectedPlatforms((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    setSelectedPlatforms((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
+
+  // Clear error after a short delay
+  useEffect(() => {
+    if (!errorMsg) return;
+    const t = setTimeout(() => setErrorMsg(null), 5000);
+    return () => clearTimeout(t);
+  }, [errorMsg]);
 
   // BACKEND INTEGRATION
   const sendToBackend = async () => {
@@ -120,8 +201,10 @@ export default function SocialMediaTool(): JSX.Element {
       return;
     }
 
-    if (selectedPlatforms.includes("linkedin") && !linkedin) {
-      setErrorMsg("You must connect LinkedIn before posting.");
+    // If any selected item is a linkedin urn but linkedin session is missing — block
+    const hasLinkedInSelected = selectedPlatforms.some((p) => p.startsWith("urn:li:"));
+    if (hasLinkedInSelected && !linkedin) {
+      setErrorMsg("You must connect LinkedIn before posting to LinkedIn.");
       return;
     }
 
@@ -129,6 +212,7 @@ export default function SocialMediaTool(): JSX.Element {
     form.append("user_id", user.id);
     form.append("caption", caption);
 
+    // Send platforms[] = mix of urns and platform ids (backend should accept urns for LinkedIn)
     selectedPlatforms.forEach((p) => form.append("platforms[]", p));
 
     form.append("post_mode", postMode);
@@ -146,11 +230,14 @@ export default function SocialMediaTool(): JSX.Element {
         body: form
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Backend error");
+      }
 
       return res.json();
     } catch (err: any) {
-      throw new Error(err.message);
+      throw new Error(err.message || "Network error");
     }
   };
 
@@ -230,21 +317,45 @@ export default function SocialMediaTool(): JSX.Element {
           <CardContent className="p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
 
             {ALL_PLATFORMS.map((p) => {
-              const isSelected = selectedPlatforms.includes(p.id);
+              const basicSelected = isSelected(p.id);
               const isConnected = CONNECTED[p.id];
+
+              // For linkedin we show a special tile that toggles the entities panel below
+              if (p.id === "linkedin") {
+                return (
+                  <div key={p.id} className={`p-3 rounded-xl border ${!isConnected ? "opacity-50 bg-gray-100" : "bg-white/90 hover:shadow-sm"}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`${p.bgColor} w-10 h-10 rounded-lg flex items-center justify-center`}>
+                        <p.icon className={`w-5 h-5 ${p.color}`} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="font-semibold text-sm">{p.name}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {isConnected ? `${linkedin?.firstName || "Connected"}` : "Not connected"}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-2">
+                        <button
+                          onClick={() => setShowLinkedinEntities((s) => !s)}
+                          className="text-sm px-2 py-1 bg-blue-50 rounded"
+                          disabled={!isConnected}
+                        >
+                          {showLinkedinEntities ? "Hide" : "Show"}
+                        </button>
+                        <div className="text-xs text-gray-400">{isConnected ? "Connected" : "Connect"}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
 
               return (
                 <button
                   key={p.id}
                   disabled={!isConnected}
                   onClick={() => togglePlatform(p.id)}
-                  className={`p-3 rounded-xl border transition ${
-                    !isConnected
-                      ? "opacity-50 cursor-not-allowed bg-gray-100"
-                      : isSelected
-                      ? "scale-105 bg-white shadow-lg"
-                      : "bg-white/90 hover:shadow-sm"
-                  }`}
+                  className={`p-3 rounded-xl border transition ${!isConnected ? "opacity-50 cursor-not-allowed bg-gray-100" : basicSelected ? "scale-105 bg-white shadow-lg" : "bg-white/90 hover:shadow-sm"}`}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`${p.bgColor} w-10 h-10 rounded-lg flex items-center justify-center`}>
@@ -253,13 +364,49 @@ export default function SocialMediaTool(): JSX.Element {
                     <div className="flex-1 text-left">
                       <div className="font-semibold text-sm">{p.name}</div>
                     </div>
-                    {isSelected && <CheckCircle className="w-4 h-4 text-green-600" />}
+                    {basicSelected && <CheckCircle className="w-4 h-4 text-green-600" />}
                   </div>
                 </button>
               );
             })}
 
           </CardContent>
+
+          {/* LINKEDIN ENTITIES PANEL */}
+          {CONNECTED.linkedin && showLinkedinEntities && (
+            <CardContent className="p-4 border-t">
+              <h3 className="text-sm font-semibold mb-3">LinkedIn Targets</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {linkedinEntities.length === 0 && (
+                  <div className="p-3 bg-gray-50 rounded text-sm text-gray-600">No LinkedIn profile/pages found.</div>
+                )}
+
+                {linkedinEntities.map((e) => {
+                  const sel = isSelected(e.urn);
+                  return (
+                    <div key={e.urn} className={`p-3 rounded-lg border flex items-center gap-3 ${sel ? "bg-white shadow-md" : "bg-white/95"}`}>
+                      <img src={e.logo || e.logo || undefined} alt={e.name} className="w-10 h-10 rounded object-cover bg-gray-100" />
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{e.name}</div>
+                        <div className="text-xs text-gray-500">{e.type === "person" ? "Personal profile" : "Company Page"}</div>
+                      </div>
+
+                      <div>
+                        <input
+                          type="checkbox"
+                          checked={sel}
+                          onChange={() => togglePlatform(e.urn)}
+                          disabled={!CONNECTED.linkedin}
+                          className="w-4 h-4"
+                          aria-label={`Select ${e.name}`}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          )}
         </Card>
 
         {/* POST CREATOR */}
