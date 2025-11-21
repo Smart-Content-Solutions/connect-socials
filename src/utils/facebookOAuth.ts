@@ -32,8 +32,7 @@ const REDIRECT_URI = "https://www.smartcontentsolutions.co.uk/facebook/callback"
 
 // Generate random state
 function generateState(length = 32) {
-  const chars =~
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   return [...Array(length)]
     .map(() => chars[Math.floor(Math.random() * chars.length)])
     .join("");
