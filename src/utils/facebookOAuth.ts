@@ -21,7 +21,7 @@ export interface FacebookAuthData {
 export const FACEBOOK_AUTH_STORAGE_KEY = "facebook_auth_data";
 
 // N8N Workflow URL
-const N8N_URL = import.meta.env.VITE_N8N_WEBHOOK_URL_FACEBOOK;
+const N8N_URL = import.meta.env.VITE_N8N_WEBHOOK_URL;
 
 // Facebook App Client ID
 const FACEBOOK_CLIENT_ID = import.meta.env.VITE_FACEBOOK_CLIENT_ID;
@@ -74,7 +74,7 @@ export async function completeFacebookAuth() {
   const userId = clerkUser.id;
 
   // Send code to n8n backend to perform exchange & profile/pages fetch & DB upsert
-  const res = await fetch(`${N8N_URL}/oauth-callback`, {
+  const res = await fetch(`${N8N_URL}/oauth-facebook`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
