@@ -12,10 +12,14 @@ import {
   type FacebookAuthData
 } from "@/utils/facebookOAuth";
 import { toast } from "sonner";
+import { useAuth } from "@clerk/clerk-react";
 
 export function FacebookConnectButton() {
   const [authData, setAuthData] = useState<FacebookAuthData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Clerk user
+  const { userId, isLoaded } = useAuth();
 
   useEffect(() => {
     const stored = getFacebookAuthData();
@@ -23,10 +27,17 @@ export function FacebookConnectButton() {
   }, []);
 
   const handleConnect = async () => {
+    if (!isLoaded) return;
+    if (!userId) {
+      toast.error("You must be logged in to connect Facebook.");
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await initiateFacebookAuth();
-      // initiateFacebookAuth will redirect user away, so no further logic here
+      // PASS CLERK USER ID (CRITICAL FIX)
+      initiateFacebookAuth(userId);
+      // Redirect happens instantly
     } catch (err) {
       console.error(err);
       toast.error("Failed to start Facebook auth");
@@ -40,6 +51,7 @@ export function FacebookConnectButton() {
     toast.success("Facebook disconnected");
   };
 
+  // Already connected UI
   if (authData && isFacebookConnected()) {
     return (
       <Card className="p-8 max-w-2xl mx-auto">
@@ -78,12 +90,10 @@ export function FacebookConnectButton() {
           <div className="space-y-1 text-sm text-muted-foreground">
             {authData.pages && authData.pages.length > 0 ? (
               authData.pages.map((p) => (
-                <div key={p.id}>
-                  • {p.name}
-                </div>
+                <div key={p.id}>• {p.name}</div>
               ))
             ) : (
-              <div>No pages found or page tokens not available.</div>
+              <div>No pages found.</div>
             )}
           </div>
         </div>
@@ -91,6 +101,7 @@ export function FacebookConnectButton() {
     );
   }
 
+  // Not connected UI
   return (
     <Card className="p-8 max-w-2xl mx-auto text-center">
       <div className="mb-6">
@@ -100,11 +111,16 @@ export function FacebookConnectButton() {
 
         <h2 className="text-3xl font-bold mb-2">Connect Your Facebook</h2>
         <p className="text-muted-foreground">
-          Enable posting to Facebook Pages and profile sync.
+          Enable posting to Facebook Pages and sync your profile info.
         </p>
       </div>
 
-      <Button onClick={handleConnect} disabled={isLoading} size="lg" className="gap-2 text-lg px-8 py-6 bg-blue-600 text-white">
+      <Button
+        onClick={handleConnect}
+        disabled={isLoading || !isLoaded}
+        size="lg"
+        className="gap-2 text-lg px-8 py-6 bg-blue-600 text-white"
+      >
         <Facebook className="h-6 w-6" />
         {isLoading ? "Connecting…" : "Connect Facebook"}
       </Button>
