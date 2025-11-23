@@ -29,6 +29,7 @@ import {
 
 import { getLinkedInAuthData } from "@/utils/linkedinOAuth";
 import { getFacebookAuthData } from "@/utils/facebookOAuth";
+import { getInstagramAuthData } from "@/utils/instagramOAuth";
 
 type Platform = {
   id: string;
@@ -46,13 +47,19 @@ type LinkedInEntity = {
   type: "person" | "organization";
 };
 
+type InstagramEntity = {
+  key: string; // e.g. instagram:business:{ig_id} or instagram:page:{page_id}
+  id: string; // ig id or page id
+  name: string;
+  type: "business" | "page";
+  logo?: string | null;
+};
+
 const ALL_PLATFORMS: Platform[] = [
   { id: "facebook", name: "Facebook", icon: Facebook, color: "text-blue-600", bgColor: "bg-blue-50" },
   { id: "instagram", name: "Instagram", icon: Instagram, color: "text-pink-600", bgColor: "bg-pink-50" },
   { id: "x", name: "X (Twitter)", icon: Twitter, color: "text-gray-900", bgColor: "bg-gray-50" },
-
   { id: "linkedin", name: "LinkedIn", icon: Linkedin, color: "text-blue-700", bgColor: "bg-blue-50" },
-
   { id: "tiktok", name: "TikTok", icon: Music, color: "text-gray-900", bgColor: "bg-gray-50" },
   { id: "pinterest", name: "Pinterest", icon: Pin, color: "text-red-600", bgColor: "bg-red-50" },
   { id: "youtube", name: "YouTube", icon: Youtube, color: "text-red-600", bgColor: "bg-red-50" },
@@ -63,12 +70,17 @@ const ALL_PLATFORMS: Platform[] = [
   { id: "mastodon", name: "Mastodon", icon: Cloud, color: "text-purple-600", bgColor: "bg-purple-50" }
 ];
 
+// -- SAMPLE uploaded image path (dev/test) --
+// The environment/tooling will transform this local path into an accessible URL during processing.
+const SAMPLE_UPLOADED_IMAGE = "/mnt/data/cb6d4125-4766-4055-964d-b5bbad277921.png";
+
 export default function SocialMediaTool(): JSX.Element {
   const navigate = useNavigate();
   const { user, isSignedIn, isLoaded } = useUser();
 
   const linkedin = getLinkedInAuthData();
   const facebook = getFacebookAuthData();
+  const instagram = getInstagramAuthData();
 
   const [loading, setLoading] = useState(false);
   const [caption, setCaption] = useState("");
@@ -88,11 +100,15 @@ export default function SocialMediaTool(): JSX.Element {
   const [linkedinEntities, setLinkedinEntities] = useState<LinkedInEntity[]>([]);
   const [showLinkedinEntities, setShowLinkedinEntities] = useState(true);
 
+  // Instagram entities (business account + connected pages)
+  const [instagramEntities, setInstagramEntities] = useState<InstagramEntity[]>([]);
+  const [showInstagramEntities, setShowInstagramEntities] = useState(true);
+
   // CONNECTED PLATFORM DETECTION
   const CONNECTED = {
     linkedin: !!linkedin,
     facebook: !!facebook,
-    instagram: false,
+    instagram: !!instagram,
     x: false,
     tiktok: false,
     pinterest: false,
@@ -150,6 +166,45 @@ export default function SocialMediaTool(): JSX.Element {
     setLinkedinEntities(entities);
   }, [linkedin]);
 
+  // Populate Instagram entities from saved auth data
+  useEffect(() => {
+    if (!instagram) {
+      setInstagramEntities([]);
+      return;
+    }
+
+    const items: InstagramEntity[] = [];
+
+    // Primary connected Instagram business account (if provided)
+    if (instagram.instagram_user_id) {
+      const key = `instagram:business:${instagram.instagram_user_id}`;
+      items.push({
+        key,
+        id: instagram.instagram_user_id,
+        name: instagram.name || instagram.username || `Instagram ${instagram.instagram_user_id}`,
+        type: "business",
+        logo: instagram.picture || null
+      });
+    }
+
+    // Pages (Facebook pages connected to IG business accounts)
+    const pages = instagram.pages || [];
+    if (Array.isArray(pages)) {
+      pages.forEach((p) => {
+        const key = `instagram:page:${p.id}`;
+        items.push({
+          key,
+          id: p.id,
+          name: p.name || `Page ${p.id}`,
+          type: "page",
+          logo: null
+        });
+      });
+    }
+
+    setInstagramEntities(items);
+  }, [instagram]);
+
   // IMAGE UPLOAD
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -176,7 +231,17 @@ export default function SocialMediaTool(): JSX.Element {
       return;
     }
 
-    // Non-linkedin: block if not connected
+    // Instagram entities (instagram:business:... or instagram:page:...)
+    if (id.startsWith("instagram:")) {
+      if (!CONNECTED.instagram) {
+        setErrorMsg("Instagram is not connected. Please connect Instagram first.");
+        return;
+      }
+      setSelectedPlatforms((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+      return;
+    }
+
+    // Non-linkedin / non-instagram: block if not connected
     if (!CONNECTED[id as keyof typeof CONNECTED]) {
       setErrorMsg(`${ALL_PLATFORMS.find((p) => p.id === id)?.name} is not connected. Please connect first.`);
       return;
@@ -204,6 +269,13 @@ export default function SocialMediaTool(): JSX.Element {
       setErrorMsg("You must connect LinkedIn before posting to LinkedIn.");
       return;
     }
+
+    const hasInstagramSelected = selectedPlatforms.some((p) => p.startsWith("instagram:"));
+    if (hasInstagramSelected && !instagram) {
+      setErrorMsg("You must connect Instagram before posting to Instagram.");
+      return;
+    }
+
     if (selectedPlatforms.includes("facebook") && !facebook) {
       setErrorMsg("You must connect Facebook before posting to Facebook.");
       return;
@@ -213,7 +285,7 @@ export default function SocialMediaTool(): JSX.Element {
     form.append("user_id", user.id);
     form.append("caption", caption);
 
-    // Send platforms[] (URNs for LinkedIn, platform ids like 'facebook' for Facebook)
+    // Send platforms[] (URNs for LinkedIn, instagram keys for IG entities, platform ids like 'facebook' for Facebook)
     selectedPlatforms.forEach((p) => form.append("platforms[]", p));
 
     form.append("post_mode", postMode);
@@ -350,6 +422,36 @@ export default function SocialMediaTool(): JSX.Element {
                 );
               }
 
+              // Instagram special tile: show connected user or connect status
+              if (p.id === "instagram") {
+                return (
+                  <div key={p.id} className={`p-3 rounded-xl border ${!isConnected ? "opacity-50 bg-gray-100" : "bg-white/90 hover:shadow-sm"}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`${p.bgColor} w-10 h-10 rounded-lg flex items-center justify-center`}>
+                        <p.icon className={`w-5 h-5 ${p.color}`} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="font-semibold text-sm">{p.name}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {isConnected ? `${instagram?.username || instagram?.name || "Connected"}` : "Not connected"}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-2">
+                        <button
+                          onClick={() => setShowInstagramEntities((s) => !s)}
+                          className="text-sm px-2 py-1 bg-pink-50 rounded"
+                          disabled={!isConnected}
+                        >
+                          {showInstagramEntities ? "Hide" : "Show"}
+                        </button>
+                        <div className="text-xs text-gray-400">{isConnected ? "Connected" : "Connect"}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
               // Facebook special tile: show connected user or connect status
               if (p.id === "facebook") {
                 return (
@@ -432,6 +534,42 @@ export default function SocialMediaTool(): JSX.Element {
               </div>
             </CardContent>
           )}
+
+          {/* INSTAGRAM ENTITIES PANEL */}
+          {CONNECTED.instagram && showInstagramEntities && (
+            <CardContent className="p-4 border-t">
+              <h3 className="text-sm font-semibold mb-3">Instagram Targets</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {instagramEntities.length === 0 && (
+                  <div className="p-3 bg-gray-50 rounded text-sm text-gray-600">No Instagram business account or connected pages found.</div>
+                )}
+
+                {instagramEntities.map((e) => {
+                  const sel = isSelected(e.key);
+                  return (
+                    <div key={e.key} className={`p-3 rounded-lg border flex items-center gap-3 ${sel ? "bg-white shadow-md" : "bg-white/95"}`}>
+                      <img src={e.logo || undefined} alt={e.name} className="w-10 h-10 rounded object-cover bg-gray-100" />
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{e.name}</div>
+                        <div className="text-xs text-gray-500">{e.type === "business" ? "Instagram Business" : "Facebook Page (connected to IG)"}</div>
+                      </div>
+
+                      <div>
+                        <input
+                          type="checkbox"
+                          checked={sel}
+                          onChange={() => togglePlatform(e.key)}
+                          disabled={!CONNECTED.instagram}
+                          className="w-4 h-4"
+                          aria-label={`Select ${e.name}`}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          )}
         </Card>
 
         {/* POST CREATOR */}
@@ -490,6 +628,21 @@ export default function SocialMediaTool(): JSX.Element {
                     />
                     <Upload className="w-8 h-8 mx-auto text-gray-400" />
                     <p>Click to upload</p>
+
+                    {/* Dev: quick sample image loader using uploaded file path */}
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Use the local uploaded file path (tooling will convert path to URL)
+                          setImagePreview(SAMPLE_UPLOADED_IMAGE);
+                          setImageFile(null);
+                        }}
+                        className="text-xs text-gray-500 underline"
+                      >
+                        Use sample uploaded image
+                      </button>
+                    </div>
                   </label>
                 )}
               </div>
