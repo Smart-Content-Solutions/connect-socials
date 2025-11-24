@@ -31,12 +31,14 @@ import AccountSettings from "./pages/base44/AccountSettings";
 import LinkedInCallback from "./pages/linkedin/callback";
 import CreatePost from "./pages/linkedin/create-post";
 import FacebookCallback from "./pages/auth/FacebookCallback";
-import InstagramCallback from "./pages/auth/InstagramCallback";   // ✅ NEW
+import InstagramCallback from "./pages/auth/InstagramCallback";
+
+// Auth Pages
+import Login from "./pages/base44/Login";
+import SignupPage from "./pages/base44/Signup";
 
 // Other
 import NotFound from "./pages/NotFound";
-import Login from "./pages/base44/Login";
-import SignupPage from "./pages/base44/Signup";
 
 const queryClient = new QueryClient();
 
@@ -61,9 +63,9 @@ const App = () => (
       <BrowserRouter>
         <Routes>
 
-          {/* ====================== */}
-          {/* PUBLIC WEBSITE PAGES   */}
-          {/* ====================== */}
+          {/* ========================= */}
+          {/* PUBLIC WEBSITE ROUTES    */}
+          {/* ========================= */}
           <Route path="/" element={<Layout><Home /></Layout>} />
           <Route path="/home" element={<Layout><Home /></Layout>} />
           <Route path="/about" element={<Layout><About /></Layout>} />
@@ -76,13 +78,23 @@ const App = () => (
           <Route path="/pro" element={<Layout><ProPlan /></Layout>} />
           <Route path="/checkout" element={<Layout><StripeCheckout /></Layout>} />
 
-          {/* AUTH */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/sign-up/*" element={<SignupPage />} />
+          {/* ========================= */}
+          {/* AUTH ROUTES (Clerk)      */}
+          {/* ========================= */}
 
-          {/* =============================== */}
-          {/* DASHBOARD (PROTECTED ROUTES)   */}
-          {/* =============================== */}
+          {/* LOGIN */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/login/factor-one" element={<Login />} />
+          <Route path="/login/factor-two" element={<Login />} />
+
+          {/* SIGN UP */}
+          <Route path="/sign-up" element={<SignupPage />} />
+          <Route path="/sign-up/factor-one" element={<SignupPage />} />
+          <Route path="/sign-up/factor-two" element={<SignupPage />} />
+
+          {/* =========================== */}
+          {/* DASHBOARD (PROTECTED)      */}
+          {/* =========================== */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/social-posts" element={<ProtectedRoute><SocialMediaTool /></ProtectedRoute>} />
           <Route path="/email-campaigns" element={<ProtectedRoute><EmailCampaignTool /></ProtectedRoute>} />
@@ -90,23 +102,15 @@ const App = () => (
           <Route path="/leads-calls" element={<ProtectedRoute><LeadsTool /></ProtectedRoute>} />
           <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
 
-          {/* =============================== */}
-          {/* LINKEDIN OAUTH + PAGES         */}
-          {/* =============================== */}
+          {/* =========================== */}
+          {/* OAUTH CALLBACK ROUTES      */}
+          {/* =========================== */}
           <Route path="/linkedin/callback" element={<ProtectedRoute><LinkedInCallback /></ProtectedRoute>} />
           <Route path="/linkedin/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
-
-          {/* =============================== */}
-          {/* FACEBOOK OAUTH                 */}
-          {/* =============================== */}
           <Route path="/facebook/callback" element={<FacebookCallback />} />
+          <Route path="/instagram/callback" element={<InstagramCallback />} />
 
-          {/* =============================== */}
-          {/* INSTAGRAM OAUTH (NEW!)         */}
-          {/* =============================== */}
-          <Route path="/instagram/callback" element={<InstagramCallback />} />   {/* ✅ FIXED */}
-
-          {/* 404 PAGE */}
+          {/* 404 */}
           <Route path="*" element={<NotFound />} />
 
         </Routes>
