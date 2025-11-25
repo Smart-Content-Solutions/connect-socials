@@ -30,7 +30,7 @@ import {
   isFacebookConnected,
 } from "@/utils/facebookOAuth";
 
-// ⭐ INSTAGRAM (NEW REAL FLOW)
+// ⭐ INSTAGRAM
 import {
   initiateInstagramAuth,
   getInstagramAuthData,
@@ -38,48 +38,50 @@ import {
   isInstagramConnected,
 } from "@/utils/instagramOAuth";
 
+// ⭐ TIKTOK
+import {
+  initiateTikTokAuth,
+  getTikTokAuthData,
+  clearTikTokAuthData,
+  isTikTokConnected,
+} from "@/utils/tiktokOAuth";
+
 export default function ConnectedAccounts({ user }) {
   const [loadingPlatform, setLoadingPlatform] = useState(null);
 
   const [linkedinData, setLinkedinData] = useState(null);
   const [facebookData, setFacebookData] = useState(null);
   const [instagramData, setInstagramData] = useState(null);
+  const [tiktokData, setTikTokData] = useState(null);
 
-  // ------------------------------------------------------
-  // LOAD STORED AUTH (LinkedIn, Facebook, Instagram)
-  // ------------------------------------------------------
+  // Load saved auth
   useEffect(() => {
     setLinkedinData(getLinkedInAuthData());
     setFacebookData(getFacebookAuthData());
     setInstagramData(getInstagramAuthData());
+    setTikTokData(getTikTokAuthData());
   }, []);
 
-  // ------------------------------------------------------
-  // CLEANUP AFTER CALLBACK REDIRECT
-  // ------------------------------------------------------
+  // Refresh after callback
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
 
-    if (params.get("linkedin") === "connected") {
-      setLinkedinData(getLinkedInAuthData());
-    }
+    if (params.get("linkedin") === "connected") setLinkedinData(getLinkedInAuthData());
+    if (params.get("facebook") === "connected") setFacebookData(getFacebookAuthData());
+    if (params.get("instagram") === "connected") setInstagramData(getInstagramAuthData());
+    if (params.get("tiktok") === "connected") setTikTokData(getTikTokAuthData());
 
-    if (params.get("facebook") === "connected") {
-      setFacebookData(getFacebookAuthData());
-    }
-
-    if (params.get("instagram") === "connected") {
-      setInstagramData(getInstagramAuthData());
-    }
-
-    if (params.get("linkedin") || params.get("facebook") || params.get("instagram")) {
+    if (
+      params.get("linkedin") ||
+      params.get("facebook") ||
+      params.get("instagram") ||
+      params.get("tiktok")
+    ) {
       window.history.replaceState({}, "", window.location.pathname);
     }
   }, []);
 
-  // ------------------------------------------------------
-  // LINKEDIN BUTTON ACTIONS
-  // ------------------------------------------------------
+  // LinkedIn
   const startLinkedIn = () => {
     setLoadingPlatform("linkedin");
     initiateLinkedInAuth();
@@ -89,9 +91,7 @@ export default function ConnectedAccounts({ user }) {
     setLinkedinData(null);
   };
 
-  // ------------------------------------------------------
-  // FACEBOOK BUTTON ACTIONS
-  // ------------------------------------------------------
+  // Facebook
   const startFacebook = () => {
     setLoadingPlatform("facebook");
     initiateFacebookAuth();
@@ -101,9 +101,7 @@ export default function ConnectedAccounts({ user }) {
     setFacebookData(null);
   };
 
-  // ------------------------------------------------------
-  // INSTAGRAM BUTTON ACTIONS (REAL)
-  // ------------------------------------------------------
+  // Instagram
   const startInstagram = () => {
     setLoadingPlatform("instagram");
     initiateInstagramAuth();
@@ -113,9 +111,107 @@ export default function ConnectedAccounts({ user }) {
     setInstagramData(null);
   };
 
-  // ------------------------------------------------------
-  // FAKE OPTIONS FOR OTHER PLATFORMS
-  // ------------------------------------------------------
+  // ⭐ TikTok
+  const startTikTok = () => {
+    setLoadingPlatform("tiktok");
+    initiateTikTokAuth();
+  };
+  const disconnectTikTok = () => {
+    clearTikTokAuthData();
+    setTikTokData(null);
+  };
+
+  const accounts = [
+    {
+      id: "facebook",
+      name: "Facebook",
+      icon: Facebook,
+      connected: isFacebookConnected(),
+      displayName: facebookData?.name || facebookData?.user_name || null,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+      start: startFacebook,
+      disconnect: disconnectFacebook,
+    },
+
+    {
+      id: "instagram",
+      name: "Instagram",
+      icon: Instagram,
+      connected: isInstagramConnected(),
+      displayName:
+        instagramData?.username ||
+        instagramData?.name ||
+        instagramData?.instagram_user_id ||
+        null,
+      color: "text-pink-600",
+      bgColor: "bg-pink-50",
+      start: startInstagram,
+      disconnect: disconnectInstagram,
+    },
+
+    {
+      id: "x",
+      name: "X (Twitter)",
+      icon: Twitter,
+      connected: false,
+      displayName: null,
+      color: "text-gray-900",
+      bgColor: "bg-gray-50",
+      fake: true,
+    },
+
+    {
+      id: "linkedin",
+      name: "LinkedIn",
+      icon: Linkedin,
+      connected: isLinkedInConnected(),
+      displayName:
+        linkedinData
+          ? `${linkedinData.firstName ?? ""} ${linkedinData.lastName ?? ""}`.trim()
+          : null,
+      color: "text-blue-700",
+      bgColor: "bg-blue-50",
+      start: startLinkedIn,
+      disconnect: disconnectLinkedIn,
+    },
+
+    // ⭐ TikTok (REAL OAuth)
+    {
+      id: "tiktok",
+      name: "TikTok",
+      icon: Music,
+      connected: isTikTokConnected(),
+      displayName: tiktokData?.display_name || tiktokData?.open_id || null,
+      color: "text-gray-900",
+      bgColor: "bg-gray-50",
+      start: startTikTok,
+      disconnect: disconnectTikTok,
+    },
+
+    {
+      id: "pinterest",
+      name: "Pinterest",
+      icon: Pin,
+      connected: false,
+      displayName: null,
+      color: "text-red-600",
+      bgColor: "bg-red-50",
+      fake: true,
+    },
+
+    {
+      id: "youtube",
+      name: "YouTube",
+      icon: Youtube,
+      connected: false,
+      displayName: null,
+      color: "text-red-600",
+      bgColor: "bg-red-50",
+      fake: true,
+    },
+  ];
+
   const fakeConnect = (id) => {
     setLoadingPlatform(id);
     setTimeout(() => {
@@ -133,184 +229,20 @@ export default function ConnectedAccounts({ user }) {
     }, 600);
   };
 
-  // ------------------------------------------------------
-  // PLATFORM LIST
-  // ------------------------------------------------------
-  const accounts = [
-    {
-      id: "facebook",
-      name: "Facebook",
-      icon: Facebook,
-      connected: isFacebookConnected(),
-      displayName: facebookData?.name || facebookData?.user_name || null,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-    },
-
-    {
-      id: "instagram",
-      name: "Instagram",
-      icon: Instagram,
-      connected: isInstagramConnected(),
-      displayName:
-        instagramData?.username ||
-        instagramData?.name ||
-        instagramData?.instagram_user_id ||
-        null,
-      color: "text-pink-600",
-      bgColor: "bg-pink-50",
-    },
-
-    {
-      id: "x",
-      name: "X (Twitter)",
-      icon: Twitter,
-      connected: false,
-      displayName: null,
-      color: "text-gray-900",
-      bgColor: "bg-gray-50",
-    },
-
-    {
-      id: "linkedin",
-      name: "LinkedIn",
-      icon: Linkedin,
-      connected: isLinkedInConnected(),
-      displayName:
-        linkedinData
-          ? `${linkedinData.firstName ?? ""} ${linkedinData.lastName ?? ""}`.trim()
-          : null,
-      color: "text-blue-700",
-      bgColor: "bg-blue-50",
-    },
-
-    {
-      id: "tiktok",
-      name: "TikTok",
-      icon: Music,
-      connected: false,
-      displayName: null,
-      color: "text-gray-900",
-      bgColor: "bg-gray-50",
-    },
-
-    {
-      id: "pinterest",
-      name: "Pinterest",
-      icon: Pin,
-      connected: false,
-      displayName: null,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-    },
-
-    {
-      id: "youtube",
-      name: "YouTube",
-      icon: Youtube,
-      connected: false,
-      displayName: null,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-    },
-  ];
-
-  // ------------------------------------------------------
-  // RENDER UI
-  // ------------------------------------------------------
   return (
     <Card className="shadow-lg">
       <CardHeader className="border-b pb-4">
         <h3 className="text-xl font-bold text-gray-900">Connected Accounts</h3>
-        <p className="text-sm text-gray-600 mt-1">
-          Manage your connected social accounts securely.
-        </p>
+        <p className="text-sm text-gray-600 mt-1">Manage your social accounts.</p>
       </CardHeader>
 
       <CardContent className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
           {accounts.map((acc) => {
             const connected = acc.connected;
-            const displayName = acc.displayName;
-
-            const isLoading = loadingPlatform === acc.id;
-
             const Icon = acc.icon;
-
-            const platformButton = (() => {
-              // LINKEDIN
-              if (acc.id === "linkedin") {
-                return connected ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full text-xs"
-                    disabled={isLoading}
-                    onClick={disconnectLinkedIn}
-                  >
-                    {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Disconnect"}
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    className="w-full text-xs bg-blue-600 text-white"
-                    disabled={isLoading}
-                    onClick={startLinkedIn}
-                  >
-                    {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Connect"}
-                  </Button>
-                );
-              }
-
-              // FACEBOOK
-              if (acc.id === "facebook") {
-                return (
-                  <Button
-                    size="sm"
-                    className={`w-full text-xs ${
-                      !connected ? "bg-gradient-to-r from-blue-500 to-green-500 text-white" : ""
-                    }`}
-                    disabled={isLoading}
-                    onClick={connected ? disconnectFacebook : startFacebook}
-                  >
-                    {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : connected ? "Disconnect" : "Connect"}
-                  </Button>
-                );
-              }
-
-              // INSTAGRAM (REAL)
-              if (acc.id === "instagram") {
-                return (
-                  <Button
-                    size="sm"
-                    className={`w-full text-xs ${
-                      !connected ? "bg-gradient-to-r from-pink-500 to-purple-500 text-white" : ""
-                    }`}
-                    disabled={isLoading}
-                    onClick={connected ? disconnectInstagram : startInstagram}
-                  >
-                    {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : connected ? "Disconnect" : "Connect"}
-                  </Button>
-                );
-              }
-
-              // SIMULATED
-              return (
-                <Button
-                  size="sm"
-                  className={`w-full text-xs ${
-                    !connected ? "bg-gradient-to-r from-blue-500 to-green-500 text-white" : ""
-                  }`}
-                  disabled={isLoading}
-                  onClick={() =>
-                    connected ? fakeDisconnect(acc.id) : fakeConnect(acc.id)
-                  }
-                >
-                  {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : connected ? "Disconnect" : "Connect"}
-                </Button>
-              );
-            })();
+            const displayName = acc.displayName;
+            const isLoading = loadingPlatform === acc.id;
 
             return (
               <Card key={acc.id} className="border hover:shadow-md transition">
@@ -332,14 +264,36 @@ export default function ConnectedAccounts({ user }) {
                         <p className="text-xs text-gray-600 mt-1">{displayName}</p>
                       )}
 
-                      <div className="mt-3">{platformButton}</div>
+                      {/* Buttons */}
+                      <div className="mt-3">
+                        {!acc.fake ? (
+                          <Button
+                            size="sm"
+                            className={`w-full text-xs ${!connected ? "bg-gradient-to-r from-blue-500 to-green-500 text-white" : ""}`}
+                            disabled={isLoading}
+                            onClick={connected ? acc.disconnect : acc.start}
+                          >
+                            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : connected ? "Disconnect" : "Connect"}
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            className={`w-full text-xs ${!connected ? "bg-gradient-to-r from-blue-500 to-green-500 text-white" : ""}`}
+                            disabled={isLoading}
+                            onClick={() =>
+                              connected ? fakeDisconnect(acc.id) : fakeConnect(acc.id)
+                            }
+                          >
+                            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : connected ? "Disconnect" : "Connect"}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             );
           })}
-
         </div>
       </CardContent>
     </Card>

@@ -32,6 +32,8 @@ import LinkedInCallback from "./pages/linkedin/callback";
 import CreatePost from "./pages/linkedin/create-post";
 import FacebookCallback from "./pages/auth/FacebookCallback";
 import InstagramCallback from "./pages/auth/InstagramCallback";
+import TikTokCallback from "./pages/auth/TiktokCallback";
+
 
 // Auth Pages
 import Login from "./pages/base44/Login";
@@ -109,6 +111,7 @@ const App = () => (
           <Route path="/linkedin/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
           <Route path="/facebook/callback" element={<FacebookCallback />} />
           <Route path="/instagram/callback" element={<InstagramCallback />} />
+          <Route path="/tiktok/callback" element={<TikTokCallback />} />
 
           {/* 404 */}
           <Route path="*" element={<NotFound />} />
