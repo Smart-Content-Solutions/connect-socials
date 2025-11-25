@@ -26,6 +26,8 @@ import SocialMediaTool from "./pages/base44/SocialMediaTool";
 import EmailCampaignTool from "./pages/base44/EmailCampaignTool";
 import AnalyticsTool from "./pages/base44/AnalyticsTool";
 import AccountSettings from "./pages/base44/AccountSettings";
+import TermsOfService from "./pages/base44/TermsOfService";
+import PrivacyPolicy from "./pages/base44/PrivacyPolicy";
 
 // OAuth Callback Pages
 import LinkedInCallback from "./pages/linkedin/callback";
@@ -103,6 +105,9 @@ const App = () => (
           <Route path="/analytics" element={<ProtectedRoute><AnalyticsTool /></ProtectedRoute>} />
           <Route path="/leads-calls" element={<ProtectedRoute><LeadsTool /></ProtectedRoute>} />
           <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
+          <Route path="/terms" element={<ProtectedRoute><TermsOfService /></ProtectedRoute>} />
+          <Route path="/privacy" element={<ProtectedRoute><PrivacyPolicy /></ProtectedRoute>} />
+
 
           {/* =========================== */}
           {/* OAUTH CALLBACK ROUTES      */}
