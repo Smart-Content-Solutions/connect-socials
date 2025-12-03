@@ -1,7 +1,7 @@
-import React, { useState, useEffect, createContext, useContext, ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom"; // Added useNavigate for redirection
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
+import {
   Lock,
   Sparkles,
   ArrowRight,
@@ -27,243 +27,47 @@ import {
   Shield,
   Play,
   Check,
-  Crown,
-  CheckCircle2,
-  Loader2
+  Crown
 } from "lucide-react";
-// Removed: import { createPageUrl } from "../utils";
-// Removed: import { base44 } from "@/api/base44Client";
-
-// ----------------------------------------------------------------
-// 1. ADAPTED WelcomeModal (Placeholder/Stub for completeness)
-// This should match the one imported in the original file structure
-// ----------------------------------------------------------------
-function WelcomeModal({ isOpen, onClose, planName }) {
-  if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-[#1A1A1C] border border-[#E1C37A]/50 rounded-3xl p-8 max-w-sm" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-xl font-bold text-white mb-2">Welcome to the Dashboard!</h3>
-        <p className="text-[#A9AAAC] mb-6">Your {planName} plan is active. Enjoy all 21 automations!</p>
-        <button onClick={onClose} className="btn-gold w-full py-3 rounded-xl">
-          Get Started
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ----------------------------------------------------------------
-// 2. SubscriptionSuccessModal (Integrated from user provided code)
-// NOTE: TS types are removed/adapted for this single .jsx file.
-// ----------------------------------------------------------------
-function SubscriptionSuccessModal({
-  isOpen,
-  onClose,
-  planName,
-  onRedirect,
-}) {
-  const [countdown, setCountdown] = useState(3);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    setCountdown(3);
-
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          if (onRedirect) {
-            onRedirect();
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isOpen, onRedirect]);
-
-  const handleGoNow = () => {
-    if (onRedirect) {
-      onRedirect();
-    }
-  };
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          onClick={onClose}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0, y: 20 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.9, opacity: 0, y: 20 }}
-            transition={{ type: "spring", duration: 0.5 }}
-            className="glass-card-gold rounded-3xl p-8 max-w-md w-full relative glow-gold text-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Success Icon */}
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-              className="w-20 h-20 mx-auto mb-6 rounded-full bg-green-500 flex items-center justify-center"
-            >
-              <CheckCircle2 className="w-10 h-10 text-white" />
-            </motion.div>
-
-            {/* Title */}
-            <motion.h2
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-2xl font-bold text-white mb-3"
-            >
-              Subscription Active
-            </motion.h2>
-
-            {/* Plan Badge */}
-            {planName && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="inline-block px-4 py-1.5 rounded-full bg-[#E1C37A]/20 text-[#E1C37A] text-sm font-medium mb-4"
-              >
-                {planName} Plan
-              </motion.div>
-            )}
-
-            {/* Description */}
-            <motion.p
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="text-[#A9AAAC] mb-2"
-            >
-              Your plan is live and your tools are unlocking now.
-            </motion.p>
-
-            {/* Redirect Notice */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="flex items-center justify-center gap-2 text-sm text-[#5B5C60] mb-6"
-            >
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Redirecting to dashboard in {countdown}...</span>
-            </motion.div>
-
-            {/* Manual Button */}
-            <motion.button
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              onClick={handleGoNow}
-              className="btn-gold px-6 py-3 rounded-full font-semibold inline-flex items-center gap-2"
-            >
-              Go to Dashboard Now
-              <ArrowRight className="w-4 h-4" />
-            </motion.button>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-
-// ----------------------------------------------------------------
-// 3. useSubscription Hook (Integrated and adapted from user provided code)
-// NOTE: Clerk dependencies removed/simulated for runnability.
-// ----------------------------------------------------------------
-
-// Simplified UserSubscription type for simulation
-const mockUser = {
-  // Simulating Clerk public metadata structure
-  subscription_plan: "Corporate",
-  subscription_status: "active", // active | canceled | none
-  // This value is usually managed via API on the backend in a Clerk setup,
-  // but we'll include a mock here to enable the WelcomeModal flow.
-  has_seen_welcome: false 
-};
-
-function useSubscription() {
-  const [user, setUser] = useState(mockUser);
-  const isAuthenticated = true; // Assume authenticated for this preview
-
-  // Mocked access control functions based on user's plan/status
-  const isSubscriptionActive = () => user.subscription_status === "active";
-  const hasPlan = (requiredPlan) => user.subscription_plan === requiredPlan;
-  
-  // Mocked refresh (in a real app this would refresh Clerk metadata)
-  const refreshUser = async () => {
-    // In a real app with Clerk: clerkUser.reload();
-    console.log("Simulated user refresh triggered.");
-  };
-
-  return { user, isAuthenticated, isSubscriptionActive, refreshUser, hasPlan };
-}
-
-
-// ----------------------------------------------------------------
-// 4. DashboardPreview Component
-// ----------------------------------------------------------------
+import { useUser } from "@clerk/clerk-react";
+import { useSubscription } from "../../components/subscription/useSubscription";
+import WelcomeModal from "../../components/subscription/WelcomeModal";
 
 export default function DashboardPreview() {
-  const navigate = useNavigate();
-  const [hoveredTool, setHoveredTool] = useState(null);
+  const [hoveredTool, setHoveredTool] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [pulseIndex, setPulseIndex] = useState(0);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(true); // Setting to true to test the success modal flow
-  
-  const { user, isAuthenticated, isSubscriptionActive, refreshUser } = useSubscription();
 
-  // Check for just subscribed flow (Modified to remove base44 dependency)
+  const { user, isAuthenticated, isSubscriptionActive } = useSubscription();
+  const { user: clerkUser } = useUser();
+
+  const hasSeenWelcome =
+    clerkUser?.publicMetadata?.has_seen_welcome === true;
+
+  /* ===========================
+     ✅ Welcome Flow (Clerk Safe)
+  ============================ */
   useEffect(() => {
-    // In a real application, the subscription status change from the backend 
-    // would likely trigger the Success Modal. We trigger it here for demonstration.
-    if (showSuccessModal) {
-        return; // Success modal handles first-time user flow
-    }
-    
-    // Check if user is authenticated, has a plan, and hasn't seen welcome
-    if (isAuthenticated && isSubscriptionActive() && user && !user.has_seen_welcome) {
-        setShowWelcomeModal(true);
-    }
-  }, [isAuthenticated, user, isSubscriptionActive, showSuccessModal]);
+    if (!isAuthenticated || !user || !isSubscriptionActive()) return;
 
-  // Handle welcome modal close (Modified: Removed base44 API call)
-  const handleWelcomeClose = async () => {
+    if (!hasSeenWelcome) {
+      setShowWelcomeModal(true);
+    }
+  }, [isAuthenticated, user, isSubscriptionActive, hasSeenWelcome]);
+
+  const handleWelcomeClose = () => {
     setShowWelcomeModal(false);
-    
-    // In a real Clerk setup, this would require an API call to update the
-    // user's metadata (e.g., set has_seen_welcome = true)
-    console.log("Simulating marking welcome as seen for user:", user);
-    // await base44.auth.updateMe({ has_seen_welcome: true }); <--- REMOVED
-    // refreshUser(); // Trigger data refresh after mock update
   };
-  
-  const handleRedirectToDashboard = () => {
-    setShowSuccessModal(false);
-    navigate('/dashboard'); // Use React Router navigate for redirection
-  }
 
-  // Simulate live activity
+  /* ===========================
+     ✅ Pulsing Tool Activity
+  ============================ */
   useEffect(() => {
     const interval = setInterval(() => {
       setPulseIndex((prev) => (prev + 1) % 21);
     }, 2000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -309,10 +113,12 @@ export default function DashboardPreview() {
   ];
 
   return (
-    <div className="min-h-screen pt-20 pb-0 bg-[#1A1A1C] overflow-hidden font-sans">
+    <div className="min-h-screen pt-20 pb-0 bg-[#1A1A1C] overflow-hidden">
       
       {/* ============================================
           SECTION 1: THE VAULT DOOR HERO
+          Emotional Goal: Immediate tension. They've arrived at 
+          something powerful but closed.
           ============================================ */}
       <section className="relative py-20 overflow-hidden">
         {/* Animated background particles */}
@@ -378,7 +184,7 @@ export default function DashboardPreview() {
             className="flex flex-col sm:flex-row gap-4 justify-center"
           >
             <Link
-              to="/pricing" 
+              to='/pricing'
               className="btn-gold px-8 py-4 rounded-full text-base font-semibold flex items-center justify-center gap-2 group"
             >
               <Sparkles className="w-5 h-5" />
@@ -386,7 +192,7 @@ export default function DashboardPreview() {
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link
-              to="/pricing" 
+              to='/pricing'
               className="btn-outline px-8 py-4 rounded-full text-base font-medium flex items-center justify-center gap-2"
             >
               See Pricing First
@@ -397,6 +203,8 @@ export default function DashboardPreview() {
 
       {/* ============================================
           SECTION 2: THE BLURRED DASHBOARD
+          Emotional Goal: Visceral FOMO. They see the machine 
+          working but can't touch the controls.
           ============================================ */}
       <section className="py-12 relative">
         <div className="max-w-7xl mx-auto px-6">
@@ -639,6 +447,8 @@ export default function DashboardPreview() {
 
       {/* ============================================
           SECTION 3: SOCIAL PROOF
+          Emotional Goal: Validation. Others are inside. 
+          The visitor is missing out.
           ============================================ */}
       <section className="py-24 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#E1C37A]/5 to-transparent" />
@@ -699,6 +509,8 @@ export default function DashboardPreview() {
 
       {/* ============================================
           SECTION 4: WHAT HAPPENS AFTER UNLOCKING
+          Emotional Goal: Visualization. Paint the picture 
+          of life with access.
           ============================================ */}
       <section className="py-24 relative">
         <div className="max-w-6xl mx-auto px-6">
@@ -792,6 +604,8 @@ export default function DashboardPreview() {
 
       {/* ============================================
           SECTION 5: WHAT'S INCLUDED
+          Emotional Goal: Value stacking. Show them 
+          everything they're about to get.
           ============================================ */}
       <section className="py-24 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-[#E1C37A]/5 via-transparent to-transparent" />
@@ -830,6 +644,8 @@ export default function DashboardPreview() {
 
       {/* ============================================
           SECTION 6: FINAL CTA
+          Emotional Goal: Urgency. The moment of decision.
+          Make it impossible to leave without clicking.
           ============================================ */}
       <section className="py-24 relative overflow-hidden">
         <div className="absolute inset-0">
@@ -860,7 +676,7 @@ export default function DashboardPreview() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Link
-                to="/pricing" 
+                to='/pricing'
                 className="btn-gold px-10 py-5 rounded-full text-lg font-semibold flex items-center justify-center gap-3 group"
               >
                 <Lock className="w-5 h-5 group-hover:hidden" />
@@ -893,7 +709,7 @@ export default function DashboardPreview() {
         </div>
       </section>
 
-      {/* Subscribe Modal (Locked Feature CTA) */}
+      {/* Subscribe Modal */}
       <AnimatePresence>
         {showModal && (
           <motion.div
@@ -926,7 +742,7 @@ export default function DashboardPreview() {
                   Subscribe to watch the live activity feed and access all 21 automation tools.
                 </p>
                 <Link
-                  to="/pricing" 
+                  to='/pricing'
                   className="btn-gold w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2"
                 >
                   <Sparkles className="w-5 h-5" />
@@ -945,14 +761,6 @@ export default function DashboardPreview() {
       <WelcomeModal
         isOpen={showWelcomeModal}
         onClose={handleWelcomeClose}
-        planName={user?.subscription_plan}
-      />
-      
-      {/* Success Modal for post-checkout/subscription */}
-      <SubscriptionSuccessModal
-        isOpen={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
-        onRedirect={handleRedirectToDashboard}
         planName={user?.subscription_plan}
       />
     </div>
