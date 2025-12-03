@@ -105,8 +105,25 @@ const App = () => (
           <Route path="/login" element={<Login />} />
 
           {/* ✅ ✅ ✅ CLERK ROUTES (EMAIL VERIFY FIX) */}
-          <Route path="/sign-in/*" element={<SignIn routing="path" path="/sign-in" />} />
-          <Route path="/sign-up/*" element={<SignUp routing="path" path="/sign-up" />} />
+         {/* ✅ ✅ ✅ CLERK AUTH – CENTERED FIX */}
+<Route
+  path="/sign-in/*"
+  element={
+    <div className="min-h-screen flex items-center justify-center bg-[#0F0F10]">
+      <SignIn routing="path" path="/sign-in" />
+    </div>
+  }
+/>
+
+<Route
+  path="/sign-up/*"
+  element={
+    <div className="min-h-screen flex items-center justify-center bg-[#0F0F10]">
+      <SignUp routing="path" path="/sign-up" />
+    </div>
+  }
+/>
+
 
           {/* ✅ DASHBOARD */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
