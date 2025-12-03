@@ -35,7 +35,7 @@ import ProPlan from "./pages/base44/ProPlan";
 import StripeCheckout from "./pages/base44/StripeCheckout";
 
 // ✅ Dashboard
-import Dashboard from "./pages/base44/Dashboard";
+// import Dashboard from "./pages/base44/Dashboard";
 import LeadsTool from "./pages/base44/LeadsTool";
 import SocialMediaTool from "./pages/base44/SocialMediaTool";
 
@@ -123,7 +123,7 @@ const App = () => (
 
 
           {/* ✅ DASHBOARD */}
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          {/* <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} /> */}
           <Route path="/social-posts" element={<ProtectedRoute><SocialMediaTool /></ProtectedRoute>} />
           <Route path="/leads-calls" element={<ProtectedRoute><LeadsTool /></ProtectedRoute>} />
           <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
