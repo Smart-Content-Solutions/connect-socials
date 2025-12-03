@@ -1,7 +1,6 @@
 // src/pages/base44/Dashboard.tsx
 import React from "react";
 import { useUser } from "@clerk/clerk-react";
-
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import ConnectedAccounts from "@/components/dashboard/ConnectedAccounts";
 
