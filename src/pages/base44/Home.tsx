@@ -11,6 +11,9 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+import HeroSection from "../../components/home/HeroSection";
+import ProblemSection from "../../components/home/ProblemSection";
+
 export default function Home() {
   const [email, setEmail] = useState("");
   const [videoLoaded, setVideoLoaded] = useState(false);
@@ -19,46 +22,13 @@ export default function Home() {
   return (
     <div className="min-h-screen">
 
-      {/* HERO SECTION */}
-      <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-[#0F0F10] via-[#141416] to-[#1A1A1C]">
-        <div className="relative z-10 max-w-7xl mx-auto px-6 text-center">
+      {/* ✅ ORIGINAL BASE44 HERO */}
+      <HeroSection />
 
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#1A1A1C] border border-[#3B3C3E] rounded-full mb-8">
-            <Sparkles className="w-4 h-4 text-[#E1C37A]" />
-            <span className="text-sm font-medium text-[#A9AAAC]">
-              AI-Powered Content Automation
-            </span>
-          </div>
+      {/* ✅ ORIGINAL BASE44 PROBLEM SECTION */}
+      <ProblemSection />
 
-          <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-            One dashboard. <br />
-            <span className="text-[#E1C37A]">Infinite leverage.</span>
-          </h1>
-
-          <p className="text-lg sm:text-xl text-[#A9AAAC] mb-10 max-w-3xl mx-auto">
-            Smart Content Solutions puts your entire marketing operation on autopilot.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Link
-              to="/pricing"
-              className="btn-gold px-8 py-6 rounded-xl text-lg flex items-center justify-center gap-2"
-            >
-              Get Started
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-
-            <Link
-              to="/contact"
-              className="btn-outline px-8 py-6 rounded-xl text-lg"
-            >
-              Book Strategy Call
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* SOLUTION SECTION */}
+      {/* ✅ SOLUTION SECTION */}
       <section className="py-24 relative bg-[#0F0F10]">
         <div className="max-w-7xl mx-auto px-6">
 
@@ -147,7 +117,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA SECTION */}
+      {/* ✅ CTA SECTION */}
       <section className="py-24 relative overflow-hidden bg-[#0F0F10]">
         <div className="absolute inset-0 bg-gradient-to-r from-[#E1C37A]/10 via-transparent to-[#E1C37A]/10" />
 
