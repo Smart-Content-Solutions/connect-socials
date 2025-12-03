@@ -18,7 +18,7 @@ import Portfolio from "./pages/base44/Portfolio";
 import Contact from "./pages/base44/Contact";
 import Resources from "./pages/base44/Resources";
 
-// ✅ New Marketing Pages
+// ✅ ✅ NEW FILES YOU ADDED
 import DashboardPreview from "./pages/base44/DashboardPreview";
 import CoreTools from "./pages/base44/CoreTools";
 import CorporateTools from "./pages/base44/CorporateTools";
@@ -28,17 +28,15 @@ import SubscriptionSuccess from "./pages/base44/SubscriptionSuccess";
 import Privacy from "./pages/base44/Privacy";
 import Terms from "./pages/base44/Terms";
 
-// ✅ Old Plans / Stripe
+// ✅ Existing Plans / Stripe
 import StarterPlan from "./pages/base44/StarterPlan";
 import ProPlan from "./pages/base44/ProPlan";
 import StripeCheckout from "./pages/base44/StripeCheckout";
 
-// ✅ Dashboard Tools
+// ✅ Dashboard
 import Dashboard from "./pages/base44/Dashboard";
 import LeadsTool from "./pages/base44/LeadsTool";
 import SocialMediaTool from "./pages/base44/SocialMediaTool";
-import EmailCampaignTool from "./pages/base44/EmailCampaignTool";
-import AnalyticsTool from "./pages/base44/AnalyticsTool";
 import AccountSettings from "./pages/base44/AccountSettings";
 
 // ✅ OAuth
@@ -57,9 +55,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// ===========================
 // ✅ Protected Route
-// ===========================
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isSignedIn, isLoaded } = useUser();
 
@@ -82,9 +78,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
 
-          {/* ========================= */}
-          {/* ✅ PUBLIC MARKETING SITE */}
-          {/* ========================= */}
+          {/* ✅ PUBLIC MARKETING */}
           <Route path="/" element={<Layout><Home /></Layout>} />
           <Route path="/home" element={<Layout><Home /></Layout>} />
           <Route path="/about" element={<Layout><About /></Layout>} />
@@ -94,9 +88,7 @@ const App = () => (
           <Route path="/contact" element={<Layout><Contact /></Layout>} />
           <Route path="/resources" element={<Layout><Resources /></Layout>} />
 
-          {/* ========================= */}
-          {/* ✅ NEW BASE44 MARKETING  */}
-          {/* ========================= */}
+          {/* ✅ ✅ NEW ROUTES YOU ADDED */}
           <Route path="/dashboard-preview" element={<Layout><DashboardPreview /></Layout>} />
           <Route path="/core-tools" element={<Layout><CoreTools /></Layout>} />
           <Route path="/corporate-tools" element={<Layout><CorporateTools /></Layout>} />
@@ -106,16 +98,12 @@ const App = () => (
           <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
           <Route path="/terms" element={<Layout><Terms /></Layout>} />
 
-          {/* ========================= */}
-          {/* ✅ PLANS / STRIPE        */}
-          {/* ========================= */}
+          {/* ✅ PLANS */}
           <Route path="/starter" element={<Layout><StarterPlan /></Layout>} />
           <Route path="/pro" element={<Layout><ProPlan /></Layout>} />
           <Route path="/checkout" element={<Layout><StripeCheckout /></Layout>} />
 
-          {/* ========================= */}
-          {/* ✅ AUTH (CLERK)         */}
-          {/* ========================= */}
+          {/* ✅ AUTH */}
           <Route path="/login" element={<Login />} />
           <Route path="/login/factor-one" element={<Login />} />
           <Route path="/login/factor-two" element={<Login />} />
@@ -124,28 +112,20 @@ const App = () => (
           <Route path="/sign-up/factor-one" element={<SignupPage />} />
           <Route path="/sign-up/factor-two" element={<SignupPage />} />
 
-          {/* =========================== */}
-          {/* ✅ DASHBOARD (PROTECTED)  */}
-          {/* =========================== */}
+          {/* ✅ DASHBOARD */}
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/social-posts" element={<ProtectedRoute><SocialMediaTool /></ProtectedRoute>} />
-          <Route path="/email-campaigns" element={<ProtectedRoute><EmailCampaignTool /></ProtectedRoute>} />
-          <Route path="/analytics" element={<ProtectedRoute><AnalyticsTool /></ProtectedRoute>} />
           <Route path="/leads-calls" element={<ProtectedRoute><LeadsTool /></ProtectedRoute>} />
           <Route path="/account-settings" element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
 
-          {/* =========================== */}
-          {/* ✅ OAUTH CALLBACK ROUTES  */}
-          {/* =========================== */}
+          {/* ✅ OAUTH */}
           <Route path="/linkedin/callback" element={<ProtectedRoute><LinkedInCallback /></ProtectedRoute>} />
           <Route path="/linkedin/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
           <Route path="/facebook/callback" element={<FacebookCallback />} />
           <Route path="/instagram/callback" element={<InstagramCallback />} />
           <Route path="/tiktok/callback" element={<TikTokCallback />} />
 
-          {/* =========================== */}
-          {/* ✅ 404                  */}
-          {/* =========================== */}
+          {/* ✅ 404 */}
           <Route path="*" element={<NotFound />} />
 
         </Routes>
