@@ -7,8 +7,8 @@ export default function Login() {
         routing="path"
         path="/login"           // <-- REQUIRED!!!
         signUpUrl="/sign-up"
-        afterSignInUrl="/dashboard"
-        afterSignUpUrl="/dashboard"
+        afterSignInUrl="/home"
+        afterSignUpUrl="/home"
         appearance={{
           elements: {
             socialButtonsBlockButton: "bg-white shadow-md p-3 rounded-lg",
