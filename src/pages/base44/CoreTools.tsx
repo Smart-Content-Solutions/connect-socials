@@ -9,6 +9,8 @@ import SubscribeModal from "../../components/shared/SubscribeModal";
 import { coreTools } from "../../components/tools/toolsConfig";
 import { useSubscription } from "../../components/subscription/useSubscription";
 
+import type { ToolType } from "../../components/tools/ToolPageTemplate";
+
 export default function CoreTools() {
   const [showModal, setShowModal] = useState(false);
   const [selectedTool, setSelectedTool] = useState<string>("");
@@ -16,11 +18,12 @@ export default function CoreTools() {
   const { user } = useSubscription();
   const isAdmin = user?.role === "admin";
 
-  const handleUnlock = (toolName: string) => {
-    // ✅ Admin bypasses subscribe modal completely
+  // ✅ ✅ ✅ FIX: RECEIVE FULL TOOL OBJECT, NOT STRING
+  const handleUnlock = (tool: ToolType) => {
     if (isAdmin) return;
 
-    setSelectedTool(toolName);
+    // ✅ Extract STRING ONLY
+    setSelectedTool(tool.name);
     setShowModal(true);
   };
 
@@ -60,12 +63,12 @@ export default function CoreTools() {
           <ToolGridWithHighlight
             tools={coreTools}
             tier="Core"
-            onUnlockClick={handleUnlock}
+            onUnlockClick={handleUnlock}   // ✅ now correct
           />
         </div>
       </section>
 
-      {/* ================= PREVIEW SECTION ================= */}
+      {/* ================= PREVIEW ================= */}
       <section className="py-24">
         <div className="max-w-5xl mx-auto px-6">
           <motion.div
@@ -86,12 +89,13 @@ export default function CoreTools() {
 
                 <p className="text-[#A9AAAC] mb-6">
                   Watch how a single click generates a week's worth of posts,
-                  perfectly tailored to each platform. Captions, hashtags,
-                  optimal posting times. Done.
+                  perfectly tailored to each platform.
                 </p>
 
                 <button
-                  onClick={() => handleUnlock("Social Media Engine Demo")}
+                  onClick={() =>
+                    handleUnlock(coreTools[0] as unknown as ToolType)
+                  }
                   className="btn-gold px-6 py-3 rounded-full flex items-center gap-2"
                 >
                   {isAdmin ? "Watch Now" : "Watch Demo"}
@@ -100,7 +104,6 @@ export default function CoreTools() {
               </div>
 
               <div className="relative">
-                {/* ✅ Blur only for NON-admins */}
                 <div
                   className={`aspect-video rounded-2xl bg-[#1A1A1C] ${
                     !isAdmin ? "locked-blur" : ""
@@ -113,11 +116,12 @@ export default function CoreTools() {
                   </div>
                 </div>
 
-                {/* ✅ Overlay only for NON-admins */}
                 {!isAdmin && (
                   <div className="absolute inset-0 flex items-center justify-center bg-[#1A1A1C]/50 rounded-2xl">
                     <button
-                      onClick={() => handleUnlock("Demo Video")}
+                      onClick={() =>
+                        handleUnlock(coreTools[0] as unknown as ToolType)
+                      }
                       className="btn-outline px-6 py-3 rounded-full"
                     >
                       Unlock to Watch
@@ -138,8 +142,7 @@ export default function CoreTools() {
           </h2>
 
           <p className="text-[#A9AAAC] mb-8 max-w-xl mx-auto">
-            Core Tools start at $397/month. That's less than a junior marketer's
-            weekly salary.
+            Core Tools start at $397/month.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -166,7 +169,7 @@ export default function CoreTools() {
         <SubscribeModal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
-          toolName={selectedTool}
+          toolName={selectedTool}   // ✅ now always STRING
         />
       )}
     </div>
