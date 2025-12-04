@@ -20,7 +20,7 @@ import Contact from "./pages/base44/Contact";
 import Resources from "./pages/base44/Resources";
 import Account from "./pages/base44/Account";
 
-// ✅ ✅ NEW FILES YOU ADDED
+// ✅ New Pages
 import DashboardPreview from "./pages/base44/DashboardPreview";
 import CoreTools from "./pages/base44/CoreTools";
 import CorporateTools from "./pages/base44/CorporateTools";
@@ -30,13 +30,12 @@ import SubscriptionSuccess from "./pages/base44/SubscriptionSuccess";
 import Privacy from "./pages/base44/Privacy";
 import Terms from "./pages/base44/Terms";
 
-// ✅ Existing Plans / Stripe
+// ✅ Plans / Stripe
 import StarterPlan from "./pages/base44/StarterPlan";
 import ProPlan from "./pages/base44/ProPlan";
 import StripeCheckout from "./pages/base44/StripeCheckout";
 
 // ✅ Dashboard
-// import Dashboard from "./pages/base44/Dashboard";
 import LeadsTool from "./pages/base44/LeadsTool";
 import SocialMediaTool from "./pages/base44/SocialMediaTool";
 
@@ -77,6 +76,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+
           {/* ✅ PUBLIC MARKETING */}
           <Route path="/" element={<Layout><Home /></Layout>} />
           <Route path="/home" element={<Layout><Home /></Layout>} />
@@ -87,7 +87,7 @@ const App = () => (
           <Route path="/contact" element={<Layout><Contact /></Layout>} />
           <Route path="/resources" element={<Layout><Resources /></Layout>} />
 
-          {/* ✅ NEW ROUTES */}
+          {/* ✅ PLATFORM ROUTES */}
           <Route path="/dashboard-preview" element={<Layout><DashboardPreview /></Layout>} />
           <Route path="/core-tools" element={<Layout><CoreTools /></Layout>} />
           <Route path="/corporate-tools" element={<Layout><CorporateTools /></Layout>} />
@@ -104,50 +104,74 @@ const App = () => (
 
           {/* ✅ AUTH */}
           <Route path="/login" element={<Login />} />
-<Route
-  path="/login/*"
-  element={
-    <div className="min-h-screen flex items-center justify-center bg-[#0F0F10]">
-      <SignIn routing="path" path="/login" />
-    </div>
-  }
-/>
 
-<Route
-  path="/sign-up/*"
-  element={
-    <div className="min-h-screen flex items-center justify-center bg-[#0F0F10]">
-      <SignUp routing="path" path="/sign-up" />
-    </div>
-  }
-/>
-
-
-          {/* ✅ DASHBOARD */}
-          {/* <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} /> */}
-          <Route path="/social-posts" element={<ProtectedRoute><SocialMediaTool /></ProtectedRoute>} />
-          <Route path="/leads-calls" element={<ProtectedRoute><LeadsTool /></ProtectedRoute>} />
           <Route
-  path="/account"
-  element={
-    <ProtectedRoute>
-      <Layout>
-        <Account />
-      </Layout>
-    </ProtectedRoute>
-  }
-/>
-<Route path="/apps/social-automation" element={<ProtectedRoute><SocialAutomationApp /></ProtectedRoute>} />
+            path="/login/*"
+            element={
+              <div className="min-h-screen flex items-center justify-center bg-[#0F0F10]">
+                <SignIn routing="path" path="/login" />
+              </div>
+            }
+          />
+
+          <Route
+            path="/sign-up/*"
+            element={
+              <div className="min-h-screen flex items-center justify-center bg-[#0F0F10]">
+                <SignUp routing="path" path="/sign-up" />
+              </div>
+            }
+          />
+
+          {/* ✅ PROTECTED DASHBOARD */}
+          <Route
+            path="/social-posts"
+            element={<ProtectedRoute><SocialMediaTool /></ProtectedRoute>}
+          />
+          <Route
+            path="/leads-calls"
+            element={<ProtectedRoute><LeadsTool /></ProtectedRoute>}
+          />
+
+          <Route
+            path="/account"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Account />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ✅ ✅ ✅ FIXED TOOL ROUTE WITH LAYOUT */}
+          <Route
+            path="/apps/social-automation"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <SocialAutomationApp />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* ✅ OAUTH */}
-          <Route path="/linkedin/callback" element={<ProtectedRoute><LinkedInCallback /></ProtectedRoute>} />
-          <Route path="/linkedin/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+          <Route
+            path="/linkedin/callback"
+            element={<ProtectedRoute><LinkedInCallback /></ProtectedRoute>}
+          />
+          <Route
+            path="/linkedin/create-post"
+            element={<ProtectedRoute><CreatePost /></ProtectedRoute>}
+          />
           <Route path="/facebook/callback" element={<FacebookCallback />} />
           <Route path="/instagram/callback" element={<InstagramCallback />} />
           <Route path="/tiktok/callback" element={<TikTokCallback />} />
 
           {/* ✅ 404 */}
           <Route path="*" element={<NotFound />} />
+
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
