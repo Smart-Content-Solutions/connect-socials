@@ -7,6 +7,9 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useUser, SignIn, SignUp } from "@clerk/clerk-react";
 import SocialAutomationApp from "./components/apps/SocialAutomationApp";
 
+// ✅ ✅ ✅ ADD THIS IMPORT
+import { SubscriptionProvider } from "./components/subscription/SubscriptionProvider";
+
 // ✅ Layout
 import Layout from "./pages/base44/Layout";
 
@@ -20,7 +23,7 @@ import Contact from "./pages/base44/Contact";
 import Resources from "./pages/base44/Resources";
 import Account from "./pages/base44/Account";
 
-// ✅ New Pages
+// ✅ Platform Pages
 import DashboardPreview from "./pages/base44/DashboardPreview";
 import CoreTools from "./pages/base44/CoreTools";
 import CorporateTools from "./pages/base44/CorporateTools";
@@ -74,106 +77,104 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
 
-          {/* ✅ PUBLIC MARKETING */}
-          <Route path="/" element={<Layout><Home /></Layout>} />
-          <Route path="/home" element={<Layout><Home /></Layout>} />
-          <Route path="/about" element={<Layout><About /></Layout>} />
-          <Route path="/services" element={<Layout><Services /></Layout>} />
-          <Route path="/packages" element={<Layout><Packages /></Layout>} />
-          <Route path="/portfolio" element={<Layout><Portfolio /></Layout>} />
-          <Route path="/contact" element={<Layout><Contact /></Layout>} />
-          <Route path="/resources" element={<Layout><Resources /></Layout>} />
+      {/* ✅ ✅ ✅ THIS IS THE CRITICAL FIX */}
+      <SubscriptionProvider>
+        <BrowserRouter>
+          <Routes>
 
-          {/* ✅ PLATFORM ROUTES */}
-          <Route path="/dashboard-preview" element={<Layout><DashboardPreview /></Layout>} />
-          <Route path="/core-tools" element={<Layout><CoreTools /></Layout>} />
-          <Route path="/corporate-tools" element={<Layout><CorporateTools /></Layout>} />
-          <Route path="/pricing" element={<Layout><Pricing /></Layout>} />
-          <Route path="/tool" element={<Layout><Tool /></Layout>} />
-          <Route path="/subscription-success" element={<Layout><SubscriptionSuccess /></Layout>} />
-          <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
-          <Route path="/terms" element={<Layout><Terms /></Layout>} />
+            {/* ✅ PUBLIC MARKETING */}
+            <Route path="/" element={<Layout><Home /></Layout>} />
+            <Route path="/home" element={<Layout><Home /></Layout>} />
+            <Route path="/about" element={<Layout><About /></Layout>} />
+            <Route path="/services" element={<Layout><Services /></Layout>} />
+            <Route path="/packages" element={<Layout><Packages /></Layout>} />
+            <Route path="/portfolio" element={<Layout><Portfolio /></Layout>} />
+            <Route path="/contact" element={<Layout><Contact /></Layout>} />
+            <Route path="/resources" element={<Layout><Resources /></Layout>} />
 
-          {/* ✅ PLANS */}
-          <Route path="/starter" element={<Layout><StarterPlan /></Layout>} />
-          <Route path="/pro" element={<Layout><ProPlan /></Layout>} />
-          <Route path="/checkout" element={<Layout><StripeCheckout /></Layout>} />
+            {/* ✅ PLATFORM ROUTES */}
+            <Route path="/dashboard-preview" element={<Layout><DashboardPreview /></Layout>} />
+            <Route path="/core-tools" element={<Layout><CoreTools /></Layout>} />
+            <Route path="/corporate-tools" element={<Layout><CorporateTools /></Layout>} />
+            <Route path="/pricing" element={<Layout><Pricing /></Layout>} />
+            <Route path="/tool" element={<Layout><Tool /></Layout>} />
+            <Route path="/subscription-success" element={<Layout><SubscriptionSuccess /></Layout>} />
+            <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
+            <Route path="/terms" element={<Layout><Terms /></Layout>} />
 
-          {/* ✅ AUTH */}
-          <Route path="/login" element={<Login />} />
+            {/* ✅ PLANS */}
+            <Route path="/starter" element={<Layout><StarterPlan /></Layout>} />
+            <Route path="/pro" element={<Layout><ProPlan /></Layout>} />
+            <Route path="/checkout" element={<Layout><StripeCheckout /></Layout>} />
 
-          <Route
-            path="/login/*"
-            element={
-              <div className="min-h-screen flex items-center justify-center bg-[#0F0F10]">
-                <SignIn routing="path" path="/login" />
-              </div>
-            }
-          />
+            {/* ✅ AUTH */}
+            <Route path="/login" element={<Login />} />
 
-          <Route
-            path="/sign-up/*"
-            element={
-              <div className="min-h-screen flex items-center justify-center bg-[#0F0F10]">
-                <SignUp routing="path" path="/sign-up" />
-              </div>
-            }
-          />
+            <Route
+              path="/login/*"
+              element={
+                <div className="min-h-screen flex items-center justify-center bg-[#0F0F10]">
+                  <SignIn routing="path" path="/login" />
+                </div>
+              }
+            />
 
-          {/* ✅ PROTECTED DASHBOARD */}
-          <Route
-            path="/social-posts"
-            element={<ProtectedRoute><SocialMediaTool /></ProtectedRoute>}
-          />
-          <Route
-            path="/leads-calls"
-            element={<ProtectedRoute><LeadsTool /></ProtectedRoute>}
-          />
+            <Route
+              path="/sign-up/*"
+              element={
+                <div className="min-h-screen flex items-center justify-center bg-[#0F0F10]">
+                  <SignUp routing="path" path="/sign-up" />
+                </div>
+              }
+            />
 
-          <Route
-            path="/account"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Account />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
+            {/* ✅ PROTECTED DASHBOARD */}
+            <Route
+              path="/social-posts"
+              element={<ProtectedRoute><SocialMediaTool /></ProtectedRoute>}
+            />
+            <Route
+              path="/leads-calls"
+              element={<ProtectedRoute><LeadsTool /></ProtectedRoute>}
+            />
 
-          {/* ✅ ✅ ✅ FIXED TOOL ROUTE WITH LAYOUT */}
-          <Route
-            path="/apps/social-automation"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <SocialAutomationApp />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/account"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <Account />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
 
-          {/* ✅ OAUTH */}
-          <Route
-            path="/linkedin/callback"
-            element={<ProtectedRoute><LinkedInCallback /></ProtectedRoute>}
-          />
-          <Route
-            path="/linkedin/create-post"
-            element={<ProtectedRoute><CreatePost /></ProtectedRoute>}
-          />
-          <Route path="/facebook/callback" element={<FacebookCallback />} />
-          <Route path="/instagram/callback" element={<InstagramCallback />} />
-          <Route path="/tiktok/callback" element={<TikTokCallback />} />
+            {/* ✅ FIXED TOOL APP ROUTE */}
+            <Route
+              path="/apps/social-automation"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <SocialAutomationApp />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
 
-          {/* ✅ 404 */}
-          <Route path="*" element={<NotFound />} />
+            {/* ✅ OAUTH */}
+            <Route path="/linkedin/callback" element={<ProtectedRoute><LinkedInCallback /></ProtectedRoute>} />
+            <Route path="/linkedin/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+            <Route path="/facebook/callback" element={<FacebookCallback />} />
+            <Route path="/instagram/callback" element={<InstagramCallback />} />
+            <Route path="/tiktok/callback" element={<TikTokCallback />} />
 
-        </Routes>
-      </BrowserRouter>
+            {/* ✅ 404 */}
+            <Route path="*" element={<NotFound />} />
+
+          </Routes>
+        </BrowserRouter>
+      </SubscriptionProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
