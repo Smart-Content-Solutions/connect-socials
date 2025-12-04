@@ -9,6 +9,8 @@ import SubscribeModal from "../../components/shared/SubscribeModal";
 import { corporateTools } from "../../components/tools/toolsConfig";
 import { useSubscription } from "../../components/subscription/useSubscription";
 
+import type { ToolType } from "../../components/tools/ToolPageTemplate";
+
 export default function CorporateTools() {
   const [showModal, setShowModal] = useState(false);
   const [selectedTool, setSelectedTool] = useState<string>("");
@@ -16,11 +18,11 @@ export default function CorporateTools() {
   const { user } = useSubscription();
   const isAdmin = user?.role === "admin";
 
-  const handleUnlock = (toolName: string) => {
-    // ✅ Admin bypasses subscribe modal
+  // ✅ ✅ ✅ FIX: RECEIVE TOOL OBJECT, EXTRACT STRING
+  const handleUnlock = (tool: ToolType) => {
     if (isAdmin) return;
 
-    setSelectedTool(toolName);
+    setSelectedTool(tool.name);   // ✅ STRING ONLY
     setShowModal(true);
   };
 
@@ -65,7 +67,7 @@ export default function CorporateTools() {
           <ToolGridWithHighlight
             tools={corporateTools}
             tier="Corporate"
-            onUnlockClick={handleUnlock}
+            onUnlockClick={handleUnlock}   // ✅ fixed
           />
         </div>
       </section>
@@ -80,7 +82,6 @@ export default function CorporateTools() {
           />
 
           <div className="mt-12 grid md:grid-cols-2 gap-8">
-            {/* Core */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -109,14 +110,15 @@ export default function CorporateTools() {
               </div>
             </motion.div>
 
-            {/* Corporate */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               className="glass-card-gold rounded-2xl p-8 glow-gold"
             >
-              <h3 className="text-xl font-bold mb-4 gold-text">Corporate Tools</h3>
+              <h3 className="text-xl font-bold mb-4 gold-text">
+                Corporate Tools
+              </h3>
               <ul className="space-y-3">
                 {[
                   "Built for enterprise operations",
@@ -137,46 +139,6 @@ export default function CorporateTools() {
                 <span className="text-[#5B5C60] ml-2">/month</span>
               </div>
             </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= USE CASES ================= */}
-      <section className="py-24 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#E1C37A]/5 to-transparent" />
-        <div className="max-w-5xl mx-auto px-6 relative z-10">
-          <SectionHeading
-            badge="Who It's For"
-            title="Corporate Tools are built for:"
-          />
-
-          <div className="grid md:grid-cols-3 gap-6 mt-12">
-            {[
-              {
-                title: "E-commerce Brands",
-                desc: "Scaling DTC operations across multiple channels and regions."
-              },
-              {
-                title: "Marketing Agencies",
-                desc: "Managing 10+ clients without scaling headcount."
-              },
-              {
-                title: "Enterprise Teams",
-                desc: "Replacing fragmented tools with one unified platform."
-              }
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="glass-card rounded-2xl p-6 text-center"
-              >
-                <h4 className="font-semibold text-white mb-2">{item.title}</h4>
-                <p className="text-sm text-[#A9AAAC]">{item.desc}</p>
-              </motion.div>
-            ))}
           </div>
         </div>
       </section>
@@ -221,7 +183,7 @@ export default function CorporateTools() {
         <SubscribeModal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
-          toolName={selectedTool}
+          toolName={selectedTool}   // ✅ always STRING now
         />
       )}
     </div>
