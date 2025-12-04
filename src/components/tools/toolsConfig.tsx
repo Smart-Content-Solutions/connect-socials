@@ -16,6 +16,7 @@ export const coreTools = [
     id: "social-automation",
     name: "Social Media Post Automation",
     slug: "social-automation",
+    appRoute: "/apps/social-automation",
     category: "Core",
     shortDescription: "Auto schedule and post content across all major platforms.",
     longDescription: "Automatically create, schedule, and publish social media content across Instagram, Facebook, LinkedIn, X, TikTok, and more. Our AI analyzes your audience engagement patterns to post at optimal times, maximizing reach and engagement without manual intervention.",

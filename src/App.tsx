@@ -5,6 +5,7 @@ import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useUser, SignIn, SignUp } from "@clerk/clerk-react";
+import SocialAutomationApp from "./components/apps/SocialAutomationApp";
 
 // ✅ Layout
 import Layout from "./pages/base44/Layout";
@@ -136,7 +137,7 @@ const App = () => (
     </ProtectedRoute>
   }
 />
-
+<Route path="/apps/social-automation" element={<ProtectedRoute><SocialAutomationApp /></ProtectedRoute>} />
 
           {/* ✅ OAUTH */}
           <Route path="/linkedin/callback" element={<ProtectedRoute><LinkedInCallback /></ProtectedRoute>} />

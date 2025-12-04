@@ -146,12 +146,15 @@ export default function ToolPageTemplate({ tool }: ToolPageTemplateProps) {
 
             {/* CTA */}
             {hasAccess ? (
-              <button className="btn-gold px-8 py-4 rounded-full text-base font-semibold inline-flex items-center gap-2">
-                <Play className="w-5 h-5" />
-                Open Tool
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            ) : !isAuthenticated ? (
+  <Link
+    to={tool.appRoute}          // ✅ REAL APP REDIRECT
+    className="btn-gold px-8 py-4 rounded-full text-base font-semibold inline-flex items-center gap-2"
+  >
+    <Play className="w-5 h-5" />
+    Open Tool
+    <ArrowRight className="w-5 h-5" />
+  </Link>
+) : !isAuthenticated ? (
               <button
                 onClick={() => login(window.location.href)}
                 className="btn-gold px-8 py-4 rounded-full text-base font-semibold inline-flex items-center gap-2"
