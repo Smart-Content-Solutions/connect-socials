@@ -4,45 +4,38 @@ import { useUser } from "@clerk/clerk-react";
 
 import { getToolBySlug } from "@/components/tools/toolsConfig";
 import ToolPageTemplate from "@/components/tools/ToolPageTemplate";
-import { useSubscription } from "@/components/subscription/useSubscription";
 
 export default function Tool() {
   const { isSignedIn, isLoaded } = useUser();
-  const { isAuthenticated, hasAccessToTool } = useSubscription();
-
   const [searchParams] = useSearchParams();
   const slug = searchParams.get("slug");
 
-  // ✅ LOADING
+  // ✅ Loading state
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-white">
+      <div className="min-h-screen flex items-center justify-center">
         Loading…
       </div>
     );
   }
 
-  // ✅ MUST BE LOGGED IN
-  if (!isSignedIn || !isAuthenticated) {
+  // ✅ Must be logged in to even preview tools
+  if (!isSignedIn) {
     return <Navigate to="/login" replace />;
   }
 
-  // ✅ GET TOOL
   const tool = getToolBySlug(slug);
 
-  // ✅ INVALID TOOL
-  if (!tool || typeof tool !== "object") {
+  // ✅ Invalid slug → dashboard
+  if (!tool) {
     return <Navigate to="/dashboard-preview" replace />;
   }
 
-  // ✅ ACCESS CHECK (REAL SOURCE OF TRUTH)
-  const hasAccess = hasAccessToTool(tool.planRequired);
+  // ✅ DO NOT redirect normal users anymore
+  // ToolPageTemplate already handles:
+  // - locked preview
+  // - pricing CTA
+  // - admin access
 
-  // ✅ NO ACCESS → PRICING (NO WHITE SCREEN)
-  if (!hasAccess) {
-    return <Navigate to="/pricing" replace />;
-  }
-
-  // ✅ ACCESS OK → LOAD TOOL
   return <ToolPageTemplate tool={tool} />;
 }

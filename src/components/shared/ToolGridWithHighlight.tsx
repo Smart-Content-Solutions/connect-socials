@@ -32,21 +32,20 @@ function ToolCard({
 }: ToolCardProps) {
   const { hasAccessToTool, user } = useSubscription();
 
-  // ✅ CORRECT ADMIN CHECK (CLERK SAFE)
+  // ✅ CLERK-SAFE ADMIN CHECK
   const isAdmin = user?.publicMetadata?.role === "admin";
-
   const hasAccess = isAdmin || hasAccessToTool(tool.planRequired);
 
   const Icon = tool.icon;
 
-  // ✅ ONLY make it a Link if user REALLY has access
+  // ✅ ONLY NAVIGATE IF USER HAS ACCESS
   const CardWrapper: any = hasAccess && tool.slug ? Link : "div";
   const cardProps = hasAccess && tool.slug
     ? { to: `/tool?slug=${tool.slug}` }
     : {};
 
   const handleClick = () => {
-    // ✅ LOCKED USERS → OPEN PRICING / MODAL ONLY
+    // ✅ LOCKED USERS NEVER NAVIGATE
     if (!hasAccess && onUnlockClick) {
       onUnlockClick(tool);
     }
@@ -71,7 +70,7 @@ function ToolCard({
               : "hover:border-[#E1C37A]/20"
           }`}
         >
-          {/* ================= LOCKED / UNLOCKED / ADMIN OVERLAY ================= */}
+          {/* ================= LOCK / ADMIN / UNLOCK ================= */}
           {!hasAccess ? (
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-transparent via-[#1A1A1C]/50 to-[#1A1A1C]/80 z-10 flex flex-col items-center justify-end pb-6">
               <div className="w-10 h-10 rounded-full bg-[#3B3C3E] flex items-center justify-center mb-3">
@@ -129,7 +128,6 @@ function ToolCard({
   );
 }
 
-
 interface ToolGridWithHighlightProps {
   tools: ToolItem[];
   tier?: string;
@@ -186,7 +184,7 @@ export default function ToolGridWithHighlight({
         }}
       />
 
-      {/* GRID OF TOOLS */}
+      {/* GRID */}
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
         {tools.map((tool, index) => (
           <ToolCard
