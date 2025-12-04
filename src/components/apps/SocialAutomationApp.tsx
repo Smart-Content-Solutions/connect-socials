@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { CheckCircle, Upload, Loader2 } from "lucide-react";
 
@@ -90,6 +90,7 @@ export default function SocialMediaTool() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
+
     setImageFile(f);
     const reader = new FileReader();
     reader.onloadend = () => setImagePreview(String(reader.result));
@@ -104,8 +105,13 @@ export default function SocialMediaTool() {
     form.append("post_mode", postMode);
     form.append("use_ai", aiEnhance ? "yes" : "no");
 
-    if (postMode === "schedule") form.append("scheduled_time", scheduledTime);
-    if (imageFile) form.append("image", imageFile);
+    if (postMode === "schedule") {
+      form.append("scheduled_time", scheduledTime);
+    }
+
+    if (imageFile) {
+      form.append("image", imageFile);
+    }
 
     const res = await fetch("https://scs-ltd.app.n8n.cloud/webhook/social-media", {
       method: "POST",
@@ -119,9 +125,11 @@ export default function SocialMediaTool() {
     setErrorMsg(null);
 
     if (!caption.trim()) return setErrorMsg("Caption is required.");
-    if (selectedPlatforms.length === 0) return setErrorMsg("Select at least one platform.");
+    if (selectedPlatforms.length === 0)
+      return setErrorMsg("Select at least one platform.");
 
     setLoading(true);
+
     try {
       await sendToBackend();
       setIsSuccess(true);
@@ -133,19 +141,27 @@ export default function SocialMediaTool() {
     } catch (err: any) {
       setErrorMsg(err.message);
     }
+
     setLoading(false);
   };
 
   if (!isLoaded)
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading…
+      </div>
+    );
 
   if (!isSignedIn)
-    return <div className="min-h-screen flex items-center justify-center">Login required</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Login required
+      </div>
+    );
 
   return (
     <div className="min-h-screen pt-32 pb-20 bg-[#1A1A1C] text-[#D6D7D8]">
       <div className="max-w-5xl mx-auto px-6">
-
         {isSuccess && (
           <div className="mb-6 glass-card p-4 flex items-center gap-3">
             <CheckCircle className="text-green-500" />
@@ -159,7 +175,9 @@ export default function SocialMediaTool() {
           </div>
         )}
 
-        <h1 className="text-3xl font-bold mb-6">Social Media Automation</h1>
+        <h1 className="text-3xl font-bold mb-6">
+          Social Media Automation
+        </h1>
 
         {/* PLATFORMS */}
         <div className="glass-card rounded-2xl p-6 mb-8">
@@ -167,7 +185,8 @@ export default function SocialMediaTool() {
 
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {ALL_PLATFORMS.map((p) => {
-              const connected = CONNECTED[p.id as keyof typeof CONNECTED];
+              const connected =
+                CONNECTED[p.id as keyof typeof CONNECTED];
               const selected = isSelected(p.id);
               const Icon = p.icon;
 
@@ -186,8 +205,12 @@ export default function SocialMediaTool() {
                 >
                   <div className="flex items-center gap-3">
                     <Icon className="w-5 h-5 text-[#E1C37A]" />
-                    <span className="font-medium text-sm">{p.name}</span>
-                    {selected && <CheckCircle className="ml-auto text-green-500 w-4 h-4" />}
+                    <span className="font-medium text-sm">
+                      {p.name}
+                    </span>
+                    {selected && (
+                      <CheckCircle className="ml-auto text-green-500 w-4 h-4" />
+                    )}
                   </div>
                 </button>
               );
@@ -197,9 +220,10 @@ export default function SocialMediaTool() {
 
         {/* POST CREATION */}
         <div className="glass-card rounded-2xl p-6 space-y-6">
-
           <div>
-            <label className="block text-sm mb-2 text-[#A9AAAC]">Post Caption</label>
+            <label className="block text-sm mb-2 text-[#A9AAAC]">
+              Post Caption
+            </label>
             <textarea
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
@@ -218,11 +242,16 @@ export default function SocialMediaTool() {
           </div>
 
           <div>
-            <label className="block text-sm mb-2 text-[#A9AAAC]">Upload Image</label>
+            <label className="block text-sm mb-2 text-[#A9AAAC]">
+              Upload Image
+            </label>
             <div className="border-2 border-dashed border-[#3B3C3E] p-4 rounded-lg text-center">
               {imagePreview ? (
                 <div className="relative inline-block">
-                  <img src={imagePreview} className="max-h-48 rounded-lg" />
+                  <img
+                    src={imagePreview}
+                    className="max-h-48 rounded-lg"
+                  />
                   <button
                     onClick={() => {
                       setImageFile(null);
@@ -235,9 +264,16 @@ export default function SocialMediaTool() {
                 </div>
               ) : (
                 <label className="cursor-pointer">
-                  <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
                   <Upload className="mx-auto mb-2 text-[#A9AAAC]" />
-                  <p className="text-sm text-[#A9AAAC]">Click to upload</p>
+                  <p className="text-sm text-[#A9AAAC]">
+                    Click to upload
+                  </p>
                 </label>
               )}
             </div>
@@ -291,7 +327,6 @@ export default function SocialMediaTool() {
               )}
             </button>
           </div>
-
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -12,6 +13,8 @@ import {
   Pin,
   Youtube,
   Loader2,
+  CheckCircle,
+  Lock
 } from "lucide-react";
 
 // ⭐ LINKEDIN
@@ -19,7 +22,7 @@ import {
   initiateLinkedInAuth,
   getLinkedInAuthData,
   clearLinkedInAuthData,
-  isLinkedInConnected,
+  isLinkedInConnected
 } from "@/utils/linkedinOAuth";
 
 // ⭐ FACEBOOK
@@ -27,7 +30,7 @@ import {
   initiateFacebookAuth,
   getFacebookAuthData,
   clearFacebookAuthData,
-  isFacebookConnected,
+  isFacebookConnected
 } from "@/utils/facebookOAuth";
 
 // ⭐ INSTAGRAM
@@ -35,7 +38,7 @@ import {
   initiateInstagramAuth,
   getInstagramAuthData,
   clearInstagramAuthData,
-  isInstagramConnected,
+  isInstagramConnected
 } from "@/utils/instagramOAuth";
 
 // ⭐ TIKTOK
@@ -43,18 +46,17 @@ import {
   initiateTikTokAuth,
   getTikTokAuthData,
   clearTikTokAuthData,
-  isTikTokConnected,
+  isTikTokConnected
 } from "@/utils/tiktokOAuth";
 
 export default function ConnectedAccounts({ user }) {
-  const [loadingPlatform, setLoadingPlatform] = useState(null);
+  const [loadingPlatform, setLoadingPlatform] = useState<string | null>(null);
 
-  const [linkedinData, setLinkedinData] = useState(null);
-  const [facebookData, setFacebookData] = useState(null);
-  const [instagramData, setInstagramData] = useState(null);
-  const [tiktokData, setTikTokData] = useState(null);
+  const [linkedinData, setLinkedinData] = useState<any>(null);
+  const [facebookData, setFacebookData] = useState<any>(null);
+  const [instagramData, setInstagramData] = useState<any>(null);
+  const [tiktokData, setTikTokData] = useState<any>(null);
 
-  // Load saved auth
   useEffect(() => {
     setLinkedinData(getLinkedInAuthData());
     setFacebookData(getFacebookAuthData());
@@ -62,7 +64,6 @@ export default function ConnectedAccounts({ user }) {
     setTikTokData(getTikTokAuthData());
   }, []);
 
-  // Refresh after callback
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
 
@@ -81,46 +82,6 @@ export default function ConnectedAccounts({ user }) {
     }
   }, []);
 
-  // LinkedIn
-  const startLinkedIn = () => {
-    setLoadingPlatform("linkedin");
-    initiateLinkedInAuth();
-  };
-  const disconnectLinkedIn = () => {
-    clearLinkedInAuthData();
-    setLinkedinData(null);
-  };
-
-  // Facebook
-  const startFacebook = () => {
-    setLoadingPlatform("facebook");
-    initiateFacebookAuth();
-  };
-  const disconnectFacebook = () => {
-    clearFacebookAuthData();
-    setFacebookData(null);
-  };
-
-  // Instagram
-  const startInstagram = () => {
-    setLoadingPlatform("instagram");
-    initiateInstagramAuth();
-  };
-  const disconnectInstagram = () => {
-    clearInstagramAuthData();
-    setInstagramData(null);
-  };
-
-  // ⭐ TikTok
-  const startTikTok = () => {
-    setLoadingPlatform("tiktok");
-    initiateTikTokAuth();
-  };
-  const disconnectTikTok = () => {
-    clearTikTokAuthData();
-    setTikTokData(null);
-  };
-
   const accounts = [
     {
       id: "facebook",
@@ -128,12 +89,12 @@ export default function ConnectedAccounts({ user }) {
       icon: Facebook,
       connected: isFacebookConnected(),
       displayName: facebookData?.name || facebookData?.user_name || null,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      start: startFacebook,
-      disconnect: disconnectFacebook,
+      start: () => initiateFacebookAuth(),
+      disconnect: () => {
+        clearFacebookAuthData();
+        setFacebookData(null);
+      }
     },
-
     {
       id: "instagram",
       name: "Instagram",
@@ -144,75 +105,63 @@ export default function ConnectedAccounts({ user }) {
         instagramData?.name ||
         instagramData?.instagram_user_id ||
         null,
-      color: "text-pink-600",
-      bgColor: "bg-pink-50",
-      start: startInstagram,
-      disconnect: disconnectInstagram,
+      start: () => initiateInstagramAuth(),
+      disconnect: () => {
+        clearInstagramAuthData();
+        setInstagramData(null);
+      }
     },
-
     {
       id: "x",
       name: "X (Twitter)",
       icon: Twitter,
       connected: false,
       displayName: null,
-      color: "text-gray-900",
-      bgColor: "bg-gray-50",
-      fake: true,
+      fake: true
     },
-
     {
       id: "linkedin",
       name: "LinkedIn",
       icon: Linkedin,
       connected: isLinkedInConnected(),
-      displayName:
-        linkedinData
-          ? `${linkedinData.firstName ?? ""} ${linkedinData.lastName ?? ""}`.trim()
-          : null,
-      color: "text-blue-700",
-      bgColor: "bg-blue-50",
-      start: startLinkedIn,
-      disconnect: disconnectLinkedIn,
+      displayName: linkedinData
+        ? `${linkedinData.firstName ?? ""} ${linkedinData.lastName ?? ""}`.trim()
+        : null,
+      start: () => initiateLinkedInAuth(),
+      disconnect: () => {
+        clearLinkedInAuthData();
+        setLinkedinData(null);
+      }
     },
-
-    // ⭐ TikTok (REAL OAuth)
     {
       id: "tiktok",
       name: "TikTok",
       icon: Music,
       connected: isTikTokConnected(),
       displayName: tiktokData?.display_name || tiktokData?.open_id || null,
-      color: "text-gray-900",
-      bgColor: "bg-gray-50",
-      start: startTikTok,
-      disconnect: disconnectTikTok,
+      start: () => initiateTikTokAuth(),
+      disconnect: () => {
+        clearTikTokAuthData();
+        setTikTokData(null);
+      }
     },
-
     {
       id: "pinterest",
       name: "Pinterest",
       icon: Pin,
       connected: false,
-      displayName: null,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-      fake: true,
+      fake: true
     },
-
     {
       id: "youtube",
       name: "YouTube",
       icon: Youtube,
       connected: false,
-      displayName: null,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-      fake: true,
-    },
+      fake: true
+    }
   ];
 
-  const fakeConnect = (id) => {
+  const fakeConnect = (id: string) => {
     setLoadingPlatform(id);
     setTimeout(() => {
       alert(`${id} connected (simulated)`);
@@ -220,7 +169,7 @@ export default function ConnectedAccounts({ user }) {
     }, 600);
   };
 
-  const fakeDisconnect = (id) => {
+  const fakeDisconnect = (id: string) => {
     if (!confirm(`Disconnect ${id}?`)) return;
     setLoadingPlatform(id);
     setTimeout(() => {
@@ -230,72 +179,105 @@ export default function ConnectedAccounts({ user }) {
   };
 
   return (
-    <Card className="shadow-lg">
-      <CardHeader className="border-b pb-4">
-        <h3 className="text-xl font-bold text-gray-900">Connected Accounts</h3>
-        <p className="text-sm text-gray-600 mt-1">Manage your social accounts.</p>
-      </CardHeader>
+    <div className="glass-card rounded-3xl p-8">
+      <h3 className="text-2xl font-bold text-white mb-2">Connected Accounts</h3>
+      <p className="text-sm text-[#A9AAAC] mb-8">
+        Connect your social media platforms to enable publishing.
+      </p>
 
-      <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {accounts.map((acc) => {
-            const connected = acc.connected;
-            const Icon = acc.icon;
-            const displayName = acc.displayName;
-            const isLoading = loadingPlatform === acc.id;
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {accounts.map((acc, index) => {
+          const Icon = acc.icon;
+          const isLoading = loadingPlatform === acc.id;
+          const connected = acc.connected;
 
-            return (
-              <Card key={acc.id} className="border hover:shadow-md transition">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className={`w-10 h-10 rounded-lg ${acc.bgColor} flex items-center justify-center`}>
-                      <Icon className={`w-5 h-5 ${acc.color}`} />
-                    </div>
+          return (
+            <motion.div
+              key={acc.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              className="glass-card rounded-2xl p-5"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl metallic-gradient flex items-center justify-center">
+                  <Icon className="w-6 h-6 text-[#1A1A1C]" />
+                </div>
 
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-sm">{acc.name}</h4>
-                        <Badge className={`text-xs ${connected ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}`}>
-                          {connected ? "Connected" : "Not connected"}
-                        </Badge>
-                      </div>
-
-                      {connected && displayName && (
-                        <p className="text-xs text-gray-600 mt-1">{displayName}</p>
-                      )}
-
-                      {/* Buttons */}
-                      <div className="mt-3">
-                        {!acc.fake ? (
-                          <Button
-                            size="sm"
-                            className={`w-full text-xs ${!connected ? "bg-gradient-to-r from-blue-500 to-green-500 text-white" : ""}`}
-                            disabled={isLoading}
-                            onClick={connected ? acc.disconnect : acc.start}
-                          >
-                            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : connected ? "Disconnect" : "Connect"}
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            className={`w-full text-xs ${!connected ? "bg-gradient-to-r from-blue-500 to-green-500 text-white" : ""}`}
-                            disabled={isLoading}
-                            onClick={() =>
-                              connected ? fakeDisconnect(acc.id) : fakeConnect(acc.id)
-                            }
-                          >
-                            {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : connected ? "Disconnect" : "Connect"}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-white font-semibold">{acc.name}</h4>
+                    <Badge
+                      className={`${
+                        connected
+                          ? "bg-green-500/20 text-green-400"
+                          : "bg-[#3B3C3E] text-[#A9AAAC]"
+                      }`}
+                    >
+                      {connected ? "Connected" : "Not Connected"}
+                    </Badge>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </CardContent>
-    </Card>
+
+                  {connected && acc.displayName && (
+                    <p className="text-xs text-[#A9AAAC] mt-1">
+                      {acc.displayName}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-5">
+                {!acc.fake ? (
+                  <Button
+                    className={`w-full ${
+                      connected ? "btn-outline" : "btn-gold"
+                    }`}
+                    disabled={isLoading}
+                    onClick={
+                      connected ? acc.disconnect : acc.start
+                    }
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : connected ? (
+                      "Disconnect"
+                    ) : (
+                      "Connect"
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    className={`w-full ${
+                      connected ? "btn-outline" : "btn-gold"
+                    }`}
+                    disabled={isLoading}
+                    onClick={() =>
+                      connected
+                        ? fakeDisconnect(acc.id)
+                        : fakeConnect(acc.id)
+                    }
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : connected ? (
+                      "Disconnect"
+                    ) : (
+                      "Connect"
+                    )}
+                  </Button>
+                )}
+              </div>
+
+              {!connected && !acc.fake && (
+                <div className="mt-3 text-xs text-[#5B5C60] flex items-center gap-2">
+                  <Lock className="w-3 h-3" />
+                  OAuth required
+                </div>
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
