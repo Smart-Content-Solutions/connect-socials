@@ -4,45 +4,45 @@ import { useUser } from "@clerk/clerk-react";
 
 import { getToolBySlug } from "@/components/tools/toolsConfig";
 import ToolPageTemplate from "@/components/tools/ToolPageTemplate";
+import { useSubscription } from "@/components/subscription/useSubscription";
 
 export default function Tool() {
-  const { user, isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, isLoaded } = useUser();
+  const { isAuthenticated, hasAccessToTool } = useSubscription();
+
   const [searchParams] = useSearchParams();
   const slug = searchParams.get("slug");
 
-  // ✅ LOADING STATE
+  // ✅ LOADING
   if (!isLoaded) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center text-white">
         Loading…
       </div>
     );
   }
 
   // ✅ MUST BE LOGGED IN
-  if (!isSignedIn) {
+  if (!isSignedIn || !isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // ✅ FETCH TOOL
+  // ✅ GET TOOL
   const tool = getToolBySlug(slug);
 
-  // ✅ INVALID TOOL → GO BACK TO DASHBOARD
-  if (!tool) {
+  // ✅ INVALID TOOL
+  if (!tool || typeof tool !== "object") {
     return <Navigate to="/dashboard-preview" replace />;
   }
 
-  // ✅ ADMIN BYPASS
-  const isAdmin = user?.publicMetadata?.role === "admin";
+  // ✅ ACCESS CHECK (REAL SOURCE OF TRUTH)
+  const hasAccess = hasAccessToTool(tool.planRequired);
 
-  // ✅ TOOL LOCK CHECK
-  const isLocked = tool.planRequired !== "free";
-
-  // ✅ NON-ADMIN + LOCKED → SEND TO PRICING (THIS FIXES YOUR BUG)
-  if (isLocked && !isAdmin) {
+  // ✅ NO ACCESS → PRICING (NO WHITE SCREEN)
+  if (!hasAccess) {
     return <Navigate to="/pricing" replace />;
   }
 
-  // ✅ ALLOWED → RENDER TOOL
+  // ✅ ACCESS OK → LOAD TOOL
   return <ToolPageTemplate tool={tool} />;
 }
