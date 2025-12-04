@@ -32,15 +32,21 @@ function ToolCard({
 }: ToolCardProps) {
   const { hasAccessToTool, user } = useSubscription();
 
-  // ✅ ADMIN BYPASS
-  const isAdmin = user?.role === "admin";
+  // ✅ CORRECT ADMIN CHECK (CLERK SAFE)
+  const isAdmin = user?.publicMetadata?.role === "admin";
+
   const hasAccess = isAdmin || hasAccessToTool(tool.planRequired);
 
   const Icon = tool.icon;
-  const CardWrapper: any = tool.slug ? Link : "div";
-  const cardProps = tool.slug ? { to: `/tool?slug=${tool.slug}` } : {};
+
+  // ✅ ONLY make it a Link if user REALLY has access
+  const CardWrapper: any = hasAccess && tool.slug ? Link : "div";
+  const cardProps = hasAccess && tool.slug
+    ? { to: `/tool?slug=${tool.slug}` }
+    : {};
 
   const handleClick = () => {
+    // ✅ LOCKED USERS → OPEN PRICING / MODAL ONLY
     if (!hasAccess && onUnlockClick) {
       onUnlockClick(tool);
     }
@@ -67,11 +73,11 @@ function ToolCard({
         >
           {/* ================= LOCKED / UNLOCKED / ADMIN OVERLAY ================= */}
           {!hasAccess ? (
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-transparent via-[#1A1A1C]/50 to-[#1A1A1C]/80 z-10 flex flex-col items-center justify-end pb-6 pointer-events-none">
+            <div className="absolute inset-0 rounded-2xl bg-gradient-to-b from-transparent via-[#1A1A1C]/50 to-[#1A1A1C]/80 z-10 flex flex-col items-center justify-end pb-6">
               <div className="w-10 h-10 rounded-full bg-[#3B3C3E] flex items-center justify-center mb-3">
                 <Lock className="w-5 h-5 text-[#E1C37A]" />
               </div>
-              <span className="btn-gold px-5 py-2 rounded-full text-sm flex items-center gap-2 pointer-events-auto">
+              <span className="btn-gold px-5 py-2 rounded-full text-sm flex items-center gap-2">
                 Unlock Tool
                 <ArrowRight className="w-4 h-4" />
               </span>
@@ -122,6 +128,7 @@ function ToolCard({
     </motion.div>
   );
 }
+
 
 interface ToolGridWithHighlightProps {
   tools: ToolItem[];
