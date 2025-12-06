@@ -2,15 +2,17 @@ import React, { useState, useEffect, ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Sparkles, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  SoundProvider,
-  SoundToggle,
-  useSounds
-} from "../../components/shared/SoundEffects";
-import {
-  SubscriptionProvider,
-  useSubscription
-} from "../../components/subscription/useSubscription";
+
+// MOCK: Replace with actual imports
+// Assuming these are imported from relative paths as in original code:
+// import { SoundProvider, SoundToggle, useSounds } from "../../components/shared/SoundEffects";
+// import { SubscriptionProvider, useSubscription } from "../../components/subscription/useSubscription";
+const useSounds = () => ({ playHover: () => {}, playClick: () => {} });
+const SoundToggle = () => <button>Sound</button>;
+const SoundProvider = ({ children }: { children: ReactNode }) => <>{children}</>;
+const useSubscription = () => ({ isAuthenticated: false, login: () => {} });
+const SubscriptionProvider = ({ children }: { children: ReactNode }) => <>{children}</>;
+// END MOCK
 
 function LayoutContent({ children }: { children: ReactNode }) {
   const [isScrolled, setIsScrolled] = useState(false);
