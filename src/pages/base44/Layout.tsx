@@ -17,6 +17,9 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
 
+  // ✅ NEW: Detect WordPress tool page
+  const isWordpressToolPage = location.pathname.includes("/apps/wordpress-seo");
+
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
@@ -98,11 +101,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="lg:hidden p-2"
           >
-            {mobileMenuOpen ? (
-              <X className="w-6 h-6" />
-            ) : (
-              <Menu className="w-6 h-6" />
-            )}
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
@@ -160,6 +159,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
             duration: 0.3,
             ease: [0.25, 0.1, 0.25, 1]
           }}
+          className={isWordpressToolPage ? "w-full flex justify-center" : ""}
         >
           {children}
         </motion.main>
@@ -176,9 +176,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
                   alt="SCS Logo"
                   className="h-12 w-12 object-contain rounded-lg"
                 />
-                <span className="text-xl font-semibold">
-                  Smart Content Solutions
-                </span>
+                <span className="text-xl font-semibold">Smart Content Solutions</span>
               </Link>
               <p className="text-[#A9AAAC] text-sm leading-relaxed max-w-md">
                 AI automation that runs while you sleep. Scale your content.
@@ -219,8 +217,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
 
           <div className="border-t border-[#3B3C3E] mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-[#5B5C60]">
-              © {new Date().getFullYear()} Smart Content Solutions. All rights
-              reserved.
+              © {new Date().getFullYear()} Smart Content Solutions. All rights reserved.
             </p>
             <div className="flex gap-6 items-center">
               <SoundToggle />
