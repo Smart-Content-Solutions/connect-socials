@@ -2,7 +2,7 @@ import React, { useState, useEffect, ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Send, LogIn } from "lucide-react";
 
-// MOCK: Replace with actual imports for toast and UI components
+// MOCK TOAST — replace with your real component
 const useToast = () => ({ toast: ({ variant, title, description }: any) => console.log(`[TOAST] ${title}: ${description}`) });
 const ToastProvider = ({ children }: { children: ReactNode }) => <div className="toast-provider">{children}</div>;
 const ToastViewport = () => <div className="toast-viewport"></div>;
@@ -13,8 +13,8 @@ export default function WordpressAutomationApp() {
 
   const [wpUrl, setWpUrl] = useState("");
   const [wpUsername, setWpUsername] = useState("");
-  const [wpPassword, setWpPassword] = useState("");
-  const [wpToken, setWpToken] = useState<string | null>(null);
+  const [wpAppPassword, setWpAppPassword] = useState("");
+  const [isConnected, setIsConnected] = useState(false);
 
   const [content, setContent] = useState("");
   const [sections, setSections] = useState(3);
@@ -25,78 +25,71 @@ export default function WordpressAutomationApp() {
 
   const WEBHOOK_URL = "https://scs-ltd.app.n8n.cloud/webhook/wordpress-automation";
 
-  // FIX: Load token and URL from localStorage on mount
+  // Load stored credentials on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem("wp_token");
     const storedUrl = localStorage.getItem("wp_url");
-    if (storedToken && storedUrl) {
-      setWpToken(storedToken);
-      setWpUrl(storedUrl);
-      toast({ title: "Session Found", description: "Ready to submit content." });
-    }
-  }, [toast]);
+    const storedUser = localStorage.getItem("wp_username");
+    const storedAppPass = localStorage.getItem("wp_app_password");
 
-  const handleLogin = async () => {
-    if (!wpUrl || !wpUsername || !wpPassword) {
+    if (storedUrl && storedUser && storedAppPass) {
+      setWpUrl(storedUrl);
+      setWpUsername(storedUser);
+      setWpAppPassword(storedAppPass);
+      setIsConnected(true);
+
+      toast({ title: "Connected", description: "Your WordPress credentials were restored." });
+    }
+  }, []);
+
+  // Handle “login” with application password
+  const handleConnect = () => {
+    if (!wpUrl || !wpUsername || !wpAppPassword) {
       return toast({
         variant: "destructive",
         title: "Missing Fields",
-        description: "Please fill all login fields.",
+        description: "Please fill all fields.",
       });
     }
 
     setLoginLoading(true);
 
     try {
-      // NOTE: This logic uses the actual API endpoint from the original code
-      const response = await fetch(`${wpUrl}/wp-json/jwt-auth/v1/token`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: wpUsername, password: wpPassword }),
-      });
+      // No API call needed for application passwords.
+      localStorage.setItem("wp_url", wpUrl);
+      localStorage.setItem("wp_username", wpUsername);
+      localStorage.setItem("wp_app_password", wpAppPassword);
 
-      const data = await response.json();
+      setIsConnected(true);
 
-      if (data?.token) {
-        setWpToken(data.token);
-        localStorage.setItem("wp_token", data.token);
-        localStorage.setItem("wp_url", wpUrl);
-
-        toast({ title: "Logged In", description: "Connected to WordPress." });
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Login Failed",
-          description: data?.message || "Incorrect credentials.",
-        });
-      }
+      toast({ title: "Connected", description: "WordPress access enabled using Application Password." });
     } catch {
       toast({
         variant: "destructive",
-        title: "Connection Error",
-        description: "Unable to connect to WordPress. Check your URL.",
+        title: "Error",
+        description: "Unable to save login data.",
       });
     }
 
     setLoginLoading(false);
   };
 
+  // Submit to n8n
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!wpToken) {
+    if (!isConnected) {
       return toast({
         variant: "destructive",
-        title: "Not Logged In",
-        description: "Login to WordPress first.",
+        title: "Not Connected",
+        description: "Please connect to your WordPress website first.",
       });
     }
-    
+
     if (!content.trim()) {
       return toast({
-          variant: "destructive",
-          title: "Content Missing",
-          description: "Please provide content to process.",
+        variant: "destructive",
+        title: "Content Missing",
+        description: "Please provide content.",
       });
     }
 
@@ -105,15 +98,19 @@ export default function WordpressAutomationApp() {
     const form = new FormData();
     form.append("Your Blog Post Content", content);
     form.append("Number of Sections", String(sections));
-    form.append("wp_token", wpToken);
+
+    // SEND CREDENTIALS TO N8N
     form.append("wp_url", wpUrl);
+    form.append("wp_username", wpUsername);
+    form.append("wp_app_password", wpAppPassword);
+
     if (image) form.append("Gallery_Images", image);
 
     try {
-      // NOTE: Using the provided webhook URL for submission
       await fetch(WEBHOOK_URL, { method: "POST", body: form });
 
-      toast({ title: "Submitted!", description: "Sent to automation." });
+      toast({ title: "Submitted!", description: "Content sent to automation." });
+
       setContent("");
       setImage(null);
     } catch {
@@ -129,22 +126,21 @@ export default function WordpressAutomationApp() {
 
   return (
     <ToastProvider>
-      {/* FIX: Set py-20 for top padding and items-start to center content vertically on the screen */}
-      <main className="w-full flex justify-center items-start bg-[#1A1A1C] px-4 py-20"> 
-        <div className="w-full max-w-3xl"> {/* Removed min-h-screen here */}
+      <main className="w-full flex justify-center items-start bg-[#1A1A1C] px-4 py-20">
+        <div className="w-full max-w-3xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="glass-card rounded-3xl p-8" // Removed 'w-full' here as parent already limits width
+            className="glass-card rounded-3xl p-8"
           >
             <h1 className="text-3xl font-bold text-white mb-6">
               Multi-User WordPress SEO Automation (SaaS)
             </h1>
 
-            {/* LOGIN BLOCK (Step 1) */}
+            {/* STEP 1 — WORDPRESS CONNECTION */}
             <div className="mb-10 p-6 rounded-2xl bg-[#1A1A1C] border border-[#333]">
               <h2 className="text-xl text-white mb-4 font-semibold">
-                Step 1 — Login to Your WordPress Website
+                Step 1 — Connect to Your WordPress Website
               </h2>
 
               <div className="space-y-4">
@@ -154,48 +150,49 @@ export default function WordpressAutomationApp() {
                   className="w-full p-4 rounded-xl bg-[#111] border border-[#333] text-white"
                   value={wpUrl}
                   onChange={(e) => setWpUrl(e.target.value)}
-                  disabled={!!wpToken} // Disable input if logged in
+                  disabled={isConnected}
                 />
+
                 <input
                   type="text"
                   placeholder="WordPress Username"
                   className="w-full p-4 rounded-xl bg-[#111] border border-[#333] text-white"
                   value={wpUsername}
                   onChange={(e) => setWpUsername(e.target.value)}
-                  disabled={!!wpToken}
+                  disabled={isConnected}
                 />
+
                 <input
                   type="password"
-                  placeholder="WordPress Password"
+                  placeholder="Application Password (from WordPress Profile → Application Passwords)"
                   className="w-full p-4 rounded-xl bg-[#111] border border-[#333] text-white"
-                  value={wpPassword}
-                  onChange={(e) => setWpPassword(e.target.value)}
-                  disabled={!!wpToken}
+                  value={wpAppPassword}
+                  onChange={(e) => setWpAppPassword(e.target.value)}
+                  disabled={isConnected}
                 />
 
                 <button
-                  onClick={handleLogin}
-                  disabled={loginLoading || !!wpToken}
+                  onClick={handleConnect}
+                  disabled={loginLoading || isConnected}
                   className="btn-gold w-full py-4 rounded-full flex items-center justify-center gap-3 font-semibold disabled:opacity-50"
                 >
                   {loginLoading ? (
                     <>
-                      <Loader2 className="w-5 h-5 animate-spin" /> Logging In...
+                      <Loader2 className="w-5 h-5 animate-spin" /> Connecting...
                     </>
-                  ) : wpToken ? (
-                    '✅ Logged In' // Display success state
+                  ) : isConnected ? (
+                    "✅ Connected"
                   ) : (
                     <>
-                      <LogIn className="w-5 h-5" /> Login to WordPress
+                      <LogIn className="w-5 h-5" /> Connect WordPress
                     </>
                   )}
                 </button>
               </div>
             </div>
 
-            {/* UX FIX: Conditionally render Step 2 */}
-            {wpToken ? (
-              /* CONTENT SUBMISSION (Step 2) */
+            {/* STEP 2 ONLY VISIBLE IF CONNECTED */}
+            {isConnected ? (
               <form onSubmit={handleSubmit} className="space-y-6">
                 <h2 className="text-xl text-white mb-2 font-semibold">
                   Step 2 — Generate SEO Content & Publish
@@ -206,7 +203,7 @@ export default function WordpressAutomationApp() {
                   rows={6}
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  placeholder="Write your content keywords, topic, or raw draft here..."
+                  placeholder="Write your content, keywords, or draft here..."
                 />
 
                 <input
@@ -216,7 +213,7 @@ export default function WordpressAutomationApp() {
                   value={sections}
                   onChange={(e) => setSections(Number(e.target.value))}
                 />
-                
+
                 <input
                   type="file"
                   accept="image/*"
@@ -241,11 +238,11 @@ export default function WordpressAutomationApp() {
                 </button>
               </form>
             ) : (
-                <div className="mt-10 p-6 rounded-2xl bg-[#1A1A1C] border border-[#333] text-center">
-                    <p className="text-lg text-[#A9AAAC]">
-                      Please complete **Step 1** by logging in to unlock the content generation tools.
-                    </p>
-                </div>
+              <div className="mt-10 p-6 rounded-2xl bg-[#1A1A1C] border border-[#333] text-center">
+                <p className="text-lg text-[#A9AAAC]">
+                  Please complete **Step 1** to unlock the content tools.
+                </p>
+              </div>
             )}
           </motion.div>
         </div>
