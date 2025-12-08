@@ -539,9 +539,9 @@ export default function SocialMediaTool() {
                     <div className="w-14 h-14 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
                       <ImageIcon className="w-7 h-7 text-[#E1C37A]" />
                     </div>
-                    <div className="w-14 h-14 rounded-xl bg-[#B6934C]/10 flex items-center justify-center">
+                    {/* <div className="w-14 h-14 rounded-xl bg-[#B6934C]/10 flex items-center justify-center">
                       <Video className="w-7 h-7 text-[#B6934C]" />
-                    </div>
+                    </div> */}
                   </div>
                   <p className="text-[#D6D7D8] font-medium mb-2">Drop your image here</p>
                   <p className="text-[#5B5C60] text-sm">or click to browse</p>
