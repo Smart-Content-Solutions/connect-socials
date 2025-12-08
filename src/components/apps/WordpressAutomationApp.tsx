@@ -1,23 +1,31 @@
+/* -------------- ONLY SHOWING UPDATED + NEW SECTIONS -------------- */
+/* FULL COMPONENT INCLUDED BELOW */
+
 import React, { useState, useEffect, ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Send, LogIn } from "lucide-react";
 
-// MOCK TOAST — replace with your real component
-const useToast = () => ({ toast: ({ variant, title, description }: any) => console.log(`[TOAST] ${title}: ${description}`) });
-const ToastProvider = ({ children }: { children: ReactNode }) => <div className="toast-provider">{children}</div>;
-const ToastViewport = () => <div className="toast-viewport"></div>;
-// END MOCK
+const useToast = () => ({ toast: ({ title, description }: any) => console.log(`[TOAST] ${title}: ${description}`) });
+const ToastProvider = ({ children }: { children: ReactNode }) => <div>{children}</div>;
+const ToastViewport = () => <div />;
 
 export default function WordpressAutomationApp() {
   const { toast } = useToast();
 
+  /* -------------------- WORDPRESS CREDENTIALS -------------------- */
   const [wpUrl, setWpUrl] = useState("");
   const [wpUsername, setWpUsername] = useState("");
   const [wpAppPassword, setWpAppPassword] = useState("");
   const [isConnected, setIsConnected] = useState(false);
 
-  const [content, setContent] = useState("");
+  /* -------------------- SEO & CONTENT FIELDS -------------------- */
+  const [topic, setTopic] = useState("");
   const [sections, setSections] = useState(3);
+  const [keywords, setKeywords] = useState("");
+  const [location, setLocation] = useState("");
+  const [occupation, setOccupation] = useState("");
+  const [audience, setAudience] = useState("");
+  const [tone, setTone] = useState("Professional");
   const [image, setImage] = useState<File | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -25,100 +33,75 @@ export default function WordpressAutomationApp() {
 
   const WEBHOOK_URL = "https://scs-ltd.app.n8n.cloud/webhook/wordpress-automation";
 
-  // Load stored credentials on mount
+  /* -------------------- LOAD STORED SESSION -------------------- */
   useEffect(() => {
     const storedUrl = localStorage.getItem("wp_url");
     const storedUser = localStorage.getItem("wp_username");
-    const storedAppPass = localStorage.getItem("wp_app_password");
+    const storedPass = localStorage.getItem("wp_app_password");
 
-    if (storedUrl && storedUser && storedAppPass) {
+    if (storedUrl && storedUser && storedPass) {
       setWpUrl(storedUrl);
       setWpUsername(storedUser);
-      setWpAppPassword(storedAppPass);
+      setWpAppPassword(storedPass);
       setIsConnected(true);
-
-      toast({ title: "Connected", description: "Your WordPress credentials were restored." });
     }
   }, []);
 
-  // Handle “login” with application password
+  /* -------------------- CONNECT TO WORDPRESS -------------------- */
   const handleConnect = () => {
     if (!wpUrl || !wpUsername || !wpAppPassword) {
-      return toast({
-        variant: "destructive",
-        title: "Missing Fields",
-        description: "Please fill all fields.",
-      });
+      return toast({ title: "Missing Fields", description: "Please fill all fields." });
     }
 
     setLoginLoading(true);
 
-    try {
-      // No API call needed for application passwords.
-      localStorage.setItem("wp_url", wpUrl);
-      localStorage.setItem("wp_username", wpUsername);
-      localStorage.setItem("wp_app_password", wpAppPassword);
+    localStorage.setItem("wp_url", wpUrl);
+    localStorage.setItem("wp_username", wpUsername);
+    localStorage.setItem("wp_app_password", wpAppPassword);
 
-      setIsConnected(true);
-
-      toast({ title: "Connected", description: "WordPress access enabled using Application Password." });
-    } catch {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Unable to save login data.",
-      });
-    }
-
+    setIsConnected(true);
     setLoginLoading(false);
+
+    toast({ title: "Connected", description: "You're now connected to WordPress." });
   };
 
-  // Submit to n8n
+  /* -------------------- SUBMIT SEO REQUEST -------------------- */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!isConnected) {
-      return toast({
-        variant: "destructive",
-        title: "Not Connected",
-        description: "Please connect to your WordPress website first.",
-      });
-    }
-
-    if (!content.trim()) {
-      return toast({
-        variant: "destructive",
-        title: "Content Missing",
-        description: "Please provide content.",
-      });
+    if (!topic.trim()) {
+      return toast({ title: "Topic Missing", description: "Please enter a blog topic." });
     }
 
     setLoading(true);
 
     const form = new FormData();
-    form.append("Your Blog Post Content", content);
-    form.append("Number of Sections", String(sections));
 
-    // SEND CREDENTIALS TO N8N
+    /* SEO + CONTENT PARAMETERS */
+    form.append("topic", topic);
+    form.append("sections", String(sections));
+    form.append("keywords", keywords);
+    form.append("location", location);
+    form.append("occupation", occupation);
+    form.append("audience", audience);
+    form.append("tone", tone);
+
+    /* WORDPRESS CREDENTIALS */
     form.append("wp_url", wpUrl);
     form.append("wp_username", wpUsername);
     form.append("wp_app_password", wpAppPassword);
 
-    if (image) form.append("Gallery_Images", image);
+    /* OPTIONAL IMAGE */
+    if (image) form.append("image", image);
 
     try {
       await fetch(WEBHOOK_URL, { method: "POST", body: form });
+      toast({ title: "Sent!", description: "Your SEO content automation is running." });
 
-      toast({ title: "Submitted!", description: "Content sent to automation." });
-
-      setContent("");
+      setTopic("");
       setImage(null);
     } catch {
-      toast({
-        variant: "destructive",
-        title: "Submission Failed",
-        description: "Unable to send content.",
-      });
+      toast({ title: "Error", description: "Could not send automation." });
     }
 
     setLoading(false);
@@ -128,25 +111,22 @@ export default function WordpressAutomationApp() {
     <ToastProvider>
       <main className="w-full flex justify-center items-start bg-[#1A1A1C] px-4 py-20">
         <div className="w-full max-w-3xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="glass-card rounded-3xl p-8"
-          >
+          
+          {/* -------------------- STEP 1 CARD -------------------- */}
+          <motion.div className="glass-card rounded-3xl p-8 mb-10">
             <h1 className="text-3xl font-bold text-white mb-6">
-              Multi-User WordPress SEO Automation (SaaS)
+              WordPress SEO Automation (SaaS)
             </h1>
 
-            {/* STEP 1 — WORDPRESS CONNECTION */}
-            <div className="mb-10 p-6 rounded-2xl bg-[#1A1A1C] border border-[#333]">
+            <div className="p-6 rounded-2xl bg-[#1A1A1C] border border-[#333]">
               <h2 className="text-xl text-white mb-4 font-semibold">
-                Step 1 — Connect to Your WordPress Website
+                Step 1 — Connect WordPress
               </h2>
 
               <div className="space-y-4">
                 <input
                   type="text"
-                  placeholder="WordPress Site URL (https://mysite.com)"
+                  placeholder="WordPress URL (https://mysite.com)"
                   className="w-full p-4 rounded-xl bg-[#111] border border-[#333] text-white"
                   value={wpUrl}
                   onChange={(e) => setWpUrl(e.target.value)}
@@ -164,7 +144,7 @@ export default function WordpressAutomationApp() {
 
                 <input
                   type="password"
-                  placeholder="Application Password (from WordPress Profile → Application Passwords)"
+                  placeholder="Application Password (WordPress → Profile → Application Passwords)"
                   className="w-full p-4 rounded-xl bg-[#111] border border-[#333] text-white"
                   value={wpAppPassword}
                   onChange={(e) => setWpAppPassword(e.target.value)}
@@ -174,46 +154,96 @@ export default function WordpressAutomationApp() {
                 <button
                   onClick={handleConnect}
                   disabled={loginLoading || isConnected}
-                  className="btn-gold w-full py-4 rounded-full flex items-center justify-center gap-3 font-semibold disabled:opacity-50"
+                  className="btn-gold w-full py-4 rounded-full flex items-center justify-center gap-3 font-semibold"
                 >
-                  {loginLoading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" /> Connecting...
-                    </>
-                  ) : isConnected ? (
-                    "✅ Connected"
-                  ) : (
-                    <>
-                      <LogIn className="w-5 h-5" /> Connect WordPress
-                    </>
-                  )}
+                  {isConnected ? "✅ Connected" : loginLoading ? "Connecting..." : "Connect WordPress"}
                 </button>
               </div>
             </div>
+          </motion.div>
 
-            {/* STEP 2 ONLY VISIBLE IF CONNECTED */}
-            {isConnected ? (
+          {/* -------------------- STEP 2 CARD -------------------- */}
+          {isConnected && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-card rounded-3xl p-8"
+            >
+              <h2 className="text-2xl text-white mb-6 font-semibold">
+                Step 2 — Generate Personalized SEO Content
+              </h2>
+
               <form onSubmit={handleSubmit} className="space-y-6">
-                <h2 className="text-xl text-white mb-2 font-semibold">
-                  Step 2 — Generate SEO Content & Publish
-                </h2>
 
+                {/* TOPIC INPUT */}
                 <textarea
                   className="w-full p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
-                  rows={6}
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Write your content, keywords, or draft here..."
+                  rows={4}
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="Enter topic, idea, or draft..."
                 />
 
-                <input
-                  type="number"
-                  min={1}
-                  className="w-full p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
-                  value={sections}
-                  onChange={(e) => setSections(Number(e.target.value))}
-                />
+                {/* SEO PERSONALIZATION */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Location (optional)"
+                    className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                  />
 
+                  <input
+                    type="text"
+                    placeholder="Occupation / Industry"
+                    className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
+                    value={occupation}
+                    onChange={(e) => setOccupation(e.target.value)}
+                  />
+
+                  <input
+                    type="text"
+                    placeholder="Target Audience"
+                    className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
+                    value={audience}
+                    onChange={(e) => setAudience(e.target.value)}
+                  />
+
+                  <input
+                    type="text"
+                    placeholder="Keywords (comma separated)"
+                    className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
+                    value={keywords}
+                    onChange={(e) => setKeywords(e.target.value)}
+                  />
+                </div>
+
+                {/* TONE + SECTIONS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <select
+                    className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
+                    value={tone}
+                    onChange={(e) => setTone(e.target.value)}
+                  >
+                    <option>Professional</option>
+                    <option>Friendly</option>
+                    <option>Bold</option>
+                    <option>Informative</option>
+                    <option>Humorous</option>
+                    <option>Custom</option>
+                  </select>
+
+                  <input
+                    type="number"
+                    min={1}
+                    className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
+                    value={sections}
+                    onChange={(e) => setSections(Number(e.target.value))}
+                  />
+                </div>
+
+                {/* IMAGE UPLOAD */}
                 <input
                   type="file"
                   accept="image/*"
@@ -221,33 +251,20 @@ export default function WordpressAutomationApp() {
                   onChange={(e) => setImage(e.target.files?.[0] || null)}
                 />
 
+                {/* SUBMIT BUTTON */}
                 <button
                   type="submit"
-                  disabled={loading || !content.trim()}
-                  className="btn-gold px-8 py-4 rounded-full flex items-center gap-3 font-semibold disabled:opacity-50"
+                  disabled={loading}
+                  className="btn-gold w-full py-4 rounded-full flex items-center justify-center gap-3 font-semibold"
                 >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" /> Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-5 h-5" /> Run Automation
-                    </>
-                  )}
+                  {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Generating...</> : <><Send className="w-5 h-5" /> Generate & Publish</>}
                 </button>
               </form>
-            ) : (
-              <div className="mt-10 p-6 rounded-2xl bg-[#1A1A1C] border border-[#333] text-center">
-                <p className="text-lg text-[#A9AAAC]">
-                  Please complete **Step 1** to unlock the content tools.
-                </p>
-              </div>
-            )}
-          </motion.div>
-        </div>
+            </motion.div>
+          )}
 
-        <ToastViewport />
+          <ToastViewport />
+        </div>
       </main>
     </ToastProvider>
   );
