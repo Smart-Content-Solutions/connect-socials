@@ -27,7 +27,7 @@ export default function FacebookCallback() {
         toast.success("Facebook connected");
 
         // small delay so the user sees success
-        setTimeout(() => navigate("/dashboard"), 700);
+        setTimeout(() => navigate("/apps/social-automation"), 700);
       } catch (err: any) {
         console.error("Facebook callback error:", err);
         setStatus("Authentication failed. Please try again.");
