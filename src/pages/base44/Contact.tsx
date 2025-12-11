@@ -43,19 +43,24 @@ export default function Contact() {
             email: formData.email,
             company: formData.company,
             message: formData.message,
-            source: "contact_page" // <-- keeps tracking in your workflow
+            source: "contact_page",  
+            // Optional:
+            budget: "<500",
+            timeline: "ASAP"
           })
         }
       );
 
       const data = await response.json();
 
+      // Handle n8n validation errors
       if (!response.ok) {
         setErrors(data.errors || ["Something went wrong"]);
         setLoading(false);
         return;
       }
 
+      // Success
       setSubmitted(true);
       setLoading(false);
 
@@ -199,6 +204,7 @@ export default function Contact() {
                   <h3 className="text-xl font-semibold">Send a Message</h3>
                 </div>
 
+                {/* Show validation errors */}
                 {errors.length > 0 && (
                   <div className="mb-4 p-4 bg-red-500/20 border border-red-500/40 rounded-xl text-red-300">
                     {errors.map((err, i) => (
@@ -221,7 +227,6 @@ export default function Contact() {
                   </motion.div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-6">
-
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm text-[#A9AAAC] mb-2">Name</label>
