@@ -24,12 +24,45 @@ export default function Contact() {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<string[]>([]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setErrors([]);
 
-    // TODO: Replace with real API call later
-    setSubmitted(true);
+    try {
+      const response = await fetch(
+        "https://scs-ltd.app.n8n.cloud/webhook/lead-capture",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            company: formData.company,
+            message: formData.message,
+            source: "contact_page" // <-- keeps tracking in your workflow
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrors(data.errors || ["Something went wrong"]);
+        setLoading(false);
+        return;
+      }
+
+      setSubmitted(true);
+      setLoading(false);
+
+    } catch (err) {
+      setErrors(["Network error. Please try again later."]);
+      setLoading(false);
+    }
   };
 
   const benefits = [
@@ -128,7 +161,7 @@ export default function Contact() {
                   </div>
                   <div>
                     <p className="text-sm text-[#5B5C60]">Email</p>
-                    <p className="text-[#D6D7D8]">hello@smartcontentsolutions.io</p>
+                    <p className="text-[#D6D7D8]">hello@smartcontentsolutions.co</p>
                   </div>
                 </div>
 
@@ -166,6 +199,14 @@ export default function Contact() {
                   <h3 className="text-xl font-semibold">Send a Message</h3>
                 </div>
 
+                {errors.length > 0 && (
+                  <div className="mb-4 p-4 bg-red-500/20 border border-red-500/40 rounded-xl text-red-300">
+                    {errors.map((err, i) => (
+                      <p key={i} className="text-sm">• {err}</p>
+                    ))}
+                  </div>
+                )}
+
                 {submitted ? (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -180,6 +221,7 @@ export default function Contact() {
                   </motion.div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-6">
+
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm text-[#A9AAAC] mb-2">Name</label>
@@ -222,9 +264,17 @@ export default function Contact() {
                       />
                     </div>
 
-                    <Button type="submit" className="btn-gold w-full py-4 rounded-xl flex items-center justify-center gap-2">
-                      <Send className="w-5 h-5" />
-                      Send Message
+                    <Button 
+                      type="submit" 
+                      disabled={loading}
+                      className="btn-gold w-full py-4 rounded-xl flex items-center justify-center gap-2"
+                    >
+                      {loading ? "Sending..." : (
+                        <>
+                          <Send className="w-5 h-5" />
+                          Send Message
+                        </>
+                      )}
                     </Button>
                   </form>
                 )}
