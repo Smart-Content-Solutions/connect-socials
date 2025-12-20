@@ -58,7 +58,7 @@ import WordpressAutomationApp from "./components/apps/WordpressAutomationApp";
 
 // ✅ Admin
 import AdminRoute from "./components/admin/AdminRoute";
-import AdminDashboard from "./pages/admin/AdminDashboard";
+import { AdminLayout } from "./components/admin/AdminLayout";
 
 const queryClient = new QueryClient();
 
@@ -149,7 +149,7 @@ const App = () => (
               path="/admin/*"
               element={
                 <AdminRoute>
-                  <AdminDashboard />
+                  <AdminLayout />
                 </AdminRoute>
               }
             />

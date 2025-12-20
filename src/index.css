@@ -123,10 +123,36 @@ All colors MUST be HSL.
   background: linear-gradient(135deg, #E1C37A 0%, #B6934C 100%);
 }
 
-.gold-text {
+.bg-gold-gradient {
+  background: linear-gradient(135deg, #E1C37A 0%, #B6934C 100%);
+}
+
+.text-gold-gradient {
   background: linear-gradient(135deg, #E1C37A 0%, #B6934C 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.gold-glow-sm {
+  box-shadow: 0 0 15px rgba(225, 195, 122, 0.4);
+}
+
+.gold-glow {
+  box-shadow: 0 0 30px rgba(225, 195, 122, 0.5);
+}
+
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-strong {
+  background: rgba(15, 15, 16, 0.8);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .glass-card {
@@ -161,5 +187,9 @@ All colors MUST be HSL.
   border: 1px solid rgba(214,215,216,0.3);
   background: transparent;
   color: #D6D7D8;
+}
+
+.text-tertiary {
+  color: rgba(255, 255, 255, 0.3);
 }
 

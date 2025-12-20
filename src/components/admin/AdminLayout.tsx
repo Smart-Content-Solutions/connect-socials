@@ -5,9 +5,9 @@ import { MinimalSidebar } from './MinimalSidebar';
 import { AdminHeader } from './AdminHeader';
 import { AnimatedBackground } from './AnimatedBackground';
 import { SegmentedNav } from './SegmentedNav';
-import Dashboard from '@/pages/Dashboard';
-import LeadsPage from '@/pages/LeadsPage';
-import SettingsPage from '@/pages/SettingsPage';
+import Dashboard from '@/pages/admin/AdminDashboard';
+import LeadsPage from '@/pages/admin/LeadsPage';
+import SettingsPage from '@/pages/admin/SettingsPage';
 
 type Section = 'dashboard' | 'leads' | 'settings';
 
@@ -32,12 +32,12 @@ export function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  
+
   // Determine initial section from URL
   const getInitialSection = (): Section => {
-    if (location.pathname === '/leads' || location.pathname.startsWith('/leads/')) return 'leads';
-    if (location.pathname === '/settings') return 'settings';
-    if (location.pathname.startsWith('/strategy-calls/')) return 'leads';
+    if (location.pathname === '/admin/leads' || location.pathname.startsWith('/admin/leads/')) return 'leads';
+    if (location.pathname === '/admin/settings') return 'settings';
+    if (location.pathname.startsWith('/admin/strategy-calls/')) return 'leads';
     return 'dashboard';
   };
 
@@ -49,11 +49,11 @@ export function AdminLayout() {
     const newIndex = sectionOrder.indexOf(newSection);
     setDirection(newIndex > currentIndex ? 1 : -1);
     setActiveSection(newSection);
-    
+
     // Update URL for bookmarking/refresh support
-    if (newSection === 'dashboard') navigate('/');
-    else if (newSection === 'leads') navigate('/leads');
-    else if (newSection === 'settings') navigate('/settings');
+    if (newSection === 'dashboard') navigate('/admin');
+    else if (newSection === 'leads') navigate('/admin/leads');
+    else if (newSection === 'settings') navigate('/admin/settings');
   }, [activeSection, navigate]);
 
   const renderSection = useMemo(() => {
@@ -79,11 +79,11 @@ export function AdminLayout() {
 
       <div className="ml-16 min-h-screen flex flex-col relative z-10">
         <AdminHeader />
-        
+
         {/* Segmented Navigation */}
-        <SegmentedNav 
-          activeSection={activeSection} 
-          onSectionChange={handleSectionChange} 
+        <SegmentedNav
+          activeSection={activeSection}
+          onSectionChange={handleSectionChange}
         />
 
         {/* Main Content with horizontal slide animation */}

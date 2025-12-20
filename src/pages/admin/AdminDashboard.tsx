@@ -112,14 +112,14 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="space-y-6 p-8 bg-[#0F0F10] min-h-screen text-white">
+    <div className="space-y-6">
       {/* Page Header */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Dashboard</h1>
         <p className="text-gray-400 mt-1">Overview of your leads and pipeline</p>
       </motion.div>
 
@@ -129,6 +129,7 @@ export default function AdminDashboard() {
           title="Total Leads"
           value={stats.leads.total}
           icon={Users}
+          variant="white"
           delay={0.1}
         />
         <StatCard
@@ -142,6 +143,7 @@ export default function AdminDashboard() {
           title="In Progress"
           value={stats.leads.inProgress}
           icon={Clock}
+          variant="white"
           delay={0.2}
         />
         <StatCard
@@ -173,12 +175,14 @@ export default function AdminDashboard() {
           title="This Week"
           value={stats.calls.week}
           icon={CalendarClock}
+          variant="white"
           delay={0.4}
         />
         <StatCard
           title="Pending Confirmation"
           value={stats.calls.pending}
           icon={CalendarCheck}
+          variant="white"
           delay={0.45}
         />
         <StatCard
@@ -193,16 +197,14 @@ export default function AdminDashboard() {
       {/* Pipeline */}
       <PipelineChart />
 
-      {/* Activity, Table & Upcoming Calls */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1 space-y-6">
-          <ActivityFeed />
-        </div>
-        <div className="lg:col-span-2 space-y-6">
-          <UpcomingCallsCard />
-          <RecentLeadsTable />
-        </div>
+      {/* Activity & Upcoming Calls Side-by-Side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ActivityFeed />
+        <UpcomingCallsCard />
       </div>
+
+      {/* Recent Leads Table below */}
+      <RecentLeadsTable />
     </div>
   );
 }
