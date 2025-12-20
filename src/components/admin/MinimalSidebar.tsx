@@ -12,17 +12,17 @@ export function MinimalSidebar({ collapsed = false }: MinimalSidebarProps) {
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.3 }}
       className={cn(
-        'fixed left-0 top-0 h-screen bg-sidebar border-r border-sidebar-border z-40 flex flex-col items-center py-4',
+        'fixed left-0 top-0 h-screen bg-[#1A1A1C] border-r border-white/10 z-40 flex flex-col items-center py-4',
         'w-16'
       )}
     >
       {/* Logo */}
-      <motion.div 
+      <motion.div
         className="w-10 h-10 rounded-xl bg-gold-gradient flex items-center justify-center gold-glow-sm"
         whileHover={{ scale: 1.05 }}
         transition={{ duration: 0.2 }}
       >
-        <span className="text-primary-foreground font-bold text-sm">SC</span>
+        <span className="text-[#1A1A1C] font-bold text-sm">SC</span>
       </motion.div>
 
       {/* Spacer */}

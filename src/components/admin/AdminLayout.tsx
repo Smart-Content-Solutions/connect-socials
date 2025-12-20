@@ -70,7 +70,7 @@ export function AdminLayout() {
   }, [activeSection]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#0F0F10]">
       {/* Animated ambient background */}
       <AnimatedBackground />
 
