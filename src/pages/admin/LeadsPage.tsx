@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { leads, staffMembers, getStaffById, sourceLabels, statusLabels, LeadStatus, LeadSource } from '@/data/mockData';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { PriorityBadge } from '@/components/ui/priority-badge';
-import { StrategyCallsTable } from '@/components/leads/StrategyCallsTable';
+import { StrategyCallsTable } from '@/components/admin/dashboard/StrategyCallsTable';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -18,7 +18,7 @@ export default function LeadsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'leads';
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatuses, setSelectedStatuses] = useState<LeadStatus[]>([]);
   const [selectedSources, setSelectedSources] = useState<LeadSource[]>([]);
@@ -33,7 +33,7 @@ export default function LeadsPage() {
     return leads.filter(lead => {
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        const matchesSearch = 
+        const matchesSearch =
           lead.name.toLowerCase().includes(query) ||
           lead.email.toLowerCase().includes(query) ||
           lead.company?.toLowerCase().includes(query) ||
@@ -54,13 +54,13 @@ export default function LeadsPage() {
   }, [searchQuery, selectedStatuses, selectedSources, selectedAssignee]);
 
   const toggleStatus = (status: LeadStatus) => {
-    setSelectedStatuses(prev => 
+    setSelectedStatuses(prev =>
       prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
     );
   };
 
   const toggleSource = (source: LeadSource) => {
-    setSelectedSources(prev => 
+    setSelectedSources(prev =>
       prev.includes(source) ? prev.filter(s => s !== source) : [...prev, source]
     );
   };
