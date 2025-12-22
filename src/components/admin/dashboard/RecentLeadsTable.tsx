@@ -56,14 +56,14 @@ export function RecentLeadsTable() {
 
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-[#1A1A1C]">
-            <tr>
-              <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-4">NAME</th>
-              <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-4">EMAIL</th>
-              <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-4">CREATED</th>
-              <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-4">STAGE</th>
-              <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-4">ASSIGNED TO</th>
-              <th className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-6 py-4">SOURCE</th>
+          <thead>
+            <tr className="bg-[#1A1A1C]">
+              <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-4">NAME</th>
+              <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-4">EMAIL</th>
+              <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-4">CREATED</th>
+              <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-4">STAGE</th>
+              <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-4">ASSIGNED TO</th>
+              <th className="text-left text-xs font-semibold text-gray-400 uppercase tracking-wider px-6 py-4">SOURCE</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
@@ -83,7 +83,7 @@ export function RecentLeadsTable() {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                   {lead.email}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 pb-1">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
                   <div>{format(new Date(lead.created_at), 'MMM d, yyyy')}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">

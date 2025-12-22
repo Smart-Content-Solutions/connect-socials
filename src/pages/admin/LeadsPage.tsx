@@ -298,14 +298,14 @@ export default function LeadsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-white/10">
-                      <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Lead</th>
-                      <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Service Interest</th>
-                      <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Source</th>
-                      <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Status</th>
-                      <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Priority</th>
-                      <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Assigned To</th>
-                      <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider px-4 py-3">Created</th>
+                    <tr className="bg-muted/30 border-b border-white/5">
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-4">Lead</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-4">Service Interest</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-4">Source</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-4">Status</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-4">Priority</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-4">Assigned To</th>
+                      <th className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider px-4 py-4">Created</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">

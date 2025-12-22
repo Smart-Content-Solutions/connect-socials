@@ -1,20 +1,13 @@
-/* FULL COMPONENT — UI UNCHANGED, INTEGRATION FIXED */
+/* -------------- ONLY SHOWING UPDATED + NEW SECTIONS -------------- */
+/* FULL COMPONENT INCLUDED BELOW */
 
 import React, { useState, useEffect, ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Send, LogIn } from "lucide-react";
 
-const useToast = () => ({
-  toast: ({ title, description }: any) =>
-    console.log(`[TOAST] ${title}: ${description}`)
-});
+const useToast = () => ({ toast: ({ title, description }: any) => console.log(`[TOAST] ${title}: ${description}`) });
 const ToastProvider = ({ children }: { children: ReactNode }) => <div>{children}</div>;
 const ToastViewport = () => <div />;
-
-/* 🔒 REQUIRED BACKEND CONSTANTS */
-const CLIENT_ID = "client_001";
-const ENVIRONMENT = "test";
-const WEBHOOK_TOKEN = "REPLACE_ME";
 
 export default function WordpressAutomationApp() {
   const { toast } = useToast();
@@ -84,32 +77,27 @@ export default function WordpressAutomationApp() {
 
     const form = new FormData();
 
-    /* 🔒 REQUIRED IDENTITY */
-    form.append("client_id", CLIENT_ID);
-    form.append("environment", ENVIRONMENT);
-
-    /* SEO + CONTENT (MATCH WORKFLOW) */
+    /* SEO + CONTENT PARAMETERS */
     form.append("topic", topic);
-    form.append("primary_keyword", keywords); // FIX
+    form.append("sections", String(sections));
+    form.append("keywords", keywords);
     form.append("location", location);
-    form.append("service", occupation);       // FIX
+    form.append("occupation", occupation);
     form.append("audience", audience);
     form.append("tone", tone);
-    form.append("sections", String(sections));
+
+    /* WORDPRESS CREDENTIALS */
+    form.append("wp_url", wpUrl);
+    form.append("wp_username", wpUsername);
+    form.append("wp_app_password", wpAppPassword);
 
     /* OPTIONAL IMAGE */
     if (image) form.append("image", image);
 
     try {
-      await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: {
-          "x-scs-token": WEBHOOK_TOKEN
-        },
-        body: form
-      });
-
+      await fetch(WEBHOOK_URL, { method: "POST", body: form });
       toast({ title: "Sent!", description: "Your SEO content automation is running." });
+
       setTopic("");
       setImage(null);
     } catch {
@@ -119,12 +107,11 @@ export default function WordpressAutomationApp() {
     setLoading(false);
   };
 
-  /* -------------------- UI (UNCHANGED) -------------------- */
   return (
     <ToastProvider>
       <main className="w-full flex justify-center items-start bg-[#1A1A1C] px-4 py-20">
         <div className="w-full max-w-3xl">
-
+          
           {/* -------------------- STEP 1 CARD -------------------- */}
           <motion.div className="glass-card rounded-3xl p-8 mb-10">
             <h1 className="text-3xl font-bold text-white mb-6">
@@ -176,121 +163,116 @@ export default function WordpressAutomationApp() {
           </motion.div>
 
           {/* -------------------- STEP 2 CARD -------------------- */}
-          {/* -------------------- STEP 2 CARD -------------------- */}
-{isConnected && (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className="glass-card rounded-3xl p-8"
-  >
-    <h2 className="text-2xl text-white mb-6 font-semibold">
-      Step 2 — Generate Personalized SEO Content
-    </h2>
+          {isConnected && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-card rounded-3xl p-8"
+            >
+              <h2 className="text-2xl text-white mb-6 font-semibold">
+                Step 2 — Generate Personalized SEO Content
+              </h2>
 
-    <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-6">
 
-      {/* TOPIC INPUT */}
-      <textarea
-        className="w-full p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
-        rows={4}
-        value={topic}
-        onChange={(e) => setTopic(e.target.value)}
-        placeholder="Enter topic, idea, or draft..."
-      />
+                {/* TOPIC INPUT */}
+                <textarea
+                  className="w-full p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
+                  rows={4}
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  placeholder="Enter topic, idea, or draft..."
+                />
 
-      {/* SEO PERSONALIZATION */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <input
-          type="text"
-          placeholder="Location (optional)"
-          className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-        />
+                {/* SEO PERSONALIZATION */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <input
+                    type="text"
+                    placeholder="Location (optional)"
+                    className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                  />
 
-        <input
-          type="text"
-          placeholder="Occupation / Industry"
-          className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
-          value={occupation}
-          onChange={(e) => setOccupation(e.target.value)}
-        />
+                  <input
+                    type="text"
+                    placeholder="Occupation / Industry"
+                    className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
+                    value={occupation}
+                    onChange={(e) => setOccupation(e.target.value)}
+                  />
 
-        <input
-          type="text"
-          placeholder="Target Audience"
-          className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
-          value={audience}
-          onChange={(e) => setAudience(e.target.value)}
-        />
+                  <input
+                    type="text"
+                    placeholder="Target Audience"
+                    className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
+                    value={audience}
+                    onChange={(e) => setAudience(e.target.value)}
+                  />
 
-        <input
-          type="text"
-          placeholder="Keywords (comma separated)"
-          className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
-          value={keywords}
-          onChange={(e) => setKeywords(e.target.value)}
-        />
-      </div>
+                  <input
+                    type="text"
+                    placeholder="Keywords (comma separated)"
+                    className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
+                    value={keywords}
+                    onChange={(e) => setKeywords(e.target.value)}
+                  />
+                </div>
 
-      {/* TONE + SECTIONS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="flex flex-col space-y-2">
-          <label className="text-sm text-gray-300">Content Tone</label>
-          <select
-            className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
-            value={tone}
-            onChange={(e) => setTone(e.target.value)}
-          >
-            <option>Professional</option>
-            <option>Friendly</option>
-            <option>Bold</option>
-            <option>Informative</option>
-            <option>Humorous</option>
-            <option>Custom</option>
-          </select>
-        </div>
+                {/* TONE + SECTIONS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        <div className="flex flex-col space-y-2">
-          <label className="text-sm text-gray-300">Number of Sections</label>
-          <input
-            type="number"
-            min={1}
-            className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
-            value={sections}
-            onChange={(e) => setSections(Number(e.target.value))}
-          />
-        </div>
-      </div>
+  {/* CONTENT TONE */}
+  <div className="flex flex-col space-y-2">
+    <label className="text-sm text-gray-300">Content Tone</label>
+    <select
+      className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
+      value={tone}
+      onChange={(e) => setTone(e.target.value)}
+    >
+      <option>Professional</option>
+      <option>Friendly</option>
+      <option>Bold</option>
+      <option>Informative</option>
+      <option>Humorous</option>
+      <option>Custom</option>
+    </select>
+  </div>
 
-      {/* IMAGE UPLOAD */}
-      <input
-        type="file"
-        accept="image/*"
-        className="text-[#D6D7D8]"
-        onChange={(e) => setImage(e.target.files?.[0] || null)}
-      />
+  {/* NUMBER OF SECTIONS */}
+  <div className="flex flex-col space-y-2">
+    <label className="text-sm text-gray-300">Number of Sections</label>
+    <input
+      type="number"
+      min={1}
+      className="p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white"
+      value={sections}
+      onChange={(e) => setSections(Number(e.target.value))}
+    />
+  </div>
 
-      {/* SUBMIT BUTTON */}
-      <button
-        type="submit"
-        disabled={loading}
-        className="btn-gold w-full py-4 rounded-full flex items-center justify-center gap-3 font-semibold"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="w-5 h-5 animate-spin" /> Generating...
-          </>
-        ) : (
-          <>
-            <Send className="w-5 h-5" /> Generate & Publish
-          </>
-        )}
-      </button>
-    </form>
-  </motion.div>
-)}
+</div>
 
+
+                {/* IMAGE UPLOAD */}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="text-[#D6D7D8]"
+                  onChange={(e) => setImage(e.target.files?.[0] || null)}
+                />
+
+                {/* SUBMIT BUTTON */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-gold w-full py-4 rounded-full flex items-center justify-center gap-3 font-semibold"
+                >
+                  {loading ? <><Loader2 className="w-5 h-5 animate-spin" /> Generating...</> : <><Send className="w-5 h-5" /> Generate & Publish</>}
+                </button>
+              </form>
+            </motion.div>
+          )}
 
           <ToastViewport />
         </div>
