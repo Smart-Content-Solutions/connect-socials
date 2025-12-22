@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, MoreHorizontal } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
@@ -24,6 +24,7 @@ const getStatusLabel = (status: string) => {
 };
 
 export function RecentLeadsTable() {
+  const navigate = useNavigate();
   const [leads, setLeads] = useState<any[]>([]);
 
   useEffect(() => {
@@ -72,6 +73,7 @@ export function RecentLeadsTable() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.6 + index * 0.05 }}
+                onClick={() => navigate(`/admin/leads/${lead.id}`)}
                 className="row-hover cursor-pointer"
               >
                 <td className="px-6 py-4 whitespace-nowrap">

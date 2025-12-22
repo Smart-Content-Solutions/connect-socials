@@ -8,6 +8,8 @@ import { SegmentedNav } from './SegmentedNav';
 import Dashboard from '@/pages/admin/AdminDashboard';
 import LeadsPage from '@/pages/admin/LeadsPage';
 import SettingsPage from '@/pages/admin/SettingsPage';
+import LeadDetailPage from '@/pages/admin/LeadDetailPage';
+import StrategyCallDetailPage from '@/pages/admin/StrategyCallDetailPage';
 import '@/styles/admin.css';
 
 type Section = 'dashboard' | 'leads' | 'settings';
@@ -62,13 +64,19 @@ export function AdminLayout() {
       case 'dashboard':
         return <Dashboard />;
       case 'leads':
+        if (location.pathname.startsWith('/admin/leads/')) {
+          return <LeadDetailPage />;
+        }
+        if (location.pathname.startsWith('/admin/strategy-calls/')) {
+          return <StrategyCallDetailPage />;
+        }
         return <LeadsPage />;
       case 'settings':
         return <SettingsPage />;
       default:
         return <Dashboard />;
     }
-  }, [activeSection]);
+  }, [activeSection, location.pathname]);
 
   return (
     <div className="admin-theme min-h-screen bg-background">

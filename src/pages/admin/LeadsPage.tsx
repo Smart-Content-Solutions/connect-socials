@@ -317,7 +317,7 @@ export default function LeadsPage() {
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.3 + index * 0.05 }}
-                          onClick={() => navigate(`/leads/${lead.id}`)}
+                          onClick={() => navigate(`/admin/leads/${lead.id}`)}
                           className="row-hover cursor-pointer"
                         >
                           <td className="px-4 py-4">

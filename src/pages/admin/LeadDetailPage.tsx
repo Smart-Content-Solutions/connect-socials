@@ -116,7 +116,7 @@ export default function LeadDetailPage() {
         <div className="text-center">
           <h2 className="text-xl font-semibold text-foreground mb-2">Lead not found</h2>
           <p className="text-muted-foreground mb-4">The lead you're looking for doesn't exist.</p>
-          <Button onClick={() => navigate('/leads')}>
+          <Button onClick={() => navigate('/admin/leads')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Leads
           </Button>
@@ -154,7 +154,7 @@ export default function LeadDetailPage() {
         transition={{ duration: 0.2 }}
       >
         <Link
-          to="/leads"
+          to="/admin/leads"
           className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -170,7 +170,7 @@ export default function LeadDetailPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="rounded-xl p-6 bg-[#1A1A1C] border border-white/5"
+            className="rounded-xl p-6 glass card-hover"
           >
             <div className="flex items-start justify-between mb-4">
               <div>
@@ -256,7 +256,7 @@ export default function LeadDetailPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
-            className="rounded-xl p-6 bg-[#1A1A1C] border border-white/5"
+            className="rounded-xl p-6 glass card-hover"
           >
             <h3 className="text-lg font-semibold text-foreground mb-4">Internal Notes</h3>
 
@@ -306,7 +306,7 @@ export default function LeadDetailPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.2 }}
-            className="rounded-xl p-6 bg-[#1A1A1C] border border-white/5"
+            className="rounded-xl p-6 glass card-hover"
           >
             <h3 className="text-lg font-semibold text-foreground mb-4">Activity Timeline</h3>
 
@@ -349,7 +349,7 @@ export default function LeadDetailPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: 0.1 }}
-            className="rounded-xl p-6 space-y-5 bg-[#1A1A1C] border border-white/5"
+            className="rounded-xl p-6 space-y-5 glass card-hover"
           >
             {/* Status */}
             <div>
@@ -458,7 +458,7 @@ export default function LeadDetailPage() {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.3, delay: 0.2 }}
-            className="rounded-xl p-6 bg-[#1A1A1C] border border-white/5"
+            className="rounded-xl p-6 glass card-hover"
           >
             <h3 className="text-sm font-medium text-foreground mb-3">Tags</h3>
             <div className="flex flex-wrap gap-2">
