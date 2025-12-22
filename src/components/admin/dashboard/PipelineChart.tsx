@@ -38,7 +38,7 @@ export function PipelineChart() {
       try {
         const { data: leads, error } = await supabase
           .from('leads')
-          .select('status');
+          .select('*');
 
         if (error) throw error;
 

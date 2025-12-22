@@ -43,15 +43,17 @@ export function StrategyCallsTable() {
       const { data, error } = await supabase
         .from('strategy_calls')
         .select('*')
-        .order('preferred_time', { ascending: false }); // assuming preferred_time column
+        .order('preferred_time', { ascending: false });
 
-      if (data) {
+      if (error) {
+        if (error.code !== '42P01') console.error("Error fetching calls:", error);
+      } else if (data) {
         const mappedCalls: StrategyCall[] = data.map(dbCall => ({
           id: dbCall.id,
           name: dbCall.name,
           email: dbCall.email,
           phone: dbCall.phone,
-          preferredDateTime: dbCall.preferred_time || dbCall.created_at, // fallback
+          preferredDateTime: dbCall.preferred_time || dbCall.created_at,
           timeZone: dbCall.time_zone || 'UTC',
           status: (dbCall.status as StrategyCallStatus) || 'pending',
           source: dbCall.source || 'Website',
@@ -223,7 +225,7 @@ export function StrategyCallsTable() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.2 + index * 0.05 }}
-                      onClick={() => navigate(`/strategy-calls/${call.id}`)}
+                      onClick={() => navigate(`/admin/strategy-calls/${call.id}`)}
                       className="row-hover cursor-pointer"
                     >
                       <td className="px-4 py-4">

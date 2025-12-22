@@ -38,21 +38,22 @@ export default function AdminDashboard() {
         setLoading(true);
 
         // 1. Fetch Leads Stats
+        // We select * because the exact column names for status/score might differ or be missing
         const { data: leads, error: leadsError } = await supabase
           .from('leads')
-          .select('status, created_at, lead_score');
+          .select('*');
 
         if (leadsError) {
-          console.error("Leads fetch error:", leadsError); // Log but don't crash
+          console.error("Leads fetch error:", leadsError);
         }
 
         const leadsData = leads || [];
 
-        // Process Leads
+        // Process Leads - Use optional chaining and fallbacks for columns that might be renamed
         const total = leadsData.length;
-        const newLeads = leadsData.filter(l => l.status === 'new' || !l.status).length; // Assume new if no status
-        const won = leadsData.filter(l => l.status === 'won').length;
-        const lost = leadsData.filter(l => l.status === 'lost').length;
+        const newLeads = leadsData.filter(l => (l.status === 'new' || l.stage === 'new' || !l.status)).length;
+        const won = leadsData.filter(l => l.status === 'won' || l.stage === 'won').length;
+        const lost = leadsData.filter(l => l.status === 'lost' || l.stage === 'lost').length;
         // In Progress = everything else
         const inProgress = total - (newLeads + won + lost);
 
@@ -62,9 +63,18 @@ export default function AdminDashboard() {
           const { data: calls, error: callsError } = await supabase
             .from('strategy_calls')
             .select('*');
-          if (!callsError) callsData = calls || [];
+
+          if (callsError) {
+            if (callsError.code === 'PGRST116' || callsError.code === '42P01') {
+              console.warn("Table strategy_calls does not exist yet.");
+            } else {
+              console.error("Calls fetch error:", callsError);
+            }
+          } else {
+            callsData = calls || [];
+          }
         } catch (e) {
-          console.warn("Strategy calls table might not exist or verify failed");
+          console.warn("Strategy calls table fetch failed - might not exist");
         }
 
         const today = new Date();

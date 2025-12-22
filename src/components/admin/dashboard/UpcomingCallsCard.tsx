@@ -10,13 +10,17 @@ export function UpcomingCallsCard() {
   useEffect(() => {
     async function fetchCalls() {
       try {
-        const { data } = await supabase
+        const { data, error } = await supabase
           .from('strategy_calls')
           .select('*')
           .gte('preferred_time', new Date().toISOString()) // Future calls
           .order('preferred_time', { ascending: true })
           .limit(3);
 
+        if (error) {
+          if (error.code !== '42P01') console.error("Error fetching calls:", error);
+          return;
+        }
         if (data) setCalls(data);
       } catch (e) {
         // ignore if table doesn't exist
