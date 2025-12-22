@@ -2,12 +2,19 @@ import { motion } from 'framer-motion';
 import { Search, Bell, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { useUser } from '@clerk/clerk-react';
 
 interface AdminHeaderProps {
   sidebarCollapsed?: boolean;
 }
 
 export function AdminHeader({ sidebarCollapsed }: AdminHeaderProps) {
+  const { user } = useUser();
+
+  const displayName = user?.fullName || user?.username || user?.firstName || 'Admin User';
+  const email = user?.primaryEmailAddress?.emailAddress || '';
+  const imageUrl = user?.imageUrl;
+
   return (
     <motion.header
       initial={{ y: -10, opacity: 0 }}
@@ -45,12 +52,16 @@ export function AdminHeader({ sidebarCollapsed }: AdminHeaderProps) {
         {/* User */}
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
-            <p className="text-sm font-medium text-foreground">James Mitchell</p>
-            <p className="text-xs text-muted-foreground">james@scs.co.uk</p>
+            <p className="text-sm font-medium text-foreground">{displayName}</p>
+            <p className="text-xs text-muted-foreground">{email}</p>
           </div>
           <div className="relative">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center border border-white/10">
-              <User className="w-5 h-5 text-foreground" />
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center border border-white/10 overflow-hidden">
+              {imageUrl ? (
+                <img src={imageUrl} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-5 h-5 text-foreground" />
+              )}
             </div>
             <Badge
               variant="outline"
