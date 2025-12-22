@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  staffMembers, sourceLabels, statusLabels, LeadStatus, LeadPriority,
+  staffMembers, sourceLabels, statusLabels, LeadStatus, LeadPriority, LeadSource,
   Activity
 } from '@/data/mockData';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -97,7 +97,7 @@ export default function LeadDetailPage() {
             priority: data.priority || 'medium',
             assignedTo: data.assigned_to,
             createdAt: data.created_at || new Date().toISOString(),
-            tags: data.tags || []
+            tags: Array.isArray(data.tags) ? data.tags : []
           });
           setStatus(data.status || 'new');
           setPriority(data.priority || 'medium');
@@ -473,7 +473,7 @@ export default function LeadDetailPage() {
           >
             <h3 className="text-sm font-medium text-foreground mb-3">Tags</h3>
             <div className="flex flex-wrap gap-2">
-              {lead.tags.length > 0 ? (
+              {Array.isArray(lead.tags) && lead.tags.length > 0 ? (
                 lead.tags.map(tag => (
                   <span
                     key={tag}
