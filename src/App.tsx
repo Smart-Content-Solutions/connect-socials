@@ -146,14 +146,14 @@ const App = () => (
 
             {/* ✅ ADMIN ROUTES */}
              
-            {/* <Route
+             <Route
               path="/admin/*"
               element={
                 <AdminRoute>
                   <AdminLayout />
                 </AdminRoute>
               }
-            />  */}
+            />  
 
             <Route
               path="/account"
