@@ -10,7 +10,7 @@ const topRowLogos = [
   { name: "YouTube", url: "https://www.youtube.com/", logo: "https://cdn.simpleicons.org/youtube/FF0000" },
   { name: "X", url: "https://x.com/", logo: "https://cdn.simpleicons.org/x/FFFFFF" },
   { name: "Snapchat", url: "https://www.snapchat.com/", logo: "https://cdn.simpleicons.org/snapchat/FFFC00" },
-  { name: "LinkedIn", url: "https://www.linkedin.com/", logo: "https://cdn.simpleicons.org/linkedin/0A66C2" },
+  { name: "LinkedIn", url: "https://www.linkedin.com/", logo: "https://cdn.simpleicons.org/snapchat/FFFC00" },
   { name: "Reddit", url: "https://www.reddit.com/", logo: "https://cdn.simpleicons.org/reddit/FF4500" },
   { name: "Pinterest", url: "https://www.pinterest.com/", logo: "https://cdn.simpleicons.org/pinterest/BD081C" },
   { name: "Twitch", url: "https://www.twitch.tv/", logo: "https://cdn.simpleicons.org/twitch/9146FF" },
