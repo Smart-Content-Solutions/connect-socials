@@ -32,8 +32,6 @@ export default function WordpressAutomationApp() {
   const [loginLoading, setLoginLoading] = useState(false);
 
   const WEBHOOK_URL = "https://n8n.smartcontentsolutions.co.uk/webhook/seo-content-publisher";
-
-  /* -------------------- LOAD STORED SESSION -------------------- */
   useEffect(() => {
     const storedUrl = localStorage.getItem("wp_url");
     const storedUser = localStorage.getItem("wp_username");
