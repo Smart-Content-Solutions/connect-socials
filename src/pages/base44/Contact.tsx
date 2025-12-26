@@ -36,7 +36,7 @@ export default function Contact() {
 
     try {
       const response = await fetch(
-        "https://scs-ltd.app.n8n.cloud/webhook/lead-capture",
+        "https://n8n.smartcontentsolutions.co.uk/webhook/lead-capture",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
