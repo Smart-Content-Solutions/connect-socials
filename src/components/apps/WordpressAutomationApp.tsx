@@ -45,7 +45,6 @@ export default function WordpressAutomationApp() {
     }
   }, []);
 
-  /* -------------------- CONNECT TO WORDPRESS -------------------- */
   const handleConnect = () => {
     if (!wpUrl || !wpUsername || !wpAppPassword) {
       return toast({ title: "Missing Fields", description: "Please fill all fields." });
