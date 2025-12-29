@@ -8,6 +8,7 @@ import {
   Sparkles,
   ArrowRight,
   Shield,
+  Calendar,
 } from "lucide-react";
 import { useUser, useClerk } from "@clerk/clerk-react";
 
@@ -124,6 +125,35 @@ export default function Account() {
             Payments are securely processed. We never store card details.
           </span>
         </div>
+
+        {/* ✅ PLANNER SECTION - ADMIN ONLY */}
+        {user?.publicMetadata?.role === "admin" && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-8 glass-card rounded-2xl p-6 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl gold-gradient flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-[#1A1A1C]" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Planner</h3>
+                <p className="text-sm text-[#A9AAAC]">
+                  Access the admin planner dashboard
+                </p>
+              </div>
+            </div>
+
+            <Link
+              to="/planner"
+              className="btn-gold px-6 py-2 rounded-xl text-sm font-medium flex items-center gap-2"
+            >
+              Go <ArrowRight className="w-4 h-4" />
+            </Link>
+          </motion.div>
+        )}
       </div>
     </div>
   );
