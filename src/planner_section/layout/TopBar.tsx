@@ -50,6 +50,7 @@ export function TopBar() {
     <header className="h-16 bg-background/80 backdrop-blur-sm border-b border-border flex items-center justify-between px-6 sticky top-0 z-40">
       {/* Left: Breadcrumbs */}
       <div className="flex items-center gap-2">
+        <img src="/icon.png" alt="SCS Logo" className="w-5 h-5 object-contain" />
         <span className="text-muted-foreground text-sm">SCS Workspace</span>
         <span className="text-muted-foreground/50">/</span>
         <span className="text-foreground font-medium">{currentPage}</span>
