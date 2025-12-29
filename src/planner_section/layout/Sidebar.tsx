@@ -3,10 +3,10 @@ import { NavLink, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { label: "Dashboard", icon: LayoutDashboard, path: "/" },
-  { label: "Docs", icon: FileText, path: "/docs" },
-  { label: "Tasks", icon: CheckSquare, path: "/tasks" },
-  { label: "Settings", icon: Settings, path: "/settings" },
+  { label: "Dashboard", icon: LayoutDashboard, path: "/planner" },
+  { label: "Docs", icon: FileText, path: "/planner/docs" },
+  { label: "Tasks", icon: CheckSquare, path: "/planner/tasks" },
+  { label: "Settings", icon: Settings, path: "/planner/settings" },
 ];
 
 export function Sidebar() {

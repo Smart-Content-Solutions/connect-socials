@@ -62,7 +62,7 @@ export function DashboardView() {
       tags: [],
       createdBy: "Dominik",
     });
-    navigate("/docs");
+    navigate("/planner/docs");
   };
 
   if (isLoading) {
@@ -82,7 +82,7 @@ export function DashboardView() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Docs Card */}
-        <Card className="glass-card border-border hover:border-gold/30 transition-all duration-300 group cursor-pointer" onClick={() => navigate("/docs")}>
+        <Card className="glass-card border-border hover:border-gold/30 transition-all duration-300 group cursor-pointer" onClick={() => navigate("/planner/docs")}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Docs</CardTitle>
             <div className="w-10 h-10 rounded-lg bg-gold/10 flex items-center justify-center group-hover:bg-gold/20 transition-colors">
@@ -96,7 +96,7 @@ export function DashboardView() {
         </Card>
 
         {/* Tasks Card */}
-        <Card className="glass-card border-border hover:border-silver/30 transition-all duration-300 group cursor-pointer" onClick={() => navigate("/tasks")}>
+        <Card className="glass-card border-border hover:border-silver/30 transition-all duration-300 group cursor-pointer" onClick={() => navigate("/planner/tasks")}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Open Tasks</CardTitle>
             <div className="w-10 h-10 rounded-lg bg-silver/10 flex items-center justify-center group-hover:bg-silver/20 transition-colors">
@@ -152,7 +152,7 @@ export function DashboardView() {
                 <div
                   key={doc.id}
                   className="flex items-center justify-between p-3 rounded-lg bg-surface hover:bg-surface-hover cursor-pointer transition-colors"
-                  onClick={() => navigate("/docs")}
+                  onClick={() => navigate("/planner/docs")}
                 >
                   <div className="flex items-center gap-3">
                     <FileText className="w-4 h-4 text-muted-foreground" />
@@ -195,7 +195,7 @@ export function DashboardView() {
                 <div
                   key={task.id}
                   className="flex items-center justify-between p-3 rounded-lg bg-surface hover:bg-surface-hover cursor-pointer transition-colors"
-                  onClick={() => navigate("/tasks")}
+                  onClick={() => navigate("/planner/tasks")}
                 >
                   <div className="flex items-center gap-3">
                     <CheckSquare className="w-4 h-4 text-muted-foreground" />
@@ -238,13 +238,13 @@ export function DashboardView() {
               New Document
             </button>
             <button
-              onClick={() => navigate("/tasks")}
+              onClick={() => navigate("/planner/tasks")}
               className="px-4 py-2 bg-surface text-foreground border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
             >
               View Tasks
             </button>
             <button
-              onClick={() => navigate("/settings")}
+              onClick={() => navigate("/planner/settings")}
               className="px-4 py-2 bg-surface text-foreground border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
             >
               Settings
