@@ -59,6 +59,7 @@ import WordpressAutomationApp from "./components/apps/WordpressAutomationApp";
 // ✅ Admin
 import AdminRoute from "./components/admin/AdminRoute";
 import { AdminLayout } from "./components/admin/AdminLayout";
+import PlannerApp from "./planner_section/PlannerApp";
 
 const queryClient = new QueryClient();
 
@@ -145,15 +146,24 @@ const App = () => (
             />
 
             {/* ✅ ADMIN ROUTES */}
-             
-             <Route
+
+            <Route
+              path="/planner/*"
+              element={
+                <AdminRoute>
+                  <PlannerApp />
+                </AdminRoute>
+              }
+            />
+
+            <Route
               path="/admin/*"
               element={
                 <AdminRoute>
                   <AdminLayout />
                 </AdminRoute>
               }
-            />  
+            />
 
             <Route
               path="/account"
