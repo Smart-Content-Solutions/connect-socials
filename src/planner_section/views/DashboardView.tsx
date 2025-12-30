@@ -233,7 +233,7 @@ export function DashboardView() {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={handleNewDoc}
-              className="px-6 py-2.5 bg-gradient-to-r from-gold to-gold/90 text-background rounded-lg text-sm font-semibold hover:from-gold/90 hover:to-gold transition-all duration-300 gold-glow shadow-lg hover:shadow-xl hover:scale-[1.02]"
+              className="px-6 py-2.5 bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-400 text-gray-900 rounded-lg text-sm font-bold hover:from-amber-300 hover:via-yellow-400 hover:to-amber-300 transition-all duration-300 shadow-[0_0_20px_rgba(251,191,36,0.4)] hover:shadow-[0_0_30px_rgba(251,191,36,0.6)] hover:scale-[1.05] border border-amber-300"
             >
               New Document
             </button>
