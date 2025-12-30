@@ -32,9 +32,14 @@ export default function Tool() {
   console.log("  - tool found:", !!tool);
   console.log("  - current path:", window.location.pathname);
 
+  // ✅ No slug at all → don't render (user is navigating away)
+  if (!slug) {
+    console.log("  ℹ️ No slug parameter, not rendering");
+    return null;
+  }
+
   // ✅ Invalid slug → dashboard (only redirect if there IS a slug but tool not found)
-  // Don't redirect if there's no slug at all (user might be navigating away)
-  if (slug && !tool) {
+  if (!tool) {
     console.log("  ⚠️ REDIRECTING to dashboard-preview (invalid slug)");
     return <Navigate to="/dashboard-preview" replace />;
   }
