@@ -31,6 +31,7 @@ interface DbTask {
   priority: string;
   assignee: string;
   due_date: string | null;
+  completed_date?: string | null;
   created_at: string;
   updated_at: string;
   comments: string | null;
@@ -58,6 +59,7 @@ const mapDbTaskToTask = (dbTask: DbTask): Task => ({
   priority: dbTask.priority as TaskPriority,
   assignee: dbTask.assignee as Assignee,
   dueDate: dbTask.due_date ? new Date(dbTask.due_date) : undefined,
+  completedDate: dbTask.completed_date ? new Date(dbTask.completed_date) : undefined,
   createdAt: new Date(dbTask.created_at),
   updatedAt: new Date(dbTask.updated_at),
   comments: dbTask.comments || undefined,
@@ -267,6 +269,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (payload.priority !== undefined) updateData.priority = payload.priority;
       if (payload.assignee !== undefined) updateData.assignee = payload.assignee;
       if (payload.dueDate !== undefined) updateData.due_date = payload.dueDate ? payload.dueDate.toISOString().split("T")[0] : null;
+      if (payload.completedDate !== undefined) updateData.completed_date = payload.completedDate ? payload.completedDate.toISOString().split("T")[0] : null;
       if (payload.comments !== undefined) updateData.comments = payload.comments;
 
       const { data, error } = await supabase

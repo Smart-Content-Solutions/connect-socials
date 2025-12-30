@@ -22,6 +22,7 @@ export interface Task {
   priority: TaskPriority;
   assignee: Assignee;
   dueDate?: Date;
+  completedDate?: Date;
   createdAt: Date;
   updatedAt: Date;
   comments?: string;

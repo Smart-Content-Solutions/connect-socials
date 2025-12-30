@@ -5,6 +5,7 @@ import { TasksFilterBar } from "../tasks/TasksFilterBar";
 import { TasksTableView } from "../tasks/TasksTableView";
 import { TasksKanbanView } from "../tasks/TasksKanbanView";
 import { TaskDetailDrawer } from "../tasks/TaskDetailDrawer";
+import { TaskCompletionDialog } from "../tasks/TaskCompletionDialog";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, LayoutList, Kanban, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TASK_PRIORITIES, ASSIGNEES } from "../types";
+
 
 type ViewMode = "table" | "kanban";
 
@@ -33,6 +35,14 @@ export function TasksView() {
     assignee: "Dominik" as Assignee,
   });
 
+  // Completion dialog state
+  const [completionDialogOpen, setCompletionDialogOpen] = useState(false);
+  const [pendingTaskCompletion, setPendingTaskCompletion] = useState<{
+    id: string;
+    title: string;
+    updates: Partial<Task>;
+  } | null>(null);
+
   const filteredTasks = useMemo(() => {
     let result = [...tasks];
 
@@ -49,6 +59,13 @@ export function TasksView() {
 
     if (showCompletedOnly) {
       result = result.filter((t) => t.status === "Done");
+      // Sort completed tasks by completion date (most recent first)
+      result.sort((a, b) => {
+        if (!a.completedDate && !b.completedDate) return 0;
+        if (!a.completedDate) return 1;
+        if (!b.completedDate) return -1;
+        return new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime();
+      });
     }
 
     if (filters.assignee && filters.assignee !== "All") {
@@ -65,11 +82,36 @@ export function TasksView() {
   }, [tasks, filters, showCompletedOnly, searchQuery]);
 
   const handleUpdateTask = async (id: string, updates: Partial<Task>) => {
+    // Check if task is being marked as done
+    const task = tasks.find((t) => t.id === id);
+    if (task && updates.status === "Done" && task.status !== "Done") {
+      // Show completion dialog
+      setPendingTaskCompletion({ id, title: task.title, updates });
+      setCompletionDialogOpen(true);
+      return;
+    }
+
     await updateTask(id, updates);
     if (selectedTask?.id === id) {
       setSelectedTask((prev) => (prev ? { ...prev, ...updates } : null));
     }
   };
+
+  const handleConfirmCompletion = async (completedDate: Date) => {
+    if (pendingTaskCompletion) {
+      await updateTask(pendingTaskCompletion.id, {
+        ...pendingTaskCompletion.updates,
+        completedDate,
+      });
+      if (selectedTask?.id === pendingTaskCompletion.id) {
+        setSelectedTask((prev) =>
+          prev ? { ...prev, ...pendingTaskCompletion.updates, completedDate } : null
+        );
+      }
+      setPendingTaskCompletion(null);
+    }
+  };
+
 
   const handleDeleteTask = async (id: string) => {
     await deleteTask(id);
@@ -255,6 +297,17 @@ export function TasksView() {
         onUpdateTask={handleUpdateTask}
         onDeleteTask={handleDeleteTask}
         initialFullscreen={openFullscreen}
+      />
+
+      {/* Completion Dialog */}
+      <TaskCompletionDialog
+        open={completionDialogOpen}
+        onClose={() => {
+          setCompletionDialogOpen(false);
+          setPendingTaskCompletion(null);
+        }}
+        onConfirm={handleConfirmCompletion}
+        taskTitle={pendingTaskCompletion?.title || ""}
       />
     </div>
   );
