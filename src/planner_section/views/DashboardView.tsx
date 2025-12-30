@@ -233,19 +233,19 @@ export function DashboardView() {
           <div className="flex flex-wrap gap-3">
             <button
               onClick={handleNewDoc}
-              className="px-4 py-2 bg-gold text-primary-foreground rounded-lg text-sm font-medium hover:bg-gold/90 transition-colors gold-glow"
+              className="px-6 py-2.5 bg-gradient-to-r from-gold to-gold/90 text-background rounded-lg text-sm font-semibold hover:from-gold/90 hover:to-gold transition-all duration-300 gold-glow shadow-lg hover:shadow-xl hover:scale-[1.02]"
             >
               New Document
             </button>
             <button
               onClick={() => navigate("/planner/tasks")}
-              className="px-4 py-2 bg-surface text-foreground border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
+              className="px-6 py-2.5 bg-surface text-foreground border border-border rounded-lg text-sm font-medium hover:bg-surface-hover hover:border-gold/50 transition-all duration-300 hover:scale-[1.02] shadow-md"
             >
               View Tasks
             </button>
             <button
               onClick={() => navigate("/planner/settings")}
-              className="px-4 py-2 bg-surface text-foreground border border-border rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
+              className="px-6 py-2.5 bg-surface text-foreground border border-border rounded-lg text-sm font-medium hover:bg-surface-hover hover:border-silver/50 transition-all duration-300 hover:scale-[1.02] shadow-md"
             >
               Settings
             </button>
