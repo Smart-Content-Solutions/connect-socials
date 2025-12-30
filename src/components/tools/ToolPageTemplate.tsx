@@ -166,7 +166,10 @@ export default function ToolPageTemplate({ tool }: ToolPageTemplateProps) {
           <motion.button
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            onClick={() => navigate(referrerPath)}
+            onClick={() => {
+              console.log("🔙 Back button clicked! Navigating to:", referrerPath);
+              navigate(referrerPath);
+            }}
             className="flex items-center gap-2 text-[#A9AAAC] hover:text-[#E1C37A] transition-colors mb-8 group"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
