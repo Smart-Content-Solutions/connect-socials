@@ -80,9 +80,15 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
 
     try {
       for (const file of Array.from(files)) {
-        // Validate file size (max 50MB)
-        if (file.size > 50 * 1024 * 1024) {
-          toast.error(`${file.name} is too large (max 50MB)`);
+        console.log("📁 Attempting upload:", {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+        });
+
+        // Validate file size (max 200MB)
+        if (file.size > 200 * 1024 * 1024) {
+          toast.error(`${file.name} is too large (max 200MB)`);
           continue;
         }
 
@@ -91,9 +97,15 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
         // Upload to storage
         const { error: uploadError } = await supabase.storage
           .from("task-attachments")
-          .upload(fileName, file);
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error("❌ Supabase Storage Error:", uploadError);
+          throw new Error(`Storage Error: ${uploadError.message}`);
+        }
 
         // Save reference in database
         const { error: dbError } = await supabase
@@ -106,14 +118,17 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
             storage_path: fileName,
           });
 
-        if (dbError) throw dbError;
+        if (dbError) {
+          console.error("❌ Database Error:", dbError);
+          throw new Error(`Database Error: ${dbError.message}`);
+        }
       }
 
       toast.success("Files uploaded successfully");
       fetchAttachments();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error uploading file:", error);
-      toast.error("Failed to upload file");
+      toast.error(error.message || "Failed to upload file");
     } finally {
       setIsUploading(false);
       // Reset input
@@ -182,7 +197,7 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
             multiple
             onChange={handleFileUpload}
             className="hidden"
-            accept="*/*"
+            accept="video/*,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/*,.zip,.rar"
           />
           <Button
             type="button"
@@ -219,7 +234,7 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
           multiple
           onChange={handleFileUpload}
           className="hidden"
-          accept="*/*"
+          accept="video/*,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/*,.zip,.rar"
         />
         <div className="border border-dashed border-border/50 rounded-lg p-4 text-center hover:bg-surface/50 transition-colors">
           {isUploading ? (
@@ -230,7 +245,7 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
               <p className="text-sm text-muted-foreground">
                 Click to upload files (PDF, Word, images, videos, code, etc.)
               </p>
-              <p className="text-xs text-muted-foreground mt-1">Max 50MB per file</p>
+              <p className="text-xs text-muted-foreground mt-1">Max 200MB per file</p>
             </>
           )}
         </div>
