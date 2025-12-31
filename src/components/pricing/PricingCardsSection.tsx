@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Check, Zap, Building2, Sparkles, MessageSquare, Loader2 } from "lucide-react";
+import { Check, Zap, Building2, Sparkles, MessageSquare, Loader2, Lock } from "lucide-react";
 
 export default function PricingCardsSection({ 
   plans, 
@@ -120,28 +120,11 @@ export default function PricingCardsSection({
                 </div>
 
                 <div className="mt-auto">
-                  {plan.contactSales ? (
-                    <Link
-                      to="/contact"
-                      className="w-full h-12 rounded-xl font-semibold flex items-center justify-center gap-2 btn-outline"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                      {plan.cta}
-                    </Link>
-                  ) : (
-                    <button
-                      onClick={() => onSubscribe(plan.name)}
-                      disabled={loadingPlan === plan.name}
-                      className="w-full h-12 rounded-xl btn-gold flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      {loadingPlan === plan.name ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : (
-                        plan.cta
-                      )}
-                    </button>
-                  )}
-                </div>
+  <div className="w-full h-12 rounded-xl flex items-center justify-center gap-2 bg-[#2A2A2C] text-[#A9AAAC] font-semibold cursor-not-allowed border border-[#3B3C3E]">
+    <Lock className="w-4 h-4" />
+    Coming Soon
+  </div>
+</div>
               </motion.div>
             );
           })}
