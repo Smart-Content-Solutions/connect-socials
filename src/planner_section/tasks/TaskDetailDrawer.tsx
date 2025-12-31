@@ -310,7 +310,7 @@ export function TaskDetailDrawer({ task, open, onClose, onUpdateTask, onDeleteTa
   if (isFullscreen) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-card border-border">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-[hsl(240,5%,10%)] border-[hsl(240,5%,18%)] text-[hsl(0,0%,95%)] planner-theme">
           <DialogHeader className="pb-4">
             <DialogTitle>{headerContent}</DialogTitle>
           </DialogHeader>
@@ -322,7 +322,7 @@ export function TaskDetailDrawer({ task, open, onClose, onUpdateTask, onDeleteTa
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
-      <SheetContent className="w-[500px] sm:w-[550px] bg-card border-border overflow-y-auto">
+      <SheetContent className="w-[500px] sm:w-[550px] bg-[hsl(240,5%,10%)] border-[hsl(240,5%,18%)] overflow-y-auto text-[hsl(0,0%,95%)] planner-theme">
         <SheetHeader className="pb-4">
           <SheetTitle>{headerContent}</SheetTitle>
         </SheetHeader>
