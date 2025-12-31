@@ -55,7 +55,7 @@ export function TaskDetailDrawer({ task, open, onClose, onUpdateTask, onDeleteTa
       setLocalDescription(task.description);
       setLocalComments(task.comments || "");
     }
-  }, [task?.id, open]);
+  }, [task?.id, open, isFullscreen]);
 
   // Debounced update for text fields
   useEffect(() => {
