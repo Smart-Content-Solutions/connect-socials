@@ -23,7 +23,7 @@ export function TasksView() {
   const { tasks, isLoading, updateTask, createTask, deleteTask, reorderTasks, searchQuery } = useTasks();
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [filters, setFilters] = useState<TaskFilters>({});
-  const [showCompletedOnly, setShowCompletedOnly] = useState(false);
+  const [activeTab, setActiveTab] = useState<"all" | "completed">("all");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [openFullscreen, setOpenFullscreen] = useState(false);
@@ -57,7 +57,9 @@ export function TasksView() {
       );
     }
 
-    if (showCompletedOnly) {
+    // Filter based on active tab - this is the KEY change
+    if (activeTab === "completed") {
+      // Show ONLY completed tasks
       result = result.filter((t) => t.status === "Done");
       // Sort completed tasks by completion date (most recent first)
       result.sort((a, b) => {
@@ -66,6 +68,9 @@ export function TasksView() {
         if (!b.completedDate) return -1;
         return new Date(b.completedDate).getTime() - new Date(a.completedDate).getTime();
       });
+    } else {
+      // "All Tasks" tab - Exclude completed tasks
+      result = result.filter((t) => t.status !== "Done");
     }
 
     if (filters.assignee && filters.assignee !== "All") {
@@ -79,7 +84,7 @@ export function TasksView() {
     }
 
     return result;
-  }, [tasks, filters, showCompletedOnly, searchQuery]);
+  }, [tasks, filters, activeTab, searchQuery]);
 
   const handleUpdateTask = async (id: string, updates: Partial<Task>) => {
     // Check if task is being marked as done
@@ -238,8 +243,8 @@ export function TasksView() {
         <TasksFilterBar
           filters={filters}
           onFiltersChange={setFilters}
-          showCompletedOnly={showCompletedOnly}
-          onShowCompletedToggle={() => setShowCompletedOnly(!showCompletedOnly)}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
         />
         <div className="flex items-center gap-1 bg-surface rounded-lg p-1">
           <Button
