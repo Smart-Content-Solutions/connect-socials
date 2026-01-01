@@ -15,11 +15,9 @@ export default function Navbar({ activeTab, onTabChange, showTabs = true }: Navb
             <div className="max-w-7xl mx-auto flex items-center justify-between">
                 {/* Logo */}
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E1C37A] to-[#B6934C] flex items-center justify-center font-bold text-[#1A1A1C] text-xl">
-                        S
-                    </div>
+                    <img src="/icon.png" alt="SCS Logo" className="w-10 h-10 rounded-xl" />
                     <span className="text-xl font-bold bg-gradient-to-r from-[#E1C37A] to-[#D6D7D8] bg-clip-text text-transparent">
-                        SmartContent
+                        SmartContentSolutions
                     </span>
                 </div>
 
