@@ -61,6 +61,10 @@ import AdminRoute from "./components/admin/AdminRoute";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import PlannerApp from "./planner_section/PlannerApp";
 
+// ✅ NEW: Stripe success / cancel pages
+import SuccessPage from "./pages/success/Index";
+import CancelPage from "./pages/cancel/Index";
+
 const queryClient = new QueryClient();
 
 // ✅ Protected Route
@@ -88,31 +92,181 @@ const App = () => (
       <SubscriptionProvider>
         <BrowserRouter>
           <Routes>
-
             {/* ✅ PUBLIC MARKETING */}
-            <Route path="/" element={<Layout><Home /></Layout>} />
-            <Route path="/home" element={<Layout><Home /></Layout>} />
-            <Route path="/about" element={<Layout><About /></Layout>} />
-            <Route path="/services" element={<Layout><Services /></Layout>} />
-            <Route path="/packages" element={<Layout><Packages /></Layout>} />
-            <Route path="/portfolio" element={<Layout><Portfolio /></Layout>} />
-            <Route path="/contact" element={<Layout><Contact /></Layout>} />
-            <Route path="/resources" element={<Layout><Resources /></Layout>} />
+            <Route
+              path="/"
+              element={
+                <Layout>
+                  <Home />
+                </Layout>
+              }
+            />
+            <Route
+              path="/home"
+              element={
+                <Layout>
+                  <Home />
+                </Layout>
+              }
+            />
+            <Route
+              path="/about"
+              element={
+                <Layout>
+                  <About />
+                </Layout>
+              }
+            />
+            <Route
+              path="/services"
+              element={
+                <Layout>
+                  <Services />
+                </Layout>
+              }
+            />
+            <Route
+              path="/packages"
+              element={
+                <Layout>
+                  <Packages />
+                </Layout>
+              }
+            />
+            <Route
+              path="/portfolio"
+              element={
+                <Layout>
+                  <Portfolio />
+                </Layout>
+              }
+            />
+            <Route
+              path="/contact"
+              element={
+                <Layout>
+                  <Contact />
+                </Layout>
+              }
+            />
+            <Route
+              path="/resources"
+              element={
+                <Layout>
+                  <Resources />
+                </Layout>
+              }
+            />
 
             {/* ✅ PLATFORM ROUTES */}
-            <Route path="/dashboard-preview" element={<Layout><DashboardPreview /></Layout>} />
-            <Route path="/core-tools" element={<Layout><CoreTools /></Layout>} />
-            <Route path="/corporate-tools" element={<Layout><CorporateTools /></Layout>} />
-            <Route path="/pricing" element={<Layout><Pricing /></Layout>} />
-            <Route path="/tool" element={<Layout><Tool /></Layout>} />
-            <Route path="/subscription-success" element={<Layout><SubscriptionSuccess /></Layout>} />
-            <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
-            <Route path="/terms" element={<Layout><Terms /></Layout>} />
+            <Route
+              path="/dashboard-preview"
+              element={
+                <Layout>
+                  <DashboardPreview />
+                </Layout>
+              }
+            />
+            <Route
+              path="/core-tools"
+              element={
+                <Layout>
+                  <CoreTools />
+                </Layout>
+              }
+            />
+            <Route
+              path="/corporate-tools"
+              element={
+                <Layout>
+                  <CorporateTools />
+                </Layout>
+              }
+            />
+            <Route
+              path="/pricing"
+              element={
+                <Layout>
+                  <Pricing />
+                </Layout>
+              }
+            />
+            <Route
+              path="/tool"
+              element={
+                <Layout>
+                  <Tool />
+                </Layout>
+              }
+            />
+            <Route
+              path="/subscription-success"
+              element={
+                <Layout>
+                  <SubscriptionSuccess />
+                </Layout>
+              }
+            />
+            <Route
+              path="/privacy"
+              element={
+                <Layout>
+                  <Privacy />
+                </Layout>
+              }
+            />
+            <Route
+              path="/terms"
+              element={
+                <Layout>
+                  <Terms />
+                </Layout>
+              }
+            />
+
+            {/* ✅ NEW: Stripe success & cancel routes */}
+            <Route
+              path="/success"
+              element={
+                <Layout>
+                  <SuccessPage />
+                </Layout>
+              }
+            />
+            <Route
+              path="/cancel"
+              element={
+                <Layout>
+                  <CancelPage />
+                </Layout>
+              }
+            />
 
             {/* ✅ PLANS */}
-            <Route path="/starter" element={<Layout><StarterPlan /></Layout>} />
-            <Route path="/pro" element={<Layout><ProPlan /></Layout>} />
-            <Route path="/checkout" element={<Layout><StripeCheckout /></Layout>} />
+            <Route
+              path="/starter"
+              element={
+                <Layout>
+                  <StarterPlan />
+                </Layout>
+              }
+            />
+            <Route
+              path="/pro"
+              element={
+                <Layout>
+                  <ProPlan />
+                </Layout>
+              }
+            />
+            <Route
+              path="/checkout"
+              element={
+                <Layout>
+                  <StripeCheckout />
+                </Layout>
+              }
+            />
 
             {/* ✅ AUTH */}
             <Route path="/login" element={<Login />} />
@@ -138,15 +292,22 @@ const App = () => (
             {/* ✅ PROTECTED DASHBOARD */}
             <Route
               path="/social-posts"
-              element={<ProtectedRoute><SocialMediaTool /></ProtectedRoute>}
+              element={
+                <ProtectedRoute>
+                  <SocialMediaTool />
+                </ProtectedRoute>
+              }
             />
             <Route
               path="/leads-calls"
-              element={<ProtectedRoute><LeadsTool /></ProtectedRoute>}
+              element={
+                <ProtectedRoute>
+                  <LeadsTool />
+                </ProtectedRoute>
+              }
             />
 
             {/* ✅ ADMIN ROUTES */}
-
             <Route
               path="/planner/*"
               element={
@@ -196,18 +357,35 @@ const App = () => (
               }
             />
 
-
-
             {/* ✅ OAUTH */}
-            <Route path="/linkedin/callback" element={<ProtectedRoute><LinkedInCallback /></ProtectedRoute>} />
-            <Route path="/linkedin/create-post" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
-            <Route path="/facebook/callback" element={<FacebookCallback />} />
-            <Route path="/instagram/callback" element={<InstagramCallback />} />
+            <Route
+              path="/linkedin/callback"
+              element={
+                <ProtectedRoute>
+                  <LinkedInCallback />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/linkedin/create-post"
+              element={
+                <ProtectedRoute>
+                  <CreatePost />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/facebook/callback"
+              element={<FacebookCallback />}
+            />
+            <Route
+              path="/instagram/callback"
+              element={<InstagramCallback />}
+            />
             <Route path="/tiktok/callback" element={<TikTokCallback />} />
 
             {/* ✅ 404 */}
             <Route path="*" element={<NotFound />} />
-
           </Routes>
         </BrowserRouter>
       </SubscriptionProvider>
