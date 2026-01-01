@@ -21,6 +21,7 @@ export type Database = {
           created_by: string
           id: string
           last_updated: string
+          notes: string | null
           tags: string[]
           title: string
         }
@@ -30,6 +31,7 @@ export type Database = {
           created_by?: string
           id?: string
           last_updated?: string
+          notes?: string | null
           tags?: string[]
           title?: string
         }
@@ -39,6 +41,7 @@ export type Database = {
           created_by?: string
           id?: string
           last_updated?: string
+          notes?: string | null
           tags?: string[]
           title?: string
         }

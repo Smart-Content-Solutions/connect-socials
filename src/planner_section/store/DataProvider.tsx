@@ -21,6 +21,7 @@ interface DbDoc {
   created_by: string;
   last_updated: string;
   created_at: string;
+  notes: string | null;
 }
 
 interface DbTask {
@@ -48,7 +49,7 @@ const mapDbDocToDoc = (dbDoc: DbDoc): DocPage => ({
   tags: dbDoc.tags as DocTag[],
   createdBy: dbDoc.created_by,
   lastUpdated: new Date(dbDoc.last_updated),
-  notes: undefined, // Notes not stored in DB yet - Sub: add notes column if needed
+  notes: dbDoc.notes || undefined,
 });
 
 const mapDbTaskToTask = (dbTask: DbTask): Task => ({
@@ -188,6 +189,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (payload.content !== undefined) updateData.content = payload.content;
       if (payload.tags !== undefined) updateData.tags = payload.tags;
       if (payload.createdBy !== undefined) updateData.created_by = payload.createdBy;
+      if (payload.notes !== undefined) updateData.notes = payload.notes;
 
       const { data, error } = await supabase
         .from("docs")

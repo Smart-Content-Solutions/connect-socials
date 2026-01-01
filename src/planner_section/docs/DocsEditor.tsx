@@ -59,28 +59,44 @@ const sanitizeText = (text: string): string => {
 export function DocsEditor({ doc, onUpdateTitle, onUpdateContent }: DocsEditorProps) {
   const [activeCommands, setActiveCommands] = useState<Set<string>>(new Set());
   const editorRef = useRef<HTMLDivElement>(null);
-  const lastContentRef = useRef<string>("");
+  const isUpdatingRef = useRef(false);
 
-  // Initialize content when doc changes
+  // Initialize/update content when doc changes
   useEffect(() => {
-    if (editorRef.current && doc) {
-      const sanitized = DOMPurify.sanitize(doc.content, PURIFY_CONFIG);
-      // Only update if content actually changed (not from our own input)
-      if (sanitized !== lastContentRef.current) {
-        editorRef.current.innerHTML = sanitized;
-        lastContentRef.current = sanitized;
-      }
+    if (!editorRef.current || !doc) return;
+
+    const sanitized = DOMPurify.sanitize(doc.content || "", PURIFY_CONFIG);
+
+    // Only update if we're not currently typing (to preserve cursor)
+    if (!isUpdatingRef.current && editorRef.current.innerHTML !== sanitized) {
+      editorRef.current.innerHTML = sanitized || '<p><br></p>'; // Add empty paragraph if empty
     }
-  }, [doc?.id, doc?.content]); // Only re-run when doc ID or content changes externally
+  }, [doc?.id]); // Only re-run when document ID changes (switching docs)
+
+  const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+    if (!editorRef.current) return;
+
+    isUpdatingRef.current = true;
+    const currentContent = editorRef.current.innerHTML;
+    const sanitized = DOMPurify.sanitize(currentContent, PURIFY_CONFIG);
+    onUpdateContent(sanitized);
+
+    // Reset flag after a short delay
+    setTimeout(() => {
+      isUpdatingRef.current = false;
+    }, 100);
+  }, [onUpdateContent]);
 
   const executeCommand = useCallback((command: string) => {
+    if (!editorRef.current) return;
+    editorRef.current.focus();
+
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
 
     const range = selection.getRangeAt(0);
     const selectedText = range.toString();
 
-    let newHtml = "";
     switch (command) {
       case "h1":
         document.execCommand("formatBlock", false, "h1");
@@ -144,7 +160,12 @@ export function DocsEditor({ doc, onUpdateTitle, onUpdateContent }: DocsEditorPr
         }
         break;
     }
-  }, []);
+
+    // Trigger input event after command
+    if (editorRef.current) {
+      handleInput({ currentTarget: editorRef.current } as any);
+    }
+  }, [handleInput]);
 
   if (!doc) {
     return (
@@ -205,12 +226,7 @@ export function DocsEditor({ doc, onUpdateTitle, onUpdateContent }: DocsEditorPr
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          onInput={(e) => {
-            const currentContent = e.currentTarget.innerHTML;
-            const sanitized = DOMPurify.sanitize(currentContent, PURIFY_CONFIG);
-            lastContentRef.current = sanitized;
-            onUpdateContent(sanitized);
-          }}
+          onInput={handleInput}
           className={cn(
             "min-h-[400px] p-4 bg-surface rounded-lg border border-border/50",
             "focus:outline-none focus:ring-2 focus:ring-primary/30",
