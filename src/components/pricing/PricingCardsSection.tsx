@@ -56,6 +56,37 @@ export default function PricingCardsSection({
     };
   }, [activeIndex]);
 
+  // --- ADDED: Stripe Checkout handler for Early Access plan ---
+  const handleStartTrial = async () => {
+    try {
+      // Keep existing behaviour if parent uses onSubscribe
+      if (onSubscribe) {
+        onSubscribe("Early Access");
+      }
+
+      const response = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = data.url;
+      } else {
+        console.error("No URL returned from Stripe session", data);
+        alert("Something went wrong starting the checkout. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error creating checkout session", error);
+      alert("Something went wrong starting the checkout. Please try again.");
+    }
+  };
+  // --- END ADDED ---
+
   return (
     <section className="py-12 relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 relative">
@@ -141,7 +172,9 @@ export default function PricingCardsSection({
                       <div className="w-5 h-5 rounded-full bg-[#2A2A2C] flex items-center justify-center mt-0.5">
                         <Check className="w-3 h-3 text-[#E1C37A]" />
                       </div>
-                      <span className="text-sm text-[#D6D7D8]">{feature}</span>
+                      <span className="text-sm text-[#D6D7D8]">
+                        {feature}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -184,7 +217,7 @@ export default function PricingCardsSection({
             </ul>
 
             <button
-              onClick={() => onSubscribe("Early Access")}
+              onClick={handleStartTrial} // UPDATED: now uses Stripe handler
               className="mt-4 w-full sm:w-auto px-8 h-12 rounded-xl btn-gold flex items-center justify-center gap-2"
             >
               Start 3-Day Free Trial
