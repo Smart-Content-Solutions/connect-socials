@@ -1,14 +1,14 @@
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Settings, LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, CreditCard, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SegmentedNavProps {
-  activeSection: 'dashboard' | 'leads' | 'settings';
-  onSectionChange: (section: 'dashboard' | 'leads' | 'settings') => void;
+  activeSection: 'dashboard' | 'leads' | 'subscribers' | 'settings';
+  onSectionChange: (section: 'dashboard' | 'leads' | 'subscribers' | 'settings') => void;
 }
 
 interface NavItem {
-  id: 'dashboard' | 'leads' | 'settings';
+  id: 'dashboard' | 'leads' | 'subscribers' | 'settings';
   label: string;
   icon: LucideIcon;
 }
@@ -16,11 +16,13 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'leads', label: 'Leads', icon: Users },
+  { id: 'subscribers', label: 'Subscribers', icon: CreditCard },
   { id: 'settings', label: 'Staff & Settings', icon: Settings },
 ];
 
 export function SegmentedNav({ activeSection, onSectionChange }: SegmentedNavProps) {
   const activeIndex = navItems.findIndex(item => item.id === activeSection);
+  const itemCount = navItems.length;
 
   return (
     <motion.div
@@ -31,25 +33,27 @@ export function SegmentedNav({ activeSection, onSectionChange }: SegmentedNavPro
     >
       <div className="relative glass rounded-xl p-1.5 flex gap-1">
         {/* Sliding indicator */}
-        <motion.div
-          className="absolute top-1.5 bottom-1.5 rounded-lg bg-gold-gradient gold-glow-sm"
-          layoutId="segmentIndicator"
-          initial={false}
-          style={{
-            width: `calc((100% - 12px) / 3)`,
-            left: `calc(${activeIndex * (100 / 3)}% + 6px)`,
-          }}
-          transition={{
-            type: 'spring',
-            stiffness: 400,
-            damping: 30,
-          }}
-        />
+        {activeIndex >= 0 && (
+          <motion.div
+            className="absolute top-1.5 bottom-1.5 rounded-lg bg-gold-gradient gold-glow-sm"
+            layoutId="segmentIndicator"
+            initial={false}
+            style={{
+              width: `calc((100% - 12px) / ${itemCount})`,
+              left: `calc(${activeIndex * (100 / itemCount)}% + 6px)`,
+            }}
+            transition={{
+              type: 'spring',
+              stiffness: 400,
+              damping: 30,
+            }}
+          />
+        )}
 
         {navItems.map((item) => {
           const isActive = activeSection === item.id;
           const IconComponent = item.icon;
-          
+
           return (
             <button
               key={item.id}
