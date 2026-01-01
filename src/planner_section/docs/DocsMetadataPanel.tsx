@@ -1,12 +1,13 @@
-import { DocPage, DocTag, DOC_TAGS } from "@/types";
+import { DocPage, DocTag, DOC_TAGS } from "../types";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { User, Calendar, Tag, Trash2 } from "lucide-react";
+import { User, Calendar, Tag, Trash2, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { DocAttachments } from "./DocAttachments";
 
 interface DocsMetadataPanelProps {
   doc: DocPage | null;
@@ -90,6 +91,17 @@ export function DocsMetadataPanel({
         <p className="text-sm text-muted-foreground">
           {format(new Date(doc.lastUpdated), "MMM d, yyyy 'at' h:mm a")}
         </p>
+      </div>
+
+      <Separator className="bg-border/50" />
+
+      {/* Attachments */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Paperclip className="w-4 h-4 text-muted-foreground" />
+          <Label className="text-sm font-medium text-foreground">Attachments</Label>
+        </div>
+        <DocAttachments docId={doc.id} />
       </div>
 
       <Separator className="bg-border/50" />

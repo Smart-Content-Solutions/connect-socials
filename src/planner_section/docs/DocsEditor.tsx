@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import DOMPurify from "dompurify";
-import { DocPage } from "@/types";
+import { DocPage } from "../types";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";

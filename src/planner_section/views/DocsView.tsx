@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useDocs } from "../store/DataProvider";
 import { DocTag } from "../types";
-import { DocsSidebarList } from "../components/docs/DocsSidebarList";
-import { DocsEditor } from "../components/docs/DocsEditor";
-import { DocsMetadataPanel } from "../components/docs/DocsMetadataPanel";
+import { DocsSidebarList } from "../docs/DocsSidebarList";
+import { DocsEditor } from "../docs/DocsEditor";
+import { DocsMetadataPanel } from "../docs/DocsMetadataPanel";
 import { Loader2 } from "lucide-react";
 import { useUser } from "@clerk/clerk-react";
 
