@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useAuth } from "@clerk/clerk-react";
 
 type Role = "admin" | "early_access" | "user";
 
@@ -17,11 +18,12 @@ const roleLabel: Record<Role, string> = {
 };
 
 export default function UsersPage() {
+  const { getToken, isLoaded, isSignedIn } = useAuth();
+
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Track edits locally (userId -> role)
   const [pendingRoles, setPendingRoles] = useState<Record<string, Role>>({});
   const [saving, setSaving] = useState<Record<string, boolean>>({});
   const [savedMsg, setSavedMsg] = useState<Record<string, string>>({});
@@ -31,7 +33,26 @@ export default function UsersPage() {
       setLoading(true);
       setError(null);
 
-      const res = await fetch("/api/admin-users", { method: "GET" });
+      if (!isLoaded) {
+        throw new Error("Auth is still loading. Please refresh and try again.");
+      }
+
+      if (!isSignedIn) {
+        throw new Error("You must be signed in to view this page.");
+      }
+
+      const token = await getToken();
+      if (!token) {
+        throw new Error("Missing auth token. Please sign out and sign back in.");
+      }
+
+      const res = await fetch("/api/admin-users", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
       const data = await res.json();
 
       if (!res.ok) {
@@ -41,11 +62,13 @@ export default function UsersPage() {
       const list: AdminUser[] = data.users || [];
       setUsers(list);
 
-      // initialize pending roles from server roles
       const init: Record<string, Role> = {};
       for (const u of list) {
         const r = (u.role || "user").toString().toLowerCase();
-        init[u.id] = (r === "admin" || r === "early_access" || r === "user" ? r : "user") as Role;
+        init[u.id] =
+          r === "admin" || r === "early_access" || r === "user"
+            ? (r as Role)
+            : "user";
       }
       setPendingRoles(init);
     } catch (e: any) {
@@ -56,8 +79,17 @@ export default function UsersPage() {
   };
 
   useEffect(() => {
+    if (!isLoaded) return;
+
+    if (!isSignedIn) {
+      setLoading(false);
+      setError("You must be signed in to view this page.");
+      return;
+    }
+
     loadUsers();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded, isSignedIn]);
 
   const rows = useMemo(() => users, [users]);
 
@@ -73,9 +105,18 @@ export default function UsersPage() {
       setSaving((prev) => ({ ...prev, [userId]: true }));
       setSavedMsg((prev) => ({ ...prev, [userId]: "" }));
 
+      if (!isLoaded) throw new Error("Auth is still loading. Try again.");
+      if (!isSignedIn) throw new Error("You must be signed in to make changes.");
+
+      const token = await getToken();
+      if (!token) throw new Error("Missing auth token. Please sign out/in.");
+
       const res = await fetch("/api/admin-update-user-role", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ userId, role }),
       });
 
@@ -85,10 +126,7 @@ export default function UsersPage() {
         throw new Error(data?.error || "Failed to update role");
       }
 
-      // update local users list role
-      setUsers((prev) =>
-        prev.map((u) => (u.id === userId ? { ...u, role } : u))
-      );
+      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role } : u)));
 
       setSavedMsg((prev) => ({ ...prev, [userId]: "Saved" }));
       setTimeout(() => {
@@ -106,7 +144,8 @@ export default function UsersPage() {
       <div className="mb-4">
         <h1 className="text-2xl font-semibold">Users</h1>
         <p className="text-muted-foreground">
-          Manage user roles. “Early Access” is for customers who purchased your Early Access plan.
+          Manage user roles. “Early Access” is for customers who purchased your
+          Early Access plan.
         </p>
       </div>
 
@@ -139,7 +178,7 @@ export default function UsersPage() {
               ) : (
                 rows.map((u) => {
                   const current = pendingRoles[u.id] || "user";
-                  const isSaving = !!saving[u.id];
+                  const isSavingRow = !!saving[u.id];
                   const msg = savedMsg[u.id] || "";
 
                   return (
@@ -150,7 +189,9 @@ export default function UsersPage() {
                         <select
                           className="rounded-md border border-border/60 bg-background px-3 py-2"
                           value={current}
-                          onChange={(e) => setRoleFor(u.id, e.target.value as Role)}
+                          onChange={(e) =>
+                            setRoleFor(u.id, e.target.value as Role)
+                          }
                         >
                           <option value="user">{roleLabel.user}</option>
                           <option value="early_access">{roleLabel.early_access}</option>
@@ -162,12 +203,14 @@ export default function UsersPage() {
                           <button
                             className="rounded-md bg-primary px-3 py-2 text-primary-foreground disabled:opacity-60"
                             onClick={() => saveRole(u.id)}
-                            disabled={isSaving}
+                            disabled={isSavingRow}
                           >
-                            {isSaving ? "Saving…" : "Save"}
+                            {isSavingRow ? "Saving…" : "Save"}
                           </button>
                           {msg && (
-                            <span className="text-xs text-muted-foreground">{msg}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {msg}
+                            </span>
                           )}
                         </div>
                       </td>
