@@ -23,7 +23,7 @@ export default function RecentPosts({ posts, isLoading }: RecentPostsProps) {
     }
 
     return (
-        <GlassCard className="p-6 h-full flex flex-col">
+        <GlassCard className="p-6 h-[500px] flex flex-col">
             <h3 className="text-[#D6D7D8] font-semibold text-lg mb-6 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-[#E1C37A]" />
                 Recent Posts
