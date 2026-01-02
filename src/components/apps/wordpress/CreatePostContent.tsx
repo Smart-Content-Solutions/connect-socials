@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { FileText, Loader2, Send, AlertCircle, CheckCircle, Globe } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FileText, Loader2, Send, AlertCircle, CheckCircle, Globe, Info } from 'lucide-react';
 import GlassCard from './GlassCard';
 import GoldButton from './GoldButton';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,7 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
 
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [isTopicFocused, setIsTopicFocused] = useState(false);
 
     useEffect(() => {
         // Select the first site by default if none selected and sites exist
@@ -151,6 +152,8 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
                                     value={topic}
                                     onChange={(e) => setTopic(e.target.value)}
                                     placeholder="Enter topic, idea, or draft..."
+                                    onFocus={() => setIsTopicFocused(true)}
+                                    onBlur={() => setIsTopicFocused(false)}
                                 />
                             </div>
                         </div>
@@ -234,6 +237,35 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
 
                 {/* Sidebar */}
                 <div className="space-y-6">
+                    <AnimatePresence>
+                        {isTopicFocused && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                                animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+                                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                                className="overflow-hidden"
+                            >
+                                <GlassCard className="p-5 border-[#E1C37A]/30 bg-[#E1C37A]/5">
+                                    <div className="flex items-start gap-3">
+                                        <Info className="w-5 h-5 text-[#E1C37A] mt-0.5 shrink-0" />
+                                        <div className="space-y-2">
+                                            <h4 className="font-semibold text-[#E1C37A] text-sm">How this field works</h4>
+                                            <p className="text-xs text-[#D6D7D8] leading-relaxed">
+                                                The text you enter here becomes the foundation of your entire article. Our AI expands, enhances, and optimizes your input into a complete, ready post.
+                                            </p>
+                                            <p className="text-xs text-[#A9AAAC] leading-relaxed">
+                                                For best results, include as much detail as possible. The topic, angle, target reader, key points, examples, or anything important.
+                                            </p>
+                                            <p className="text-xs font-medium text-[#E1C37A]">
+                                                More detail is more accurate content.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </GlassCard>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     <GlassCard className="p-5">
                         <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
                             Select Sites
