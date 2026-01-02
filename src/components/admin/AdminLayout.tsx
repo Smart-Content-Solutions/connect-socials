@@ -11,11 +11,12 @@ import SettingsPage from '@/pages/admin/SettingsPage';
 import LeadDetailPage from '@/pages/admin/LeadDetailPage';
 import StrategyCallDetailPage from '@/pages/admin/StrategyCallDetailPage';
 import SubscribersPage from '@/pages/admin/subscriberspage'; // ✅ NEW
+import UsersPage from '@/pages/admin/UsersPage'; // ✅ ADD
 import '@/styles/admin.css';
 
-type Section = 'dashboard' | 'leads' | 'subscribers' | 'settings'; // ✅ NEW: add 'subscribers'
+type Section = 'dashboard' | 'leads' | 'subscribers' | 'users' | 'settings'; // ✅ ADD 'users'
 
-const sectionOrder: Section[] = ['dashboard', 'leads', 'subscribers', 'settings']; // ✅ include subscribers
+const sectionOrder: Section[] = ['dashboard', 'leads', 'subscribers', 'users', 'settings']; // ✅ include users
 
 const slideVariants = {
   enter: (direction: number) => ({
@@ -48,6 +49,9 @@ export function AdminLayout() {
     if (location.pathname === '/admin/subscribers') { // ✅ NEW
       return 'subscribers';
     }
+    if (location.pathname === '/admin/users') { // ✅ ADD
+      return 'users';
+    }
     if (location.pathname === '/admin/settings') {
       return 'settings';
     }
@@ -76,6 +80,7 @@ export function AdminLayout() {
       if (newSection === 'dashboard') navigate('/admin');
       else if (newSection === 'leads') navigate('/admin/leads');
       else if (newSection === 'subscribers') navigate('/admin/subscribers'); // ✅ NEW
+      else if (newSection === 'users') navigate('/admin/users'); // ✅ ADD
       else if (newSection === 'settings') navigate('/admin/settings');
     },
     [activeSection, navigate]
@@ -95,6 +100,8 @@ export function AdminLayout() {
         return <LeadsPage />;
       case 'subscribers': // ✅ NEW
         return <SubscribersPage />;
+      case 'users': // ✅ ADD
+        return <UsersPage />;
       case 'settings':
         return <SettingsPage />;
       default:
