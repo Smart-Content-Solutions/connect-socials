@@ -11,6 +11,12 @@ export default async function handler(req: any, res: any) {
 
   try {
     const priceId = process.env.STRIPE_EARLY_ACCESS_PRICE_ID;
+if (!process.env.STRIPE_SECRET_KEY) {
+  return res.status(500).json({ error: "Missing STRIPE_SECRET_KEY" });
+}
+if (!priceId) {
+  return res.status(500).json({ error: "Missing STRIPE_EARLY_ACCESS_PRICE_ID" });
+}
 
     // List subscriptions for this price (Early Access plan)
     const subscriptions = await stripe.subscriptions.list({

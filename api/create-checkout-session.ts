@@ -6,21 +6,25 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
-      apiVersion: "2023-10-16",
-    });
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    const priceId = process.env.STRIPE_EARLY_ACCESS_PRICE_ID;
+
+    if (!secretKey) {
+      return res.status(500).json({ error: "Missing STRIPE_SECRET_KEY" });
+    }
+    if (!priceId) {
+      return res.status(500).json({ error: "Missing STRIPE_EARLY_ACCESS_PRICE_ID" });
+    }
+
+    // Safe to log the price id (not secret). This helps confirm Production is reading the right value.
+    console.log("Creating checkout session with price:", priceId);
+
+    const stripe = new Stripe(secretKey, { apiVersion: "2023-10-16" });
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [
-        {
-          price: process.env.STRIPE_EARLY_ACCESS_PRICE_ID,
-          quantity: 1,
-        },
-      ],
-      subscription_data: {
-        trial_period_days: 3, // 3-day free trial
-      },
+      line_items: [{ price: priceId, quantity: 1 }],
+      subscription_data: { trial_period_days: 3 },
       success_url: `${req.headers.origin}/success`,
       cancel_url: `${req.headers.origin}/cancel`,
     });
