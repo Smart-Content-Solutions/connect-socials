@@ -30,6 +30,7 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [isTopicFocused, setIsTopicFocused] = useState(false);
+    const [progress, setProgress] = useState(0);
 
     useEffect(() => {
         // Select the first site by default if none selected and sites exist
@@ -49,6 +50,16 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
         if (!topic.trim()) return;
 
         setLoading(true);
+        setProgress(0);
+
+        // Simulate progress since the webhook might take time or return quickly
+        // We want a smooth bar that gives feedback
+        const progressInterval = setInterval(() => {
+            setProgress(prev => {
+                if (prev >= 90) return prev;
+                return prev + 2;
+            });
+        }, 800);
 
         const selectedSites = sites.filter(s => selectedSiteIds.includes(s.id));
         let successCount = 0;
@@ -82,21 +93,31 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
             }
         }
 
-        setLoading(false);
-        if (successCount > 0) {
-            if (failureCount === 0) {
-                toast.success("Content published successfully to all selected sites!");
+        clearInterval(progressInterval);
+        setProgress(100);
+
+        // Small delay to let user see 100%
+        setTimeout(() => {
+            setLoading(false);
+            if (successCount > 0) {
+                if (failureCount === 0) {
+                    toast.success("Content published successfully to all selected sites!");
+                } else {
+                    toast.warning(`Published to ${successCount} site(s), but failed for ${failureCount} site(s).`);
+                }
+                setShowSuccess(true);
+                setTimeout(() => {
+                    setShowSuccess(false);
+                    setProgress(0);
+                }, 3000);
+                // Optional: clear form
+                setTopic("");
+                setImage(null);
             } else {
-                toast.warning(`Published to ${successCount} site(s), but failed for ${failureCount} site(s).`);
+                toast.error("Failed to publish content. Please check site credentials and try again.");
+                setProgress(0);
             }
-            setShowSuccess(true);
-            setTimeout(() => setShowSuccess(false), 3000);
-            // Optional: clear form
-            setTopic("");
-            setImage(null);
-        } else {
-            toast.error("Failed to publish content. Please check site credentials and try again.");
-        }
+        }, 500);
     };
 
     const isValid = selectedSiteIds.length > 0 && topic.trim().length > 0;
@@ -332,6 +353,22 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
                             </>
                         )}
                     </GoldButton>
+
+                    {loading && (
+                        <div className="mt-4">
+                            <div className="w-full bg-[#1A1A1C] border border-[#333] rounded-full h-2.5 overflow-hidden">
+                                <motion.div
+                                    className="bg-gradient-to-r from-[#E1C37A] to-[#B6934C] h-full rounded-full"
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${progress}%` }}
+                                    transition={{ ease: "linear" }}
+                                />
+                            </div>
+                            <p className="text-xs text-[#A9AAAC] mt-3 text-center animate-pulse">
+                                Generating content... This may take up to 5 minutes to appear in your drafts.
+                            </p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
