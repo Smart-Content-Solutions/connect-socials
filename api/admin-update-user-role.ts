@@ -1,4 +1,5 @@
-import { clerkClient, verifyToken } from "@clerk/backend";
+import { clerkClient } from "@clerk/clerk-sdk-node";
+import { verifyToken } from "@clerk/backend";
 
 function getBearerToken(req: any): string | null {
   const header = req.headers?.authorization || req.headers?.Authorization;
@@ -7,17 +8,28 @@ function getBearerToken(req: any): string | null {
   return match ? match[1] : null;
 }
 
-function getClerkSessionCookie(req: any): string | null {
-  const cookieHeader = req.headers?.cookie;
-  if (!cookieHeader || typeof cookieHeader !== "string") return null;
+async function readJsonBody(req: any): Promise<any> {
+  // Vercel sometimes gives req.body as string, object, or undefined.
+  if (req.body && typeof req.body === "object") return req.body;
+  if (req.body && typeof req.body === "string") {
+    try {
+      return JSON.parse(req.body);
+    } catch {
+      return null;
+    }
+  }
 
-  const match = cookieHeader.match(/(?:^|;\s*)__session=([^;]+)/);
-  if (!match) return null;
-
+  // If body is not parsed, read raw stream
   try {
-    return decodeURIComponent(match[1]);
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    if (chunks.length === 0) return null;
+    const text = Buffer.concat(chunks).toString("utf8");
+    return JSON.parse(text);
   } catch {
-    return match[1];
+    return null;
   }
 }
 
@@ -25,50 +37,53 @@ async function requireAdmin(req: any) {
   const secretKey = process.env.CLERK_SECRET_KEY;
   if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY");
 
-  const token = getBearerToken(req) || getClerkSessionCookie(req);
-  if (!token) {
+  const token = getBearerToken(req);
+  if (!token)
     return {
       ok: false as const,
       status: 401,
       error: "Missing Authorization token",
-      debug: {
-        hasAuthHeader: Boolean(req.headers?.authorization || req.headers?.Authorization),
-        hasCookieHeader: Boolean(req.headers?.cookie),
-      },
     };
-  }
 
   const verified = await verifyToken(token, { secretKey });
 
-  const adminUserId = (verified?.sub as string) || null;
-  if (!adminUserId) return { ok: false as const, status: 401, error: "Invalid token" };
+  const userId = (verified?.sub as string) || null;
+  if (!userId)
+    return { ok: false as const, status: 401, error: "Invalid token" };
 
-  const adminUser = await clerkClient.users.getUser(adminUserId);
-  const role = (adminUser.publicMetadata as any)?.role;
+  const user = await clerkClient.users.getUser(userId);
+  const role = (user.publicMetadata as any)?.role;
 
   if (role !== "admin") {
     return { ok: false as const, status: 403, error: "Admins only" };
   }
 
-  return { ok: true as const, adminUserId };
+  return { ok: true as const, userId };
 }
 
 export default async function handler(req: any, res: any) {
+  // Always return JSON
+  res.setHeader("Content-Type", "application/json");
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
     const auth = await requireAdmin(req);
-    if (!auth.ok) return res.status(auth.status).json({ error: auth.error, debug: (auth as any).debug });
+    if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
 
-    const { userId, role } = req.body || {};
+    const body = await readJsonBody(req);
+    if (!body) {
+      return res.status(400).json({ error: "Invalid JSON body" });
+    }
+
+    const { userId, role } = body;
     const allowedRoles = ["admin", "early_access", "user"];
 
     if (!userId || typeof userId !== "string") {
       return res.status(400).json({ error: "Missing or invalid userId" });
     }
-
     if (!role || typeof role !== "string" || !allowedRoles.includes(role)) {
       return res.status(400).json({ error: "Invalid role" });
     }
@@ -86,6 +101,9 @@ export default async function handler(req: any, res: any) {
     });
   } catch (err: any) {
     console.error("admin-update-user-role error:", err);
-    return res.status(500).json({ error: err?.message || "Failed to update role" });
+    // Ensure JSON even on crash
+    return res.status(500).json({
+      error: err?.message || "Failed to update role",
+    });
   }
 }

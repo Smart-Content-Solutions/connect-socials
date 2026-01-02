@@ -17,6 +17,15 @@ const roleLabel: Record<Role, string> = {
   user: "User",
 };
 
+async function safeReadJson(res: Response) {
+  const text = await res.text();
+  try {
+    return { json: JSON.parse(text), text };
+  } catch {
+    return { json: null, text };
+  }
+}
+
 export default function UsersPage() {
   const { getToken, isLoaded, isSignedIn } = useAuth();
 
@@ -33,33 +42,24 @@ export default function UsersPage() {
       setLoading(true);
       setError(null);
 
-      if (!isLoaded) {
-        throw new Error("Auth is still loading. Please refresh and try again.");
-      }
-
-      if (!isSignedIn) {
-        throw new Error("You must be signed in to view this page.");
-      }
+      if (!isLoaded) throw new Error("Auth is still loading. Please refresh.");
+      if (!isSignedIn) throw new Error("You must be signed in.");
 
       const token = await getToken();
-      if (!token) {
-        throw new Error("Missing auth token. Please sign out and sign back in.");
-      }
+      if (!token) throw new Error("Missing auth token. Please sign out/in.");
 
       const res = await fetch("/api/admin-users", {
         method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      const data = await res.json();
+      const { json, text } = await safeReadJson(res);
 
       if (!res.ok) {
-        throw new Error(data?.error || "Failed to load users");
+        throw new Error(json?.error || text || "Failed to load users");
       }
 
-      const list: AdminUser[] = data.users || [];
+      const list: AdminUser[] = json?.users || [];
       setUsers(list);
 
       const init: Record<string, Role> = {};
@@ -106,7 +106,7 @@ export default function UsersPage() {
       setSavedMsg((prev) => ({ ...prev, [userId]: "" }));
 
       if (!isLoaded) throw new Error("Auth is still loading. Try again.");
-      if (!isSignedIn) throw new Error("You must be signed in to make changes.");
+      if (!isSignedIn) throw new Error("You must be signed in.");
 
       const token = await getToken();
       if (!token) throw new Error("Missing auth token. Please sign out/in.");
@@ -120,10 +120,10 @@ export default function UsersPage() {
         body: JSON.stringify({ userId, role }),
       });
 
-      const data = await res.json();
+      const { json, text } = await safeReadJson(res);
 
       if (!res.ok) {
-        throw new Error(data?.error || "Failed to update role");
+        throw new Error(json?.error || text || "Failed to update role");
       }
 
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role } : u)));
@@ -178,7 +178,7 @@ export default function UsersPage() {
               ) : (
                 rows.map((u) => {
                   const current = pendingRoles[u.id] || "user";
-                  const isSavingRow = !!saving[u.id];
+                  const isSaving = !!saving[u.id];
                   const msg = savedMsg[u.id] || "";
 
                   return (
@@ -189,9 +189,7 @@ export default function UsersPage() {
                         <select
                           className="rounded-md border border-border/60 bg-background px-3 py-2"
                           value={current}
-                          onChange={(e) =>
-                            setRoleFor(u.id, e.target.value as Role)
-                          }
+                          onChange={(e) => setRoleFor(u.id, e.target.value as Role)}
                         >
                           <option value="user">{roleLabel.user}</option>
                           <option value="early_access">{roleLabel.early_access}</option>
@@ -203,9 +201,9 @@ export default function UsersPage() {
                           <button
                             className="rounded-md bg-primary px-3 py-2 text-primary-foreground disabled:opacity-60"
                             onClick={() => saveRole(u.id)}
-                            disabled={isSavingRow}
+                            disabled={isSaving}
                           >
-                            {isSavingRow ? "Saving…" : "Save"}
+                            {isSaving ? "Saving…" : "Save"}
                           </button>
                           {msg && (
                             <span className="text-xs text-muted-foreground">
