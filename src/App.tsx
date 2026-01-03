@@ -60,6 +60,7 @@ import WordpressAutomationApp from "./components/apps/WordpressAutomationApp";
 import AdminRoute from "./components/admin/AdminRoute";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import PlannerApp from "./planner_section/PlannerApp";
+import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
 
 // ✅ NEW: Stripe success / cancel pages
 import SuccessPage from "./pages/success/Index";
@@ -352,9 +353,11 @@ const App = () => (
               path="/apps/wordpress-seo"
               element={
                 <ProtectedRoute>
-                  <Layout>
-                    <WordpressAutomationApp />
-                  </Layout>
+                  <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
+                    <Layout>
+                      <WordpressAutomationApp />
+                    </Layout>
+                  </RoleProtectedRoute>
                 </ProtectedRoute>
               }
             />
