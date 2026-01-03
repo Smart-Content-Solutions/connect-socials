@@ -52,7 +52,14 @@ export default function ToolPageTemplate({ tool }: ToolPageTemplateProps) {
   const [searchParams] = useSearchParams();
 
   const userPlan = (user?.subscription_plan as string) || "none";
-  const hasAccess = hasAccessToTool(tool.planRequired);
+
+  // ✅ CLERK-SAFE ADMIN CHECK & EARLY ACCESS CHECK
+  const isAdmin = user?.role === "admin";
+  const isEarlyAccess = user?.role === "early_access";
+  const isWordPressTool = tool.id === "wordpress-seo" || tool.id === "wordpress-seo" || tool.name.includes("WordPress");
+  const hasEarlyAccessToThisTool = isEarlyAccess && isWordPressTool;
+
+  const hasAccess = isAdmin || hasEarlyAccessToThisTool || hasAccessToTool(tool.planRequired);
 
   // Get the referrer from URL parameter, fallback to dashboard-preview
   const referrerPath = searchParams.get("from") || "/dashboard-preview";
