@@ -19,7 +19,8 @@ import {
 ============================ */
 
 export interface UserSubscription extends AccessControlUserSubscription {
-  role?: "admin" | "user";
+  role?: "admin" | "early_access" | "user";
+  publicMetadata?: any;
 }
 
 interface SubscriptionContextType {
@@ -68,7 +69,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
             | "trialing"
             | "none") || "none",
         role:
-          (clerkUser.publicMetadata?.role as "admin" | "user") || "user"
+          (clerkUser.publicMetadata?.role as "admin" | "early_access" | "user") || "user",
+        publicMetadata: clerkUser.publicMetadata
       };
 
       setUser(subscriptionUser);
@@ -97,7 +99,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
           | "trialing"
           | "none") || "none",
       role:
-        (clerkUser.publicMetadata?.role as "admin" | "user") || "user"
+        (clerkUser.publicMetadata?.role as "admin" | "early_access" | "user") || "user",
+      publicMetadata: clerkUser.publicMetadata
     };
 
     setUser(subscriptionUser);
@@ -121,8 +124,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     },
 
     // Admin always has access to any tool
+    // Early access users have access to Starter plan tools
     hasAccessToTool: (toolPlanRequired: string) => {
       if (user?.role === "admin") return true;
+      // Grant early_access role users access to Starter-level tools
+      if (user?.role === "early_access" && toolPlanRequired === "Starter") return true;
       return baseHasAccessToTool(user, toolPlanRequired);
     },
 
@@ -181,9 +187,9 @@ export function useSubscription(): SubscriptionContextType {
       isSubscriptionActive: () => false,
       getPlanDetails: () => null,
 
-      login: () => {},
-      logout: () => {},
-      refreshUser: async () => {}
+      login: () => { },
+      logout: () => { },
+      refreshUser: async () => { }
     };
   }
 
