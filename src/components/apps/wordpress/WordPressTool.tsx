@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { FileText, LayoutDashboard, Send } from 'lucide-react';
 import CreatePostContent from './CreatePostContent';
 import DashboardContent from './DashboardContent';
@@ -8,8 +8,9 @@ import { WordPressSite } from './WordPressSiteCard';
 import { toast } from "sonner";
 
 export default function WordPressTool() {
-    const [activeTab, setActiveTab] = useState<'create' | 'dashboard'>('create');
+    const [activeTab, setActiveTab] = useState<'create' | 'dashboard'>('dashboard');
     const [sites, setSites] = useState<WordPressSite[]>([]);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         // Load from localStorage
@@ -54,6 +55,37 @@ export default function WordPressTool() {
         }
     }, []);
 
+    useEffect(() => {
+        if (scrollContainerRef.current) {
+            const scrollTo = activeTab === 'dashboard' ? 0 : scrollContainerRef.current.scrollWidth / 2;
+            const start = scrollContainerRef.current.scrollLeft;
+            const end = scrollTo;
+            const duration = 800;
+            const startTime = performance.now();
+
+            const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+            const animateScroll = (currentTime: number) => {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easedProgress = easeInOutCubic(progress);
+
+                if (scrollContainerRef.current) {
+                    scrollContainerRef.current.scrollLeft = start + (end - start) * easedProgress;
+                }
+
+                if (progress < 1) {
+                    requestAnimationFrame(animateScroll);
+                }
+            };
+
+            requestAnimationFrame(animateScroll);
+
+            // Scroll page to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    }, [activeTab]);
+
     const saveSites = (newSites: WordPressSite[]) => {
         setSites(newSites);
         localStorage.setItem('wordpress_sites', JSON.stringify(newSites));
@@ -86,7 +118,7 @@ export default function WordPressTool() {
     };
 
     return (
-        <div className="min-h-screen pt-24 pb-20 bg-[#1A1A1C] text-[#D6D7D8]">
+        <div className="min-h-screen pt-24 pb-20 bg-[#1A1A1C] text-[#D6D7D8] overflow-hidden relative">
             {/* Ambient glow effects */}
             <div className="fixed top-1/4 -left-32 w-[500px] h-[500px] bg-[#E1C37A]/10 rounded-full blur-[150px] pointer-events-none" />
             <div className="fixed bottom-1/4 -right-32 w-[400px] h-[400px] bg-[#B6934C]/10 rounded-full blur-[150px] pointer-events-none" />
@@ -115,8 +147,8 @@ export default function WordPressTool() {
                         <button
                             onClick={() => setActiveTab('dashboard')}
                             className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${activeTab === 'dashboard'
-                                    ? 'bg-[#E1C37A]/20 text-[#E1C37A]'
-                                    : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
+                                ? 'bg-[#E1C37A]/20 text-[#E1C37A]'
+                                : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
                                 }`}
                         >
                             <LayoutDashboard className="w-4 h-4" />
@@ -125,8 +157,8 @@ export default function WordPressTool() {
                         <button
                             onClick={() => setActiveTab('create')}
                             className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${activeTab === 'create'
-                                    ? 'bg-[#E1C37A]/20 text-[#E1C37A]'
-                                    : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
+                                ? 'bg-[#E1C37A]/20 text-[#E1C37A]'
+                                : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
                                 }`}
                         >
                             <FileText className="w-4 h-4" />
@@ -135,34 +167,40 @@ export default function WordPressTool() {
                     </div>
                 </div>
 
-                {/* Content Area */}
-                <AnimatePresence mode="wait">
-                    {activeTab === 'create' ? (
-                        <motion.div
-                            key="create"
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: 20 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            <CreatePostContent sites={sites} />
-                        </motion.div>
-                    ) : (
-                        <motion.div
-                            key="dashboard"
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -20 }}
-                            transition={{ duration: 0.3 }}
+                {/* Content Area with Slide Animation */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="relative rounded-2xl bg-[#3B3C3E]/20 backdrop-blur-[10px] border border-white/5 overflow-hidden"
+                >
+                    {/* Scrollable Container */}
+                    <div
+                        ref={scrollContainerRef}
+                        className="flex overflow-x-hidden scroll-smooth"
+                        style={{ scrollSnapType: 'x mandatory' }}
+                    >
+                        {/* Dashboard Panel */}
+                        <div
+                            className="w-full flex-shrink-0 p-6 md:p-8"
+                            style={{ scrollSnapAlign: 'start' }}
                         >
                             <DashboardContent
                                 sites={sites}
                                 onAddSite={handleAddSite}
                                 onRemoveSite={handleDisconnect}
                             />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                        </div>
+
+                        {/* Create Post Panel */}
+                        <div
+                            className="w-full flex-shrink-0 p-6 md:p-8"
+                            style={{ scrollSnapAlign: 'start' }}
+                        >
+                            <CreatePostContent sites={sites} />
+                        </div>
+                    </div>
+                </motion.div>
             </div>
         </div>
     );
