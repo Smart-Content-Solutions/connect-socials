@@ -143,15 +143,19 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
             setLoading(false);
             if (successCount > 0) {
                 if (failureCount === 0) {
-                    toast.success("Automation started! Your posts are being generated in the background. Please check your drafts in a few minutes.");
+                    toast.success("Automation started! Your AI-generated posts will appear in WordPress drafts within 4-5 minutes.", {
+                        duration: 6000,
+                    });
                 } else {
-                    toast.warning(`Started generation for ${successCount} site(s), but failed for ${failureCount} site(s).`);
+                    toast.warning(`Started generation for ${successCount} site(s), but failed for ${failureCount} site(s).`, {
+                        duration: 6000,
+                    });
                 }
                 setShowSuccess(true);
                 setTimeout(() => {
                     setShowSuccess(false);
                     setProgress(0);
-                }, 3000);
+                }, 5000);
                 // Optional: clear form
                 setTopic("");
                 setImage(null);
@@ -193,9 +197,12 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
                     exit={{ opacity: 0, y: -20 }}
                     className="mb-6"
                 >
-                    <GlassCard goldGlow className="p-4 flex items-center gap-3">
-                        <CheckCircle className="w-5 h-5 text-green-400" />
-                        <p className="text-[#D6D7D8]">Your content has been generated and sent to {selectedSiteIds.length} site(s).</p>
+                    <GlassCard goldGlow className="p-4 flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 shrink-0" />
+                        <div>
+                            <p className="text-[#D6D7D8] font-medium">Automation Started Successfully!</p>
+                            <p className="text-[#A9AAAC] text-sm mt-1">Your AI-generated post is being created and will appear in your WordPress drafts within 4-5 minutes.</p>
+                        </div>
                     </GlassCard>
                 </motion.div>
             )}

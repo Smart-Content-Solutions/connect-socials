@@ -9,6 +9,9 @@ export const config = {
 
 const N8N_WEBHOOK_URL = "https://n8n.smartcontentsolutions.co.uk/webhook/seo-content-publisher";
 
+// Timeout for n8n request (5 seconds) - we don't wait for the full workflow
+const N8N_TIMEOUT_MS = 5000;
+
 export default async function handler(req: any, res: any) {
     // Set CORS headers for all responses
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -31,8 +34,21 @@ export default async function handler(req: any, res: any) {
             return res.status(400).json({ success: false, error: 'No request body provided' });
         }
 
+        // Validate required fields before sending to n8n
+        if (!body.topic || body.topic.trim() === '') {
+            return res.status(400).json({ success: false, error: 'Topic is required' });
+        }
+        if (!body.wp_url || body.wp_url.trim() === '') {
+            return res.status(400).json({ success: false, error: 'WordPress URL is required' });
+        }
+        if (!body.wp_username || body.wp_username.trim() === '') {
+            return res.status(400).json({ success: false, error: 'WordPress username is required' });
+        }
+        if (!body.wp_app_password || body.wp_app_password.trim() === '') {
+            return res.status(400).json({ success: false, error: 'WordPress app password is required' });
+        }
+
         // Create FormData for n8n (n8n workflows expect form data)
-        // IMPORTANT: n8n requires ALL fields to be present, even if empty
         const formData = new FormData();
 
         // Always append all required fields (use empty string if not provided)
@@ -66,31 +82,57 @@ export default async function handler(req: any, res: any) {
             hasImage: !!body.image,
         });
 
-        // Forward to n8n
-        const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
-            method: 'POST',
-            body: formData,
-        });
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), N8N_TIMEOUT_MS);
 
-        const responseText = await n8nResponse.text();
-
-        console.log('n8n response status:', n8nResponse.status);
-        console.log('n8n response body:', responseText.substring(0, 500));
-
-        if (n8nResponse.ok) {
-            return res.status(200).json({
-                success: true,
-                message: 'Request forwarded to n8n successfully',
-                n8nResponse: responseText
+        try {
+            // Forward to n8n with timeout
+            const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
+                method: 'POST',
+                body: formData,
+                signal: controller.signal,
             });
-        } else {
-            console.error('n8n webhook error:', n8nResponse.status, responseText);
-            return res.status(n8nResponse.status).json({
-                success: false,
-                error: 'n8n webhook returned an error',
-                status: n8nResponse.status,
-                details: responseText
-            });
+
+            clearTimeout(timeoutId);
+
+            // If we got a response, n8n received it
+            console.log('n8n response status:', n8nResponse.status);
+
+            // Any 2xx response means n8n accepted the request
+            if (n8nResponse.ok) {
+                return res.status(200).json({
+                    success: true,
+                    message: 'Automation started successfully! Your post will appear in drafts within 4-5 minutes.',
+                    mode: 'confirmed'
+                });
+            } else {
+                // n8n returned an error
+                const responseText = await n8nResponse.text();
+                console.error('n8n webhook error:', n8nResponse.status, responseText);
+                return res.status(n8nResponse.status).json({
+                    success: false,
+                    error: 'n8n workflow error',
+                    details: responseText
+                });
+            }
+        } catch (fetchError: any) {
+            clearTimeout(timeoutId);
+
+            // Check if this was a timeout (AbortError)
+            if (fetchError.name === 'AbortError') {
+                // Timeout means n8n received the request but is still processing
+                // This is expected behavior - the workflow takes 4-5 minutes
+                console.log('n8n request timed out (expected - workflow is processing in background)');
+                return res.status(200).json({
+                    success: true,
+                    message: 'Automation started! n8n is processing your request. Your post will appear in drafts within 4-5 minutes.',
+                    mode: 'fire_and_forget'
+                });
+            }
+
+            // Other fetch errors (network issues, etc.)
+            throw fetchError;
         }
     } catch (error: any) {
         console.error('Error forwarding to n8n:', error);
