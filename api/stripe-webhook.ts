@@ -1,11 +1,22 @@
 import Stripe from "stripe";
 import { createClerkClient } from "@clerk/backend";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { getSubscriptionConfirmationEmail } from "./emails/subscription-confirmation";
 import { getSubscriptionCancellationEmail } from "./emails/subscription-cancellation";
 
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
-const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Create email transporter (reusable)
+const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: smtpPort,
+  secure: smtpPort === 465, // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 // IMPORTANT: Stripe webhook signature verification needs the RAW body
 export const config = {
@@ -96,8 +107,8 @@ export default async function handler(req: any, res: any) {
               trialDays: session.mode === 'subscription' && session.payment_status === 'no_payment_required' ? 3 : undefined,
             });
 
-            await resend.emails.send({
-              from: 'Smart Content Solutions <noreply@smartcontentsolutions.co.uk>',
+            await transporter.sendMail({
+              from: process.env.SMTP_FROM || 'Smart Content Solutions <noreply@smartcontentsolutions.co.uk>',
               to: userEmail,
               subject: emailData.subject,
               html: emailData.html,
@@ -145,8 +156,8 @@ export default async function handler(req: any, res: any) {
               planName: (user.publicMetadata as any)?.planName || "Early Access Plan",
             });
 
-            await resend.emails.send({
-              from: 'Smart Content Solutions <noreply@smartcontentsolutions.co.uk>',
+            await transporter.sendMail({
+              from: process.env.SMTP_FROM || 'Smart Content Solutions <noreply@smartcontentsolutions.co.uk>',
               to: userEmail,
               subject: emailData.subject,
               html: emailData.html,
