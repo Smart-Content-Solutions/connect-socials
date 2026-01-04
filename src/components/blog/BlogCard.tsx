@@ -10,6 +10,7 @@ export interface BlogPost {
   slug: string;
   coverImage: string;
   category: string;
+  content?: string; // Full article content (optional for list view)
 }
 
 interface BlogCardProps {
