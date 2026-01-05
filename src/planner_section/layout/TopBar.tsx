@@ -62,7 +62,7 @@ export function TopBar() {
               <Menu className="w-5 h-5 text-foreground" />
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-72 bg-sidebar border-sidebar-border">
+          <SheetContent side="left" className="p-0 w-72 bg-[hsl(240,5%,10%)] border-[hsl(240,5%,18%)] planner-theme">
             <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
               <div className="flex items-center gap-2">
                 <img src="/icon.png" alt="SCS Logo" className="w-8 h-8 object-contain" />
