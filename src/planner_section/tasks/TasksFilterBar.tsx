@@ -107,7 +107,7 @@ export function TasksFilterBar({
         <SelectTrigger className="w-[140px] bg-surface border-border/50">
           <SelectValue placeholder="Priority" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="planner-theme">
           <SelectItem value="All">All Priorities</SelectItem>
           {TASK_PRIORITIES.map((priority) => (
             <SelectItem key={priority} value={priority}>
