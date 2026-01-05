@@ -36,6 +36,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
     { name: "Core Tools", href: "/core-tools" },
     { name: "Corporate", href: "/corporate-tools" },
     { name: "Pricing", href: "/pricing" },
+    { name: "Blogs", href: "/blog" },
     { name: "Contact", href: "/contact" }
   ];
 

@@ -193,3 +193,20 @@ All colors MUST be HSL.
   color: rgba(255, 255, 255, 0.3);
 }
 
+/* ==============================
+   ✅ BLOG CONTENT IMAGES
+============================== */
+.blog-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1.5rem 0;
+}
+
+.blog-content figure {
+  margin: 1.5rem 0;
+}
+
+.blog-content figure img {
+  margin: 0;
+}

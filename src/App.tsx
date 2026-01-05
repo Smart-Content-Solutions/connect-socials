@@ -21,6 +21,8 @@ import Packages from "./pages/base44/Packages";
 import Portfolio from "./pages/base44/Portfolio";
 import Contact from "./pages/base44/Contact";
 import Resources from "./pages/base44/Resources";
+import Blog from "./pages/base44/Blog";
+import BlogPost from "./pages/base44/BlogPost";
 import Account from "./pages/base44/Account";
 
 // ✅ Platform Pages
@@ -155,6 +157,22 @@ const App = () => (
               element={
                 <Layout>
                   <Resources />
+                </Layout>
+              }
+            />
+            <Route
+              path="/blog"
+              element={
+                <Layout>
+                  <Blog />
+                </Layout>
+              }
+            />
+            <Route
+              path="/blog/:slug"
+              element={
+                <Layout>
+                  <BlogPost />
                 </Layout>
               }
             />
