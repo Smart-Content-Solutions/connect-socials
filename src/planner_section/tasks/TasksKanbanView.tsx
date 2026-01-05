@@ -57,12 +57,13 @@ export function TasksKanbanView({ tasks, onUpdateTask, onSelectTask }: TasksKanb
   };
 
   return (
-    <div className="grid grid-cols-4 gap-4 h-[calc(100vh-16rem)] min-h-[500px]">
+    <div className="flex overflow-x-auto lg:grid lg:grid-cols-4 gap-4 h-[calc(100vh-16rem)] min-h-[500px] pb-4 lg:pb-0 custom-scrollbar">
       {TASK_STATUSES.map((status) => (
         <div
           key={status}
           className={cn(
             "flex flex-col rounded-xl border border-border/50 bg-card/30 transition-all overflow-hidden",
+            "min-w-[280px] sm:min-w-[320px] lg:min-w-0", // Fixed width on mobile/tablet, auto on desktop grid
             dragOverColumn === status && "ring-2 ring-primary/50 bg-primary/5"
           )}
           onDragOver={(e) => handleDragOver(e, status)}
@@ -107,7 +108,7 @@ export function TasksKanbanView({ tasks, onUpdateTask, onSelectTask }: TasksKanb
                     <h4 className="text-sm font-medium text-foreground mb-2 leading-snug break-words">
                       {task.title}
                     </h4>
-                    
+
                     <div className="flex items-center gap-2 flex-wrap mb-3">
                       <Badge
                         variant="outline"
@@ -137,14 +138,14 @@ export function TasksKanbanView({ tasks, onUpdateTask, onSelectTask }: TasksKanb
                 </div>
               </Card>
             ))}
-            
+
             {/* Empty state visual */}
             {getTasksByStatus(status).length === 0 && (
               <div className="h-20 border-2 border-dashed border-border/20 rounded-lg flex items-center justify-center m-1">
                 <p className="text-xs text-muted-foreground/40 italic">Drop tasks here</p>
               </div>
             )}
-            
+
             {/* Bottom Spacer to ensure full scrollability visibility */}
             <div className="h-2" />
           </div>

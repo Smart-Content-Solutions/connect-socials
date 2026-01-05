@@ -67,7 +67,7 @@ export function TasksTableView({ tasks, onUpdateTask, onSelectTask, onDeleteTask
   }, [tasks, onReorder]);
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
+    <div className="rounded-lg border border-border overflow-x-auto">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

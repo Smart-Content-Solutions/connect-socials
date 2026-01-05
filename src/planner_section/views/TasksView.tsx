@@ -239,14 +239,16 @@ export function TasksView() {
       </div>
 
       {/* View Switcher & Filters */}
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <TasksFilterBar
-          filters={filters}
-          onFiltersChange={setFilters}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-        />
-        <div className="flex items-center gap-1 bg-surface rounded-lg p-1">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div className="overflow-x-auto pb-2 sm:pb-0 custom-scrollbar">
+          <TasksFilterBar
+            filters={filters}
+            onFiltersChange={setFilters}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+        </div>
+        <div className="flex items-center gap-1 bg-surface rounded-lg p-1 self-end sm:self-auto">
           <Button
             variant="ghost"
             size="sm"
