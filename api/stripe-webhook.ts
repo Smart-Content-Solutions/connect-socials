@@ -6,17 +6,19 @@ import { getSubscriptionCancellationEmail } from "./emails/subscription-cancella
 
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
-// Create email transporter (reusable)
-const smtpPort = parseInt(process.env.SMTP_PORT || '587');
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: smtpPort,
-  secure: smtpPort === 465, // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
+// Helper function to create email transporter only when needed
+function getEmailTransporter() {
+  const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: smtpPort,
+    secure: smtpPort === 465,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+}
 
 // IMPORTANT: Stripe webhook signature verification needs the RAW body
 export const config = {
@@ -96,25 +98,30 @@ export default async function handler(req: any, res: any) {
         });
         console.log(`Granted early_access to ${clerkUserId}`);
 
-        // Send confirmation email
+        // Send confirmation email (only if SMTP is configured)
         try {
-          const userEmail = user.emailAddresses.find(e => e.id === user.primaryEmailAddressId)?.emailAddress;
+          if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+            const userEmail = user.emailAddresses.find((e: any) => e.id === user.primaryEmailAddressId)?.emailAddress;
 
-          if (userEmail) {
-            const emailData = getSubscriptionConfirmationEmail({
-              userName: user.firstName || user.username || 'there',
-              planName: session.metadata?.planName || "Early Access Plan",
-              trialDays: session.mode === 'subscription' && session.payment_status === 'no_payment_required' ? 3 : undefined,
-            });
+            if (userEmail) {
+              const emailData = getSubscriptionConfirmationEmail({
+                userName: user.firstName || user.username || 'there',
+                planName: session.metadata?.planName || "Early Access Plan",
+                trialDays: session.mode === 'subscription' && session.payment_status === 'no_payment_required' ? 3 : undefined,
+              });
 
-            await transporter.sendMail({
-              from: process.env.SMTP_FROM || 'Smart Content Solutions <noreply@smartcontentsolutions.co.uk>',
-              to: userEmail,
-              subject: emailData.subject,
-              html: emailData.html,
-            });
+              const transporter = getEmailTransporter();
+              await transporter.sendMail({
+                from: process.env.SMTP_FROM || 'Smart Content Solutions <noreply@smartcontentsolutions.co.uk>',
+                to: userEmail,
+                subject: emailData.subject,
+                html: emailData.html,
+              });
 
-            console.log(`Confirmation email sent to ${userEmail}`);
+              console.log(`Confirmation email sent to ${userEmail}`);
+            }
+          } else {
+            console.log('[Webhook] SMTP not configured, skipping confirmation email');
           }
         } catch (emailError) {
           console.error('Failed to send confirmation email:', emailError);
@@ -146,24 +153,29 @@ export default async function handler(req: any, res: any) {
         });
         console.log(`Revoked early_access for ${clerkUserId}`);
 
-        // Send cancellation email
+        // Send cancellation email (only if SMTP is configured)
         try {
-          const userEmail = user.emailAddresses.find((e: any) => e.id === user.primaryEmailAddressId)?.emailAddress;
+          if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+            const userEmail = user.emailAddresses.find((e: any) => e.id === user.primaryEmailAddressId)?.emailAddress;
 
-          if (userEmail) {
-            const emailData = getSubscriptionCancellationEmail({
-              userName: user.firstName || user.username || 'there',
-              planName: (user.publicMetadata as any)?.planName || "Early Access Plan",
-            });
+            if (userEmail) {
+              const emailData = getSubscriptionCancellationEmail({
+                userName: user.firstName || user.username || 'there',
+                planName: (user.publicMetadata as any)?.planName || "Early Access Plan",
+              });
 
-            await transporter.sendMail({
-              from: process.env.SMTP_FROM || 'Smart Content Solutions <noreply@smartcontentsolutions.co.uk>',
-              to: userEmail,
-              subject: emailData.subject,
-              html: emailData.html,
-            });
+              const transporter = getEmailTransporter();
+              await transporter.sendMail({
+                from: process.env.SMTP_FROM || 'Smart Content Solutions <noreply@smartcontentsolutions.co.uk>',
+                to: userEmail,
+                subject: emailData.subject,
+                html: emailData.html,
+              });
 
-            console.log(`Cancellation email sent to ${userEmail}`);
+              console.log(`Cancellation email sent to ${userEmail}`);
+            }
+          } else {
+            console.log('[Webhook] SMTP not configured, skipping cancellation email');
           }
         } catch (emailError) {
           console.error('Failed to send cancellation email:', emailError);
