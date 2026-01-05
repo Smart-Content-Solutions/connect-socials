@@ -1,8 +1,8 @@
 import Stripe from "stripe";
 import { createClerkClient } from "@clerk/backend";
 import nodemailer from "nodemailer";
-import { getSubscriptionConfirmationEmail } from "./emails/subscription-confirmation";
-import { getSubscriptionCancellationEmail } from "./emails/subscription-cancellation";
+import { getSubscriptionConfirmationEmail } from "./emails/subscription-confirmation.js";
+import { getSubscriptionCancellationEmail } from "./emails/subscription-cancellation.js";
 
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
