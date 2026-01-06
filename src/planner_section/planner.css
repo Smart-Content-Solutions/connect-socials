@@ -91,3 +91,45 @@
         border: 1px solid hsl(var(--border) / 0.5);
     }
 }
+
+/* Calendar specific styles for dark theme */
+@layer components {
+    .planner-theme .rdp {
+        --rdp-cell-size: 36px;
+        --rdp-accent-color: hsl(45 90% 55%);
+        --rdp-background-color: hsl(45 90% 55% / 0.2);
+        --rdp-accent-color-dark: hsl(45 80% 45%);
+        --rdp-background-color-dark: hsl(45 90% 55% / 0.15);
+        --rdp-outline: 2px solid var(--rdp-accent-color);
+        --rdp-outline-selected: 2px solid var(--rdp-accent-color);
+        color: hsl(0 0% 95%);
+        background: hsl(240 5% 10%);
+    }
+
+    .planner-theme .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+        background-color: hsl(240 5% 18%);
+    }
+
+    .planner-theme .rdp-day_selected,
+    .planner-theme .rdp-day_selected:focus-visible,
+    .planner-theme .rdp-day_selected:hover {
+        background-color: hsl(45 90% 55%);
+        color: hsl(240 6% 6%);
+    }
+
+    .planner-theme .rdp-day_today:not(.rdp-day_selected) {
+        background-color: hsl(240 5% 18%);
+        font-weight: 600;
+    }
+
+    /* Ensure calendar buttons are clickable */
+    .planner-theme .rdp-button {
+        cursor: pointer;
+        pointer-events: auto;
+    }
+
+    .planner-theme .rdp-nav_button {
+        cursor: pointer;
+        pointer-events: auto;
+    }
+}

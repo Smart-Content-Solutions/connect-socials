@@ -143,7 +143,6 @@ export function SortableTaskRow({
               selected={task.dueDate ? new Date(task.dueDate) : undefined}
               onSelect={(date) => onUpdateTask(task.id, { dueDate: date })}
               initialFocus
-              className="pointer-events-auto"
             />
           </PopoverContent>
         </Popover>
@@ -171,7 +170,6 @@ export function SortableTaskRow({
               selected={task.completedDate ? new Date(task.completedDate) : undefined}
               onSelect={(date) => onUpdateTask(task.id, { completedDate: date })}
               initialFocus
-              className="pointer-events-auto"
             />
           </PopoverContent>
         </Popover>

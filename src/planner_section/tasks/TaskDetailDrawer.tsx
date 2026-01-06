@@ -245,7 +245,6 @@ export function TaskDetailDrawer({ task, open, onClose, onUpdateTask, onDeleteTa
                 selected={task.dueDate ? new Date(task.dueDate) : undefined}
                 onSelect={(date) => onUpdateTask(task.id, { dueDate: date })}
                 initialFocus
-                className="pointer-events-auto"
               />
             </PopoverContent>
           </Popover>
