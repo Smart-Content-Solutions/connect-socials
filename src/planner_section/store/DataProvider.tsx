@@ -243,7 +243,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
           status: payload.status || "To Do",
           priority: payload.priority || "Medium",
           assignee: payload.assignee || "Dominik",
-          due_date: payload.dueDate ? payload.dueDate.toISOString().split("T")[0] : null,
+          due_date: payload.dueDate
+            ? `${payload.dueDate.getFullYear()}-${String(payload.dueDate.getMonth() + 1).padStart(2, '0')}-${String(payload.dueDate.getDate()).padStart(2, '0')}`
+            : null,
         })
         .select()
         .single();
@@ -270,8 +272,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (payload.status !== undefined) updateData.status = payload.status;
       if (payload.priority !== undefined) updateData.priority = payload.priority;
       if (payload.assignee !== undefined) updateData.assignee = payload.assignee;
-      if (payload.dueDate !== undefined) updateData.due_date = payload.dueDate ? payload.dueDate.toISOString().split("T")[0] : null;
-      if (payload.completedDate !== undefined) updateData.completed_date = payload.completedDate ? payload.completedDate.toISOString().split("T")[0] : null;
+
+      // Fix: Use local date formatting to avoid timezone issues
+      if (payload.dueDate !== undefined) {
+        updateData.due_date = payload.dueDate
+          ? `${payload.dueDate.getFullYear()}-${String(payload.dueDate.getMonth() + 1).padStart(2, '0')}-${String(payload.dueDate.getDate()).padStart(2, '0')}`
+          : null;
+      }
+      if (payload.completedDate !== undefined) {
+        updateData.completed_date = payload.completedDate
+          ? `${payload.completedDate.getFullYear()}-${String(payload.completedDate.getMonth() + 1).padStart(2, '0')}-${String(payload.completedDate.getDate()).padStart(2, '0')}`
+          : null;
+      }
+
       if (payload.comments !== undefined) updateData.comments = payload.comments;
 
       const { data, error } = await supabase
