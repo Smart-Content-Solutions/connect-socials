@@ -1,27 +1,24 @@
 import { BlogPost } from "./BlogCard";
 
 /**
- * WordPress API helper module
+ * WordPress.com API helper module
  * 
- * Fetches blog posts from WordPress REST API and maps them
+ * Fetches blog posts from WordPress.com REST API and maps them
  * to the BlogPost type used by BlogCard/BlogGrid components.
  */
 
-// Get WordPress API base URL from environment variable
-const getWpApiBase = (): string => {
+// Get WordPress.com site identifier from environment variable, or use default
+const getWpSiteId = (): string => {
   // Try Vite format first (for Vite builds)
-  const viteEnv = import.meta.env.VITE_WP_API_BASE;
+  const viteEnv = import.meta.env.VITE_WP_SITE_ID;
   if (viteEnv) return viteEnv;
   
-  // Try CRA format (for Create React App builds) - fallback
-  const craEnv = (import.meta.env as any).REACT_APP_WP_API_BASE;
-  if (craEnv) return craEnv;
-  
-  // If neither is found, return empty string (will be caught in error handling)
-  return "";
+  // Default to the configured WordPress.com site
+  return "scsblog83.wordpress.com";
 };
 
-const WP_API_BASE = getWpApiBase();
+const WP_SITE_ID = getWpSiteId();
+const WP_API_BASE = `https://public-api.wordpress.com/wp/v2/sites/${WP_SITE_ID}`;
 
 /**
  * WordPress post object structure (as returned by REST API)
@@ -121,19 +118,13 @@ const mapWpPostToBlogPost = (wpPost: WpPost): BlogPost => {
  * @returns Promise<BlogPost[]> - Array of blog posts
  */
 export async function fetchWpPosts(page: number = 1): Promise<BlogPost[]> {
-  if (!WP_API_BASE) {
-    throw new Error(
-      "WordPress API base URL is not configured. Please set VITE_WP_API_BASE environment variable."
-    );
-  }
-
   try {
-    const url = `${WP_API_BASE}/wp-json/wp/v2/posts?per_page=12&page=${page}&_embed`;
+    const url = `${WP_API_BASE}/posts?per_page=12&page=${page}&_embed`;
     const response = await fetch(url);
 
     if (!response.ok) {
       throw new Error(
-        `WordPress API error: ${response.status} ${response.statusText}`
+        `WordPress.com API error: ${response.status} ${response.statusText}`
       );
     }
 
@@ -143,7 +134,7 @@ export async function fetchWpPosts(page: number = 1): Promise<BlogPost[]> {
     // Handle CORS and network errors
     if (error.name === "TypeError" && error.message.includes("fetch")) {
       throw new Error(
-        `Failed to connect to WordPress API. This may be a CORS issue or network error. URL: ${WP_API_BASE}/wp-json/wp/v2/posts`
+        `Failed to connect to WordPress.com API. This may be a CORS issue or network error. URL: ${WP_API_BASE}/posts`
       );
     }
     throw error;
@@ -157,18 +148,12 @@ export async function fetchWpPosts(page: number = 1): Promise<BlogPost[]> {
  * @returns Promise<BlogPost | null> - Blog post or null if not found
  */
 export async function fetchWpPostBySlug(slug: string): Promise<BlogPost | null> {
-  if (!WP_API_BASE) {
-    throw new Error(
-      "WordPress API base URL is not configured. Please set VITE_WP_API_BASE environment variable."
-    );
-  }
-
   if (!slug) {
     return null;
   }
 
   try {
-    const url = `${WP_API_BASE}/wp-json/wp/v2/posts?slug=${encodeURIComponent(slug)}&_embed`;
+    const url = `${WP_API_BASE}/posts?slug=${encodeURIComponent(slug)}&_embed`;
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -176,7 +161,7 @@ export async function fetchWpPostBySlug(slug: string): Promise<BlogPost | null> 
         return null;
       }
       throw new Error(
-        `WordPress API error: ${response.status} ${response.statusText}`
+        `WordPress.com API error: ${response.status} ${response.statusText}`
       );
     }
 
@@ -191,7 +176,7 @@ export async function fetchWpPostBySlug(slug: string): Promise<BlogPost | null> 
     // Handle CORS and network errors
     if (error.name === "TypeError" && error.message.includes("fetch")) {
       throw new Error(
-        `Failed to connect to WordPress API. This may be a CORS issue or network error. URL: ${WP_API_BASE}/wp-json/wp/v2/posts`
+        `Failed to connect to WordPress.com API. This may be a CORS issue or network error. URL: ${WP_API_BASE}/posts`
       );
     }
     throw error;
