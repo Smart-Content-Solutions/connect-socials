@@ -411,33 +411,8 @@ export async function exportDailyReportPDF(
   });
 
   // =========================================
-  // TOTAL TIME SUMMARY
+  // TOTAL TIME SUMMARY - REMOVED
   // =========================================
-
-  addSpacer(6);
-  addDivider();
-
-  // Summary box
-  checkPageBreak(30);
-  pdf.setFillColor(245, 245, 248);
-  pdf.roundedRect(margin, y, contentWidth, 24, 3, 3, "F");
-
-  pdf.setFontSize(11);
-  pdf.setFont("helvetica", "bold");
-  pdf.setTextColor(headerColor.r, headerColor.g, headerColor.b);
-  pdf.text("Total Time Spent Today", margin + 8, y + 10);
-
-  const hours = Math.floor(totalMinutes / 60);
-  const mins = totalMinutes % 60;
-  const totalTimeText = totalMinutes > 0
-    ? `${totalMinutes} minutes (${hours}h ${mins}m)`
-    : "0 minutes";
-
-  pdf.setFontSize(14);
-  pdf.setFont("helvetica", "bold");
-  pdf.setTextColor(accentColor.r, accentColor.g, accentColor.b);
-  pdf.text(totalTimeText, margin + 8, y + 19);
-  y += 32;
 
   // =========================================
   // FOOTER
