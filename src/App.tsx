@@ -61,8 +61,9 @@ import WordpressAutomationApp from "./components/apps/WordpressAutomationApp";
 // ✅ Admin
 import AdminRoute from "./components/admin/AdminRoute";
 import { AdminLayout } from "./components/admin/AdminLayout";
-import PlannerApp from "./planner_section/PlannerApp";
+// import PlannerApp from "./planner_section/PlannerApp";
 import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
+import DailyTracker from "./components/daily_tracker/pages/DailyTracker";
 
 // ✅ NEW: Stripe success / cancel pages
 import SuccessPage from "./pages/success/Index";
@@ -327,11 +328,20 @@ const App = () => (
             />
 
             {/* ✅ ADMIN ROUTES */}
-            <Route
+            {/* <Route
               path="/planner/*"
               element={
                 <AdminRoute>
                   <PlannerApp />
+                </AdminRoute>
+              }
+            /> */}
+
+            <Route
+              path="/daily-tracker"
+              element={
+                <AdminRoute>
+                  <DailyTracker />
                 </AdminRoute>
               }
             />

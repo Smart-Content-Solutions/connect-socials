@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   Home,
+  CalendarCheck,
 } from "lucide-react";
 
 function fakeLogout() {
@@ -24,6 +25,7 @@ export default function DashboardLayout({ children, user }) {
 
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+    { name: "Daily Tracker", path: "/daily-tracker", icon: CalendarCheck },
     { name: "Social Posts", path: "/social-posts", icon: Share2 },
     { name: "Email Campaigns", path: "/email-campaigns", icon: Mail },
     { name: "Analytics", path: "/analytics", icon: BarChart3 },
@@ -55,9 +57,8 @@ export default function DashboardLayout({ children, user }) {
       </div>
 
       <aside
-        className={`fixed top-0 left-0 z-40 h-screen w-64 bg-white border-r shadow-lg transition-transform duration-300 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0`}
+        className={`fixed top-0 left-0 z-40 h-screen w-64 bg-white border-r shadow-lg transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } lg:translate-x-0`}
       >
         <div className="h-full flex flex-col">
           <div className="p-6 border-b">
@@ -93,11 +94,10 @@ export default function DashboardLayout({ children, user }) {
                 key={item.path}
                 to={item.path}
                 onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                  isActive(item.path)
-                    ? "bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-md"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive(item.path)
+                  ? "bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-md"
+                  : "text-gray-700 hover:bg-gray-100"
+                  }`}
               >
                 <item.icon className="w-5 h-5" />
                 <span className="font-medium">{item.name}</span>
