@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { WordPressSite } from './WordPressSiteCard';
 import { toast } from "sonner";
+import { compressImage } from '@/lib/image-compression';
 
 // Use backend API proxy to avoid CORS issues with direct n8n calls
 const API_PROXY_URL = "/api/wordpress-automation";
@@ -64,14 +65,21 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
         }, 800);
 
         const selectedSites = sites.filter(s => selectedSiteIds.includes(s.id));
-        let successCount = 0;
-        let failureCount = 0;
 
-        for (const site of selectedSites) {
-            // Convert image to base64 if present
-            let imageData: string | null = null;
-            let imageName: string | null = null;
-            if (image) {
+        // Pre-process image (compress & convert to base64 once)
+        let imageData: string | null = null;
+        let imageName: string | null = null;
+
+        if (image) {
+            try {
+                // Show toast for large images to explain delay
+                if (image.size > 1024 * 1024) {
+                    toast.info("Optimizing image...", { duration: 2000 });
+                }
+
+                const processedFile = await compressImage(image);
+                imageName = processedFile.name;
+
                 const reader = new FileReader();
                 const base64Promise = new Promise<string>((resolve) => {
                     reader.onload = () => {
@@ -80,11 +88,25 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
                         const base64 = result.split(',')[1];
                         resolve(base64);
                     };
-                    reader.readAsDataURL(image);
+                    reader.readAsDataURL(processedFile);
                 });
                 imageData = await base64Promise;
-                imageName = image.name;
+            } catch (err) {
+                console.error("Image processing failed", err);
+                // Continue without image or fail? 
+                // Let's fail specific to image but maybe allow user to retry without it? 
+                // For now, let's just log and continue without image to prevent crash, or maybe better to stop.
+                // Stopping is safer.
+                toast.error("Failed to process image. Please try another.");
+                setLoading(false);
+                return;
             }
+        }
+
+        let successCount = 0;
+        let failureCount = 0;
+
+        for (const site of selectedSites) {
 
             const payload = {
                 topic,
