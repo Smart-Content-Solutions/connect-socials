@@ -26,6 +26,26 @@ const stripHtml = (html: string) => {
   return (tmp.textContent || tmp.innerText || "").trim();
 };
 
+const extractImagesFromHtml = (html: string): string[] => {
+  if (!html) return [];
+  const regex = /<img[^>]+src="([^">]+)"/g;
+  const matches = [];
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    if (match[1]) matches.push(match[1]);
+  }
+  return matches;
+};
+
+const getImageDimensions = (src: string): Promise<{ width: number; height: number }> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    img.onerror = () => resolve({ width: 0, height: 0 }); // Fail gracefully
+    img.src = src;
+  });
+};
+
 export async function exportDailyReportPDF(
   selectedDate: Date,
   tasks: Task[],
@@ -129,6 +149,54 @@ export async function exportDailyReportPDF(
     addSpacer(8);
   };
 
+  // Helper to add images from content
+  const addContentImages = async (htmlContent: string) => {
+    const images = extractImagesFromHtml(htmlContent);
+    for (const src of images) {
+      // Basic support for base64 images mostly
+      if (src.startsWith('data:image')) {
+        const dims = await getImageDimensions(src);
+        if (dims.width > 0) {
+          // Calculate scale to fit width
+          let imgWidth = dims.width;
+          let imgHeight = dims.height;
+
+          // Max width in PDF points (approx conversion: 1px screen ~= 0.26mm, but PDF is usually 72dpi or custom units. jsPDF default is mm)
+          // 1mm = 3.78px approx.
+          // Let's just fit it to contentWidth (mm)
+          // Convert pixels to PDF units (roughly) isn't direct without DPI.
+          // But we can just enforce max width = contentWidth
+
+          const maxWidth = contentWidth - 20; // Indented slightly
+          const pxToMm = 0.264583; // 1px = 0.26mm approx (96dpi)
+
+          let finalWidth = imgWidth * pxToMm;
+          let finalHeight = imgHeight * pxToMm;
+
+          if (finalWidth > maxWidth) {
+            const scale = maxWidth / finalWidth;
+            finalWidth = maxWidth;
+            finalHeight = finalHeight * scale;
+          }
+
+          checkPageBreak(finalHeight + 10);
+
+          try {
+            // Determine format
+            let format = "PNG";
+            if (src.includes("image/jpeg") || src.includes("image/jpg")) format = "JPEG";
+            if (src.includes("image/webp")) format = "WEBP";
+
+            pdf.addImage(src, format, margin + 10, y, finalWidth, finalHeight);
+            y += finalHeight + 5;
+          } catch (e) {
+            console.error("Failed to add image to PDF", e);
+          }
+        }
+      }
+    }
+  };
+
   // =========================================
   // HEADER SECTION
   // =========================================
@@ -223,17 +291,13 @@ export async function exportDailyReportPDF(
   addText("Completed Tasks", 13, { isBold: true });
   addSpacer(6);
 
-  tasks.forEach((task, index) => {
+  // Use for loop for await compatibility
+  for (let index = 0; index < tasks.length; index++) {
+    const task = tasks[index];
     const dailyNote = dailyNotesMap.get(task.id);
 
-    // Calculate required height for this task (increased for more content)
-    const estimatedHeight = 80 +
-      (task.description ? 40 : 0) +
-      (task.comments ? 30 : 0) +
-      (dailyNote?.notes_text ? 35 : 0) +
-      (dailyNote?.links?.length ? dailyNote.links.length * 6 : 0) +
-      (dailyNote?.attachments?.length ? dailyNote.attachments.length * 10 : 0);
-
+    // Calculate required height for this task (estimation)
+    const estimatedHeight = 50; // Base metadata
     checkPageBreak(estimatedHeight);
 
     // Task number and title
@@ -319,6 +383,9 @@ export async function exportDailyReportPDF(
         y += 4.5;
       });
       addSpacer(3);
+
+      // Embed images found in description
+      await addContentImages(task.description);
     }
 
     // Task Comments (full)
@@ -339,6 +406,9 @@ export async function exportDailyReportPDF(
         y += 4.5;
       });
       addSpacer(3);
+
+      // Embed images found in comments
+      await addContentImages(task.comments);
     }
 
     // Task Notes (full, not truncated)
@@ -408,11 +478,7 @@ export async function exportDailyReportPDF(
     if (index < tasks.length - 1) {
       addDivider("dashed");
     }
-  });
-
-  // =========================================
-  // TOTAL TIME SUMMARY - REMOVED
-  // =========================================
+  }
 
   // =========================================
   // FOOTER

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import DOMPurify from "dompurify";
 import { Task, TaskStatus, TaskPriority, TASK_STATUSES, TASK_PRIORITIES, ASSIGNEES, Assignee } from "../types";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -93,9 +94,10 @@ export function TaskDetailDrawer({
       {task.description && (
         <div>
           <Label className="text-sm font-medium text-foreground mb-2 block">Description</Label>
-          <div className="bg-surface border border-border/50 rounded-md px-3 py-2 text-foreground min-h-[80px] whitespace-pre-wrap">
-            {task.description}
-          </div>
+          <div
+            className="bg-surface border border-border/50 rounded-md px-3 py-2 text-foreground min-h-[80px] prose prose-invert max-w-none prose-sm overflow-hidden"
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.description) }}
+          />
         </div>
       )}
 
@@ -216,9 +218,10 @@ export function TaskDetailDrawer({
         <>
           <div>
             <Label className="text-sm font-medium text-foreground mb-2 block">Comments / Notes</Label>
-            <div className="bg-surface border border-border/50 rounded-md px-3 py-2 text-foreground min-h-[60px] whitespace-pre-wrap">
-              {task.comments}
-            </div>
+            <div
+              className="bg-surface border border-border/50 rounded-md px-3 py-2 text-foreground min-h-[60px] prose prose-invert max-w-none prose-sm overflow-hidden"
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(task.comments) }}
+            />
           </div>
           <Separator className="bg-border/50" />
         </>
