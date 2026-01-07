@@ -26,6 +26,12 @@ const stripHtml = (html: string) => {
   return (tmp.textContent || tmp.innerText || "").trim();
 };
 
+const removeEmojis = (str: string) => {
+  if (!str) return "";
+  // Regex to remove common emojis and symbols that jsPDF doesn't support with standard fonts
+  return str.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+};
+
 const extractImagesFromHtml = (html: string): string[] => {
   if (!html) return [];
   const regex = /<img[^>]+src="([^">]+)"/g;
@@ -126,7 +132,11 @@ export async function exportDailyReportPDF(
     pdf.setFontSize(fontSize);
     pdf.setFont("helvetica", isBold ? "bold" : "normal");
     pdf.setTextColor(color.r, color.g, color.b);
-    const lines = pdf.splitTextToSize(text, maxWidth - indent);
+
+    // Clean text to avoid rendering issues
+    const cleanText = removeEmojis(text);
+
+    const lines = pdf.splitTextToSize(cleanText, maxWidth - indent);
     lines.forEach((line: string) => {
       checkPageBreak(fontSize * 0.5);
       pdf.text(line, margin + indent, y);
@@ -160,12 +170,6 @@ export async function exportDailyReportPDF(
           // Calculate scale to fit width
           let imgWidth = dims.width;
           let imgHeight = dims.height;
-
-          // Max width in PDF points (approx conversion: 1px screen ~= 0.26mm, but PDF is usually 72dpi or custom units. jsPDF default is mm)
-          // 1mm = 3.78px approx.
-          // Let's just fit it to contentWidth (mm)
-          // Convert pixels to PDF units (roughly) isn't direct without DPI.
-          // But we can just enforce max width = contentWidth
 
           const maxWidth = contentWidth - 20; // Indented slightly
           const pxToMm = 0.264583; // 1px = 0.26mm approx (96dpi)
@@ -228,22 +232,21 @@ export async function exportDailyReportPDF(
     addText("Day Summary", 13, { isBold: true });
     addSpacer(4);
 
-    // Summary box background
-    const summaryLines = pdf.splitTextToSize(daySummary, contentWidth - 16);
-    const summaryHeight = summaryLines.length * 5 + 12;
-
-    checkPageBreak(summaryHeight);
-    pdf.setFillColor(248, 248, 250);
-    pdf.roundedRect(margin, y - 2, contentWidth, summaryHeight, 3, 3, "F");
-
+    // Render plain text with page breaks instead of a single bounded box
+    // This handles long text (like the user provided) much better
+    const cleanSummary = removeEmojis(daySummary);
     pdf.setFontSize(10);
     pdf.setFont("helvetica", "normal");
     pdf.setTextColor(headerColor.r, headerColor.g, headerColor.b);
+
+    const summaryLines = pdf.splitTextToSize(cleanSummary, contentWidth - 5);
     summaryLines.forEach((line: string) => {
-      pdf.text(line, margin + 8, y + 6);
+      checkPageBreak(5);
+      pdf.text(line, margin, y);
       y += 5;
     });
-    y += 10;
+
+    y += 5;
 
     addDivider();
   }
@@ -311,7 +314,8 @@ export async function exportDailyReportPDF(
     pdf.setFontSize(12);
     pdf.setFont("helvetica", "bold");
     pdf.setTextColor(headerColor.r, headerColor.g, headerColor.b);
-    const titleLines = pdf.splitTextToSize(task.title, contentWidth - 16);
+    const title = removeEmojis(task.title);
+    const titleLines = pdf.splitTextToSize(title, contentWidth - 16);
     titleLines.forEach((line: string) => {
       pdf.text(line, margin + 12, y + 3);
       y += 6;
@@ -375,7 +379,7 @@ export async function exportDailyReportPDF(
 
       pdf.setFont("helvetica", "normal");
       pdf.setTextColor(headerColor.r, headerColor.g, headerColor.b);
-      const cleanDescription = stripHtml(task.description);
+      const cleanDescription = removeEmojis(stripHtml(task.description)); // Strip emojis
       const descLines = pdf.splitTextToSize(cleanDescription, contentWidth - 16);
       descLines.forEach((line: string) => {
         checkPageBreak(5);
@@ -398,7 +402,7 @@ export async function exportDailyReportPDF(
 
       pdf.setFont("helvetica", "italic");
       pdf.setTextColor(headerColor.r, headerColor.g, headerColor.b);
-      const cleanComments = stripHtml(task.comments);
+      const cleanComments = removeEmojis(stripHtml(task.comments)); // Strip emojis
       const commentLines = pdf.splitTextToSize(cleanComments, contentWidth - 16);
       commentLines.forEach((line: string) => {
         checkPageBreak(5);
@@ -421,7 +425,7 @@ export async function exportDailyReportPDF(
 
       pdf.setFont("helvetica", "normal");
       pdf.setTextColor(headerColor.r, headerColor.g, headerColor.b);
-      const cleanNotes = stripHtml(dailyNote.notes_text);
+      const cleanNotes = removeEmojis(stripHtml(dailyNote.notes_text)); // Strip emojis
       const notesLines = pdf.splitTextToSize(cleanNotes, contentWidth - 16);
       notesLines.forEach((line: string) => {
         checkPageBreak(5);
