@@ -14,6 +14,18 @@ interface DailyNoteWithAttachments {
   }[];
 }
 
+const stripHtml = (html: string) => {
+  if (!html) return "";
+  const tmp = document.createElement("DIV");
+  // Pre-process line breaks to preserve formatting
+  const processedHtml = html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<div>/gi, "\n");
+  tmp.innerHTML = processedHtml;
+  return (tmp.textContent || tmp.innerText || "").trim();
+};
+
 export async function exportDailyReportPDF(
   selectedDate: Date,
   tasks: Task[],
@@ -299,7 +311,8 @@ export async function exportDailyReportPDF(
 
       pdf.setFont("helvetica", "normal");
       pdf.setTextColor(headerColor.r, headerColor.g, headerColor.b);
-      const descLines = pdf.splitTextToSize(task.description, contentWidth - 16);
+      const cleanDescription = stripHtml(task.description);
+      const descLines = pdf.splitTextToSize(cleanDescription, contentWidth - 16);
       descLines.forEach((line: string) => {
         checkPageBreak(5);
         pdf.text(line, margin + 16, y);
@@ -318,7 +331,8 @@ export async function exportDailyReportPDF(
 
       pdf.setFont("helvetica", "italic");
       pdf.setTextColor(headerColor.r, headerColor.g, headerColor.b);
-      const commentLines = pdf.splitTextToSize(task.comments, contentWidth - 16);
+      const cleanComments = stripHtml(task.comments);
+      const commentLines = pdf.splitTextToSize(cleanComments, contentWidth - 16);
       commentLines.forEach((line: string) => {
         checkPageBreak(5);
         pdf.text(line, margin + 16, y);
@@ -337,7 +351,8 @@ export async function exportDailyReportPDF(
 
       pdf.setFont("helvetica", "normal");
       pdf.setTextColor(headerColor.r, headerColor.g, headerColor.b);
-      const notesLines = pdf.splitTextToSize(dailyNote.notes_text, contentWidth - 16);
+      const cleanNotes = stripHtml(dailyNote.notes_text);
+      const notesLines = pdf.splitTextToSize(cleanNotes, contentWidth - 16);
       notesLines.forEach((line: string) => {
         checkPageBreak(5);
         pdf.text(line, margin + 16, y);
