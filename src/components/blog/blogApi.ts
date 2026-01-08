@@ -1,24 +1,14 @@
 import { BlogPost } from "./BlogCard";
 
 /**
- * WordPress.com API helper module
+ * WordPress REST API helper module
  * 
- * Fetches blog posts from WordPress.com REST API and maps them
+ * Fetches blog posts from WordPress REST API and maps them
  * to the BlogPost type used by BlogCard/BlogGrid components.
  */
 
-// Get WordPress.com site identifier from environment variable, or use default
-const getWpSiteId = (): string => {
-  // Try Vite format first (for Vite builds)
-  const viteEnv = import.meta.env.VITE_WP_SITE_ID;
-  if (viteEnv) return viteEnv;
-  
-  // Default to the configured WordPress.com site
-  return "scsblog83.wordpress.com";
-};
-
-const WP_SITE_ID = getWpSiteId();
-const WP_API_BASE = `https://public-api.wordpress.com/wp/v2/sites/${WP_SITE_ID}`;
+// WordPress REST API base URL
+const WP_API_BASE = `https://wp.smartcontentsolutions.co.uk/wp-json/wp/v2`;
 
 /**
  * WordPress post object structure (as returned by REST API)
@@ -124,7 +114,7 @@ export async function fetchWpPosts(page: number = 1): Promise<BlogPost[]> {
 
     if (!response.ok) {
       throw new Error(
-        `WordPress.com API error: ${response.status} ${response.statusText}`
+        `WordPress API error: ${response.status} ${response.statusText}`
       );
     }
 
@@ -134,7 +124,7 @@ export async function fetchWpPosts(page: number = 1): Promise<BlogPost[]> {
     // Handle CORS and network errors
     if (error.name === "TypeError" && error.message.includes("fetch")) {
       throw new Error(
-        `Failed to connect to WordPress.com API. This may be a CORS issue or network error. URL: ${WP_API_BASE}/posts`
+        `Failed to connect to WordPress API. This may be a CORS issue or network error. URL: ${WP_API_BASE}/posts`
       );
     }
     throw error;
@@ -161,7 +151,7 @@ export async function fetchWpPostBySlug(slug: string): Promise<BlogPost | null> 
         return null;
       }
       throw new Error(
-        `WordPress.com API error: ${response.status} ${response.statusText}`
+        `WordPress API error: ${response.status} ${response.statusText}`
       );
     }
 
@@ -176,7 +166,7 @@ export async function fetchWpPostBySlug(slug: string): Promise<BlogPost | null> 
     // Handle CORS and network errors
     if (error.name === "TypeError" && error.message.includes("fetch")) {
       throw new Error(
-        `Failed to connect to WordPress.com API. This may be a CORS issue or network error. URL: ${WP_API_BASE}/posts`
+        `Failed to connect to WordPress API. This may be a CORS issue or network error. URL: ${WP_API_BASE}/posts`
       );
     }
     throw error;
