@@ -5,6 +5,7 @@ import { DashboardView } from "./views/DashboardView";
 import { DocsView } from "./views/DocsView";
 import { TasksView } from "./views/TasksView";
 import { SettingsView } from "./views/SettingsView";
+import DailyTracker from "@/components/daily_tracker/pages/DailyTracker";
 import "./planner.css";
 
 export default function PlannerApp() {
@@ -17,6 +18,7 @@ export default function PlannerApp() {
                         <Route path="/docs" element={<DocsView />} />
                         <Route path="/tasks" element={<TasksView />} />
                         <Route path="/settings" element={<SettingsView />} />
+                        <Route path="/daily-tracker" element={<DailyTracker />} />
                         <Route path="*" element={<Navigate to="/planner" replace />} />
                     </Routes>
                 </Layout>

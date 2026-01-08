@@ -25,7 +25,7 @@ export default function DashboardLayout({ children, user }) {
 
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { name: "Daily Tracker", path: "/daily-tracker", icon: CalendarCheck },
+    { name: "Daily Tracker", path: "/planner/daily-tracker", icon: CalendarCheck },
     { name: "Social Posts", path: "/social-posts", icon: Share2 },
     { name: "Email Campaigns", path: "/email-campaigns", icon: Mail },
     { name: "Analytics", path: "/analytics", icon: BarChart3 },

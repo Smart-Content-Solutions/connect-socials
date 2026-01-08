@@ -63,7 +63,7 @@ import AdminRoute from "./components/admin/AdminRoute";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import PlannerApp from "./planner_section/PlannerApp";
 import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
-import DailyTracker from "./components/daily_tracker/pages/DailyTracker";
+
 
 // ✅ NEW: Stripe success / cancel pages
 import SuccessPage from "./pages/success/Index";
@@ -337,14 +337,7 @@ const App = () => (
               }
             />
 
-            <Route
-              path="/daily-tracker"
-              element={
-                <AdminRoute>
-                  <DailyTracker />
-                </AdminRoute>
-              }
-            />
+
 
             <Route
               path="/admin/*"

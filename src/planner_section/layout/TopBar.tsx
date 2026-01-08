@@ -23,6 +23,7 @@ const pageTitles: Record<string, string> = {
   "/": "Dashboard",
   "/docs": "Docs",
   "/tasks": "Tasks",
+  "/planner/daily-tracker": "Daily Tracker",
   "/settings": "Settings",
 };
 

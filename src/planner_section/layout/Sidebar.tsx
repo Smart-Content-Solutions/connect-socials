@@ -6,7 +6,7 @@ export const navItems = [
   { label: "Dashboard", icon: LayoutDashboard, path: "/planner" },
   { label: "Docs", icon: FileText, path: "/planner/docs" },
   { label: "Tasks", icon: CheckSquare, path: "/planner/tasks" },
-  { label: "Daily Tracker", icon: CalendarCheck, path: "/daily-tracker" },
+  { label: "Daily Tracker", icon: CalendarCheck, path: "/planner/daily-tracker" },
   { label: "Settings", icon: Settings, path: "/planner/settings" },
 ];
 

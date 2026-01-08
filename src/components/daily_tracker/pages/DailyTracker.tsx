@@ -154,7 +154,7 @@ export default function DailyTracker() {
   return (
     <div className="min-h-screen bg-[hsl(240,5%,6%)] planner-theme">
       {/* Sticky Top Bar */}
-      <header className="sticky top-0 z-20 border-b border-border/30 bg-[hsl(240,5%,8%)]/90 backdrop-blur-xl">
+      <header className="sticky top-16 z-20 border-b border-border/30 bg-[hsl(240,5%,8%)]/90 backdrop-blur-xl">
         <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between gap-2">
             {/* Left: Title - hidden on small mobile */}
