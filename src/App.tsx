@@ -289,16 +289,7 @@ const App = () => (
             />
 
             {/* ✅ AUTH */}
-            <Route path="/login" element={<Login />} />
-
-            <Route
-              path="/login/*"
-              element={
-                <div className="min-h-screen flex items-center justify-center bg-[#0F0F10]">
-                  <SignIn routing="path" path="/login" />
-                </div>
-              }
-            />
+            <Route path="/login/*" element={<Login />} />
 
             <Route
               path="/sign-up/*"
