@@ -69,7 +69,7 @@ export function TasksFilterBar({
         <SelectTrigger className="w-[140px] bg-surface border-border/50">
           <SelectValue placeholder="Assignee" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="planner-theme">
           <SelectItem value="All">All Assignees</SelectItem>
           {ASSIGNEES.map((assignee) => (
             <SelectItem key={assignee} value={assignee}>
@@ -88,7 +88,7 @@ export function TasksFilterBar({
           <SelectTrigger className="w-[140px] bg-surface border-border/50">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="planner-theme">
             <SelectItem value="All">All Statuses</SelectItem>
             {availableStatuses.map((status) => (
               <SelectItem key={status} value={status}>

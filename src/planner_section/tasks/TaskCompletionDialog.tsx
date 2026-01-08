@@ -49,7 +49,7 @@ export function TaskCompletionDialog({
 
     return (
         <Dialog open={open} onOpenChange={handleCancel}>
-            <DialogContent className="bg-card border-border sm:max-w-[425px]">
+            <DialogContent className="planner-theme bg-card border-border sm:max-w-[425px]">
                 <DialogHeader>
                     <DialogTitle className="text-foreground">Task Completed!</DialogTitle>
                     <DialogDescription className="text-muted-foreground">

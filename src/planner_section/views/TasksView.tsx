@@ -173,7 +173,7 @@ export function TasksView() {
               New Task
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-card border-border">
+          <DialogContent className="planner-theme bg-card border-border">
             <DialogHeader>
               <DialogTitle className="text-foreground">Create New Task</DialogTitle>
             </DialogHeader>
@@ -206,7 +206,7 @@ export function TasksView() {
                     <SelectTrigger className="bg-surface border-border/50 mt-1">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="planner-theme">
                       {TASK_PRIORITIES.map((p) => (
                         <SelectItem key={p} value={p}>{p}</SelectItem>
                       ))}

@@ -171,7 +171,7 @@ export function TaskDetailDrawer({ task, open, onClose, onUpdateTask, onDeleteTa
                 {task.status}
               </Badge>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="planner-theme">
               {TASK_STATUSES.map((status) => (
                 <SelectItem key={status} value={status}>
                   {status}
@@ -239,7 +239,7 @@ export function TaskDetailDrawer({ task, open, onClose, onUpdateTask, onDeleteTa
                 {task.dueDate ? format(new Date(task.dueDate), "MMM d, yyyy") : "Set date"}
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
+            <PopoverContent className="planner-theme w-auto p-0" align="start">
               <Calendar
                 mode="single"
                 selected={task.dueDate ? new Date(task.dueDate) : undefined}

@@ -129,7 +129,7 @@ export function TopBar() {
             <ChevronDown className="w-4 h-4 text-muted-foreground hidden md:block" />
           </div>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-48 bg-card border-border">
+        <DropdownMenuContent align="end" className="planner-theme w-48 bg-card border-border">
           <div className="px-2 py-1.5 border-b border-border mb-1 md:hidden">
             <p className="text-xs font-medium text-foreground truncate">{displayName}</p>
           </div>
