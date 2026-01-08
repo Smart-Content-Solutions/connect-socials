@@ -22,9 +22,10 @@ import { cn } from "@/lib/utils";
 
 // DOMPurify configuration for rich text editor
 const PURIFY_CONFIG = {
-  ALLOWED_TAGS: ['h1', 'h2', 'h3', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'u', 'a', 'code', 'pre', 'div', 'span', 'input', 'br', 'b', 'i'],
-  ALLOWED_ATTR: ['href', 'class', 'type', 'checked'],
+  ALLOWED_TAGS: ['h1', 'h2', 'h3', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'u', 'a', 'code', 'pre', 'div', 'span', 'input', 'br', 'b', 'i', 'img'],
+  ALLOWED_ATTR: ['href', 'class', 'type', 'checked', 'src', 'alt', 'width', 'height', 'style'],
   ALLOW_DATA_ATTR: false,
+  ADD_DATA_URI_TAGS: ['img'],
 };
 
 interface DocsEditorProps {
