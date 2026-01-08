@@ -222,7 +222,7 @@ export function TasksView() {
                     <SelectTrigger className="bg-surface border-border/50 mt-1">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="planner-theme">
                       {ASSIGNEES.map((a) => (
                         <SelectItem key={a} value={a}>{a}</SelectItem>
                       ))}

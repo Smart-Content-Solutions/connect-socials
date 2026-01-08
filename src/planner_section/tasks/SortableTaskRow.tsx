@@ -97,7 +97,7 @@ export function SortableTaskRow({
               {task.priority}
             </Badge>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="planner-theme">
             {TASK_PRIORITIES.map((priority) => (
               <SelectItem key={priority} value={priority}>
                 {priority}
@@ -115,7 +115,7 @@ export function SortableTaskRow({
           <SelectTrigger className="h-8 w-[110px] bg-surface border-border/50 text-xs">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="planner-theme">
             {ASSIGNEES.map((assignee) => (
               <SelectItem key={assignee} value={assignee}>
                 {assignee}

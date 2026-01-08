@@ -191,7 +191,7 @@ export function TaskDetailDrawer({ task, open, onClose, onUpdateTask, onDeleteTa
                 {task.priority}
               </Badge>
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="planner-theme">
               {TASK_PRIORITIES.map((priority) => (
                 <SelectItem key={priority} value={priority}>
                   {priority}
@@ -216,7 +216,7 @@ export function TaskDetailDrawer({ task, open, onClose, onUpdateTask, onDeleteTa
             <SelectTrigger className="bg-surface border-border/50">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="planner-theme">
               {ASSIGNEES.map((assignee) => (
                 <SelectItem key={assignee} value={assignee}>
                   {assignee}
