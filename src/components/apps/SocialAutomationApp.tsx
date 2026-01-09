@@ -38,7 +38,9 @@ import {
 import {
   initiateFacebookAuth,
   clearFacebookAuthData,
-  isFacebookConnected
+  isFacebookConnected,
+  getFacebookAuthData,
+  type FacebookPage
 } from "@/utils/facebookOAuth";
 
 import {
@@ -59,6 +61,8 @@ import {
   clearBlueskyCredentials,
   isBlueskyConnected
 } from "@/utils/blueskyOAuth";
+
+import DashboardContent from "../social/DashboardContent";
 
 type Platform = {
   id: string;
@@ -107,6 +111,31 @@ export default function SocialMediaTool() {
   const [blueskyPassword, setBlueskyPassword] = useState("");
   const [blueskyError, setBlueskyError] = useState("");
   const [isEditingBluesky, setIsEditingBluesky] = useState(false);
+
+  // Facebook Pages Modal State
+  const [showFacebookPagesModal, setShowFacebookPagesModal] = useState(false);
+  const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
+  const [selectedFacebookPage, setSelectedFacebookPage] = useState<FacebookPage | null>(null);
+
+  // Load Facebook Pages on mount if connected
+  React.useEffect(() => {
+    if (isFacebookConnected()) {
+      const data = getFacebookAuthData();
+      if (data?.pages) {
+        setFacebookPages(data.pages);
+      }
+
+      // Check if we have a saved page selection
+      const savedPage = localStorage.getItem('facebook_selected_page');
+      if (savedPage) {
+        try {
+          setSelectedFacebookPage(JSON.parse(savedPage));
+        } catch (e) {
+          console.error("Failed to parse saved facebook page", e);
+        }
+      }
+    }
+  }, []);
 
   const gridRef = useRef<HTMLDivElement>(null);
   const [highlightStyle, setHighlightStyle] = useState({
@@ -491,6 +520,82 @@ export default function SocialMediaTool() {
         </div>
       )}
 
+      {/* Facebook Pages Selection Modal */}
+      {showFacebookPagesModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#3B3C3E] rounded-2xl p-8 max-w-lg w-full border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-[#1877F2]/20 flex items-center justify-center">
+                  <Facebook className="w-6 h-6 text-[#1877F2]" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-[#D6D7D8]">Select Facebook Page</h2>
+                  <p className="text-xs text-[#A9AAAC]">Choose a page to manage</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowFacebookPagesModal(false)}
+                className="w-8 h-8 rounded-lg bg-[#3B3C3E] hover:bg-[#4B4C4E] flex items-center justify-center transition-colors"
+              >
+                <X className="w-5 h-5 text-[#A9AAAC]" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              {facebookPages.length === 0 ? (
+                <div className="text-center py-8 text-[#5B5C60]">
+                  <p>No pages found for this user.</p>
+                  <p className="text-xs mt-2">Make sure you granted the correct permissions.</p>
+                </div>
+              ) : (
+                facebookPages.map(page => (
+                  <button
+                    key={page.id}
+                    onClick={() => {
+                      setSelectedFacebookPage(page);
+                      localStorage.setItem('facebook_selected_page', JSON.stringify(page));
+                      setShowFacebookPagesModal(false);
+                      // Satisfy Meta Requirement: Immediate redirect to Page Dashboard (for Analytics)
+                      // Instead of 'create' post, we stay on dashboard but now it shows analytics
+                      // Force a re-render or toast if needed, but since we update state, the dashboard will update automatically.
+                      // Ideally we might want to switch TO dashboard if we were elsewhere, but usually we select from dashboard.
+                      // If we are on 'create', better switch back to 'dashboard' to show the stats.
+                      setActiveTab('dashboard');
+                    }}
+                    className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-[#1877F2]/10 flex items-center justify-center text-[#1877F2] font-bold text-lg">
+                        {page.name.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-[#D6D7D8] font-semibold group-hover:text-[#E1C37A] transition-colors">
+                          {page.name}
+                        </p>
+                        <p className="text-xs text-[#5B5C60] font-mono">ID: {page.id}</p>
+                      </div>
+                    </div>
+
+                    {selectedFacebookPage?.id === page.id && (
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
+                        <CheckCircle className="w-3 h-3 text-[#1A1A1C]" />
+                      </div>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-white/5 text-center">
+              <p className="text-xs text-[#5B5C60]">
+                This list is retrieved using the <code>pages_show_list</code> permission.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
           <div className="flex items-center gap-4">
@@ -532,9 +637,19 @@ export default function SocialMediaTool() {
         </div>
 
         {isSuccess && (
-          <div className="mb-6 p-4 rounded-xl bg-[#E1C37A]/10 border border-[#E1C37A]/20 flex items-center gap-3">
-            <CheckCircle className="w-5 h-5 text-green-400" />
-            <p className="text-[#D6D7D8]">Your post has been {postMode === 'publish' ? 'published' : 'scheduled'} successfully!</p>
+          <div className="mb-6 p-4 rounded-xl bg-[#E1C37A]/10 border border-[#E1C37A]/20 flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 text-green-400 mt-0.5" />
+            <div>
+              <p className="text-[#D6D7D8] font-medium">
+                Success! content {postMode === 'publish' ? 'published' : 'scheduled'}.
+              </p>
+              {selectedFacebookPage && selectedPlatforms.includes('facebook') && (
+                <p className="text-[#A9AAAC] text-xs mt-1">
+                  Posted to <b>{selectedFacebookPage.name}</b> (ID: {selectedFacebookPage.id}) using
+                  <code>pages_manage_posts</code> permission.
+                </p>
+              )}
+            </div>
           </div>
         )}
 
@@ -552,7 +667,10 @@ export default function SocialMediaTool() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
+              className="space-y-8"
             >
+              <DashboardContent />
+
               <div className="flex items-center gap-3 mb-4">
                 <LinkIcon className="w-5 h-5 text-[#E1C37A]" />
                 <h3 className="text-lg font-semibold text-[#D6D7D8]">Connected Accounts</h3>
@@ -622,35 +740,65 @@ export default function SocialMediaTool() {
 
                       <h3 className="text-[#D6D7D8] font-semibold text-lg mb-1">{p.name}</h3>
                       <p className="text-[#5B5C60] text-sm mb-4">
-                        {connected ? 'Connected' : 'Not connected'}
+                        {connected
+                          ? (p.id === 'facebook' && selectedFacebookPage
+                            ? `Page: ${selectedFacebookPage.name}`
+                            : 'Connected')
+                          : 'Not connected'}
                       </p>
 
                       {p.connect && (
-                        <button
-                          onClick={() => {
-                            setLoadingPlatform(p.id);
-                            connected ? p.disconnect?.() : p.connect();
-                            setTimeout(() => setLoadingPlatform(null), 1200);
-                          }}
-                          className={`w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 ${connected
-                            ? 'bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10'
-                            : 'bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] hover:shadow-[0_0_20px_rgba(225,195,122,0.3)]'
-                            }`}
-                        >
-                          {loadingPlatform === p.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : connected ? (
+                        <div className="space-y-2">
+                          {connected && p.id === 'facebook' ? (
                             <>
-                              <Unlink className="w-4 h-4" />
-                              Disconnect
+                              <button
+                                onClick={() => setShowFacebookPagesModal(true)}
+                                className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
+                              >
+                                <LayoutDashboard className="w-4 h-4" />
+                                {selectedFacebookPage ? "Switch Page" : "Select Page"}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm("Disconnect Facebook?")) {
+                                    p.disconnect?.();
+                                    setSelectedFacebookPage(null);
+                                    localStorage.removeItem('facebook_selected_page');
+                                  }
+                                }}
+                                className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
+                              >
+                                Disconnect
+                              </button>
                             </>
                           ) : (
-                            <>
-                              <LinkIcon className="w-4 h-4" />
-                              Connect
-                            </>
+                            <button
+                              onClick={() => {
+                                setLoadingPlatform(p.id);
+                                connected ? p.disconnect?.() : p.connect();
+                                setTimeout(() => setLoadingPlatform(null), 1200);
+                              }}
+                              className={`w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 ${connected
+                                ? 'bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10'
+                                : 'bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] hover:shadow-[0_0_20px_rgba(225,195,122,0.3)]'
+                                }`}
+                            >
+                              {loadingPlatform === p.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : connected ? (
+                                <>
+                                  <Unlink className="w-4 h-4" />
+                                  Disconnect
+                                </>
+                              ) : (
+                                <>
+                                  <LinkIcon className="w-4 h-4" />
+                                  Connect
+                                </>
+                              )}
+                            </button>
                           )}
-                        </button>
+                        </div>
                       )}
                     </div>
                   );
@@ -698,7 +846,7 @@ export default function SocialMediaTool() {
                           <Icon className="w-5 h-5" style={{ color }} />
                         </div>
                         <p className={`text-xs font-medium ${selected ? 'text-[#E1C37A]' : 'text-[#A9AAAC]'}`}>
-                          {p.name}
+                          {p.id === 'facebook' && selectedFacebookPage ? selectedFacebookPage.name : p.name}
                         </p>
                       </button>
                     );

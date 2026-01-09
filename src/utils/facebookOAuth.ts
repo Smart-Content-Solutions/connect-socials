@@ -54,6 +54,7 @@ export function getFacebookAuthData(): FacebookAuthData | null {
 
 export function clearFacebookAuthData(): void {
   localStorage.removeItem(FACEBOOK_AUTH_STORAGE_KEY);
+  localStorage.removeItem("facebook_selected_page");
 }
 
 // STEP 1 — Start Facebook OAuth
@@ -70,7 +71,7 @@ export async function initiateFacebookAuth(): Promise<void> {
   localStorage.setItem(OAUTH_STATE_KEY, state);
   localStorage.setItem(OAUTH_INITIATOR_USER_KEY, clerkUserId);
 
-  const scope = "email,public_profile,pages_show_list,pages_read_engagement,pages_manage_posts";
+  const scope = "email,public_profile,pages_show_list,pages_read_engagement,pages_manage_posts,pages_read_user_content";
 
   const authUrl =
     "https://www.facebook.com/v19.0/dialog/oauth" +
