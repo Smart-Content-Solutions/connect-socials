@@ -104,8 +104,6 @@ export default function SocialMediaTool() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loadingPlatform, setLoadingPlatform] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-
-  // Bluesky modal state
   const [showBlueskyModal, setShowBlueskyModal] = useState(false);
   const [blueskyUsername, setBlueskyUsername] = useState("");
   const [blueskyPassword, setBlueskyPassword] = useState("");
