@@ -44,7 +44,7 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
             // 1. Fetch real posts
             console.log("DEBUG: Requesting feed for ID:", page.id);
             const postsRes = await fetch(
-                `https://graph.facebook.com/v19.0/${page.id}/feed?fields=id,message,created_time,full_picture,type,shares,comments.summary(total_count),likes.summary(total_count)&limit=5&access_token=${page.access_token}`
+                `https://graph.facebook.com/v19.0/${page.id}/feed?fields=id,message,created_time,full_picture&limit=5&access_token=${page.access_token}`
             );
             const postsData = await postsRes.json();
 
@@ -58,11 +58,12 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
                 const formattedPosts = postsData.data.map((p: any) => ({
                     platform: "Facebook",
                     content: p.message || "No text content",
-                    engagement: `${p.likes?.summary?.total_count || 0} likes • ${p.comments?.summary?.total_count || 0} comments`,
+                    engagement: "View on Facebook",
                     time: new Date(p.created_time).toLocaleDateString(),
-                    type: p.type || "text",
+                    type: p.full_picture ? "image" : "text",
                     caption: "",
-                    id: p.id
+                    id: p.id,
+                    image: p.full_picture || null
                 }));
                 setRealPosts(formattedPosts);
                 setHasFetchedRealData(true); // Mark as successfully fetched (even if 0 items)
