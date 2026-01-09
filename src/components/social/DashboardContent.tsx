@@ -41,11 +41,11 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
         setHasFetchedRealData(false); // reset before fetch
 
         try {
-            // 1. Fetch real posts + engagement
-            console.log("DEBUG: Requesting feed + engagement for ID:", page.id);
-            // We use summary(total_count) which is the modern way to get counts safely
+            // 1. Fetch real posts + engagement + reach (insights)
+            console.log("DEBUG: Requesting feed + engagement + reach for ID:", page.id);
+            // We fetch the 'post_impressions_unique' metric for each post to calculate reach
             const postsRes = await fetch(
-                `https://graph.facebook.com/v19.0/${page.id}/feed?fields=id,message,created_time,full_picture,likes.summary(total_count),comments.summary(total_count)&limit=10&access_token=${page.access_token}`
+                `https://graph.facebook.com/v19.0/${page.id}/feed?fields=id,message,created_time,full_picture,likes.summary(total_count),comments.summary(total_count),insights.metric(post_impressions_unique)&limit=10&access_token=${page.access_token}`
             );
             const postsData = await postsRes.json();
 
@@ -59,6 +59,8 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
                 const formattedPosts = postsData.data.map((p: any) => {
                     const likeCount = p.likes?.summary?.total_count || 0;
                     const commentCount = p.comments?.summary?.total_count || 0;
+                    // Get reach from post insights if available
+                    const reach = p.insights?.data?.find((i: any) => i.name === 'post_impressions_unique')?.values[0]?.value || 0;
 
                     return {
                         platform: "Facebook",
@@ -70,7 +72,8 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
                         id: p.id,
                         image: p.full_picture || null,
                         likes: likeCount,
-                        comments: commentCount
+                        comments: commentCount,
+                        reach: reach
                     };
                 });
                 setRealPosts(formattedPosts);
@@ -102,9 +105,10 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
         }
     };
 
-    // Calculate aggregate engagement from posts
+    // Calculate aggregate metrics from posts
     const totalLikes = realPosts.reduce((acc, p) => acc + (p.likes || 0), 0);
     const totalComments = realPosts.reduce((acc, p) => acc + (p.comments || 0), 0);
+    const totalReach = realPosts.reduce((acc, p) => acc + (p.reach || 0), 0);
 
     // Prioritize real data if available, otherwise fallback to mock
     const stats = selectedPage ? [
@@ -116,9 +120,9 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
             color: "text-[#1877F2]"
         },
         {
-            label: "Post Reach",
-            value: realStats?.page_impressions_unique?.toString() || "15.2K",
-            change: "+24%",
+            label: hasFetchedRealData ? "Post Reach (Real)" : "Post Reach",
+            value: hasFetchedRealData ? totalReach.toLocaleString() : (realStats?.page_impressions_unique?.toString() || "15.2K"),
+            change: hasFetchedRealData ? "Live" : "+24%",
             icon: Users,
             color: "text-green-500"
         },
