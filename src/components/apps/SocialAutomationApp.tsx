@@ -109,8 +109,6 @@ export default function SocialMediaTool() {
   const [blueskyPassword, setBlueskyPassword] = useState("");
   const [blueskyError, setBlueskyError] = useState("");
   const [isEditingBluesky, setIsEditingBluesky] = useState(false);
-
-  // Facebook Pages Modal State
   const [showFacebookPagesModal, setShowFacebookPagesModal] = useState(false);
   const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
   const [selectedFacebookPage, setSelectedFacebookPage] = useState<FacebookPage | null>(null);
