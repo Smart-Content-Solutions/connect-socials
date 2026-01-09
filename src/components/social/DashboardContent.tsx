@@ -16,6 +16,8 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
 
     const [apiError, setApiError] = useState<string | null>(null);
 
+    const [hasFetchedRealData, setHasFetchedRealData] = useState(false);
+
     // Watch for prop changes to fetch data
     useEffect(() => {
         if (selectedPage?.access_token) {
@@ -24,6 +26,7 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
         } else {
             setRealPosts([]);
             setRealStats(null);
+            setHasFetchedRealData(false);
             if (selectedPage) {
                 console.warn("DEBUG: No access_token found for selected page");
                 setApiError("No Page Access Token found. Please reconnect Facebook.");
@@ -35,6 +38,8 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
         if (!page.access_token) return;
         setIsLoadingRealData(true);
         setApiError(null);
+        setHasFetchedRealData(false); // reset before fetch
+
         try {
             // 1. Fetch real posts
             console.log("DEBUG: Requesting feed for ID:", page.id);
@@ -44,11 +49,11 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
             const postsData = await postsRes.json();
 
             if (postsData.error) {
-                console.error("DEBUG: FB API Posts Error:", postsData.error);
+                console.error("DEBUG: FB API Posts Error:", JSON.stringify(postsData.error, null, 2));
                 throw new Error(postsData.error.message);
             }
 
-            if (postsData.data && postsData.data.length > 0) {
+            if (postsData.data) {
                 console.log("DEBUG: Found posts from API:", postsData.data.length);
                 const formattedPosts = postsData.data.map((p: any) => ({
                     platform: "Facebook",
@@ -60,9 +65,7 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
                     id: p.id
                 }));
                 setRealPosts(formattedPosts);
-            } else {
-                console.warn("DEBUG: API returned empty list for feed");
-                // We keep mock data but log the event
+                setHasFetchedRealData(true); // Mark as successfully fetched (even if 0 items)
             }
 
             // 2. Fetch basic page metrics (Insights)
@@ -72,8 +75,8 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
             const insightsData = await insightsRes.json();
 
             if (insightsData.error) {
-                console.error("DEBUG: FB API Insights Error:", insightsData.error);
-                // Don't throw here, just log, so posts still show
+                console.warn("DEBUG: Insights warning (normal for test pages):", insightsData.error.message);
+                // We do NOT throw here. Just leave stats as null.
             } else if (insightsData.data) {
                 console.log("DEBUG: Found insights data");
                 const statsMap: any = {};
@@ -90,6 +93,7 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
         }
     };
 
+
     // Prioritize real data if available, otherwise fallback to mock
     const stats = selectedPage ? [
         { label: "Page Likes", value: realStats?.page_fan_adds_unique?.toString() || "2,453", change: "+12%", icon: Facebook, color: "text-[#1877F2]" },
@@ -103,7 +107,7 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
         { label: "Comments", value: "1,892", change: "+5%", icon: MessageCircle, color: "text-purple-500" },
     ];
 
-    const recentPosts = (selectedPage && realPosts.length > 0) ? realPosts : [
+    const recentPosts = (selectedPage && hasFetchedRealData) ? realPosts : [
         {
             platform: "Facebook",
             content: selectedPage ? `New update from ${selectedPage.name}! Check out our latest features...` : "Waiting for login...",
@@ -218,6 +222,11 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
                 </CardHeader>
                 <CardContent className="p-4">
                     <div className="space-y-4">
+                        {recentPosts.length === 0 && (
+                            <div className="text-center py-8 text-[#5B5C60] italic">
+                                No posts found on this page. Create a post on Facebook to see it here!
+                            </div>
+                        )}
                         {recentPosts.map((post, index) => (
                             <motion.div
                                 key={index}
