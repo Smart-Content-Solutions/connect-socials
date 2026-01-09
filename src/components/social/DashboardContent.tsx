@@ -105,74 +105,61 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
         }
     };
 
+    if (!selectedPage) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="w-20 h-20 rounded-full bg-[#1877F2]/10 flex items-center justify-center mb-6">
+                    <Facebook className="w-10 h-10 text-[#1877F2]" />
+                </div>
+                <h2 className="text-2xl font-bold text-[#D6D7D8] mb-2">Connect Your Facebook Page</h2>
+                <p className="text-[#A9AAAC] max-w-md mx-auto mb-8">
+                    Connect your account and select a page to view real-time engagement metrics and manage your content library.
+                </p>
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-[#3B3C3E]/30 border border-white/5 text-xs text-[#5B5C60]">
+                    <Info className="w-4 h-4 shrink-0" />
+                    <p>Metrics are retrieved using <code>pages_read_engagement</code> and <code>pages_read_user_content</code> permissions.</p>
+                </div>
+            </div>
+        );
+    }
+
     // Calculate aggregate metrics from posts
     const totalLikes = realPosts.reduce((acc, p) => acc + (p.likes || 0), 0);
     const totalComments = realPosts.reduce((acc, p) => acc + (p.comments || 0), 0);
     const totalReach = realPosts.reduce((acc, p) => acc + (p.reach || 0), 0);
 
-    // Prioritize real data if available, otherwise fallback to mock
-    const stats = selectedPage ? [
+    const stats = [
         {
             label: hasFetchedRealData ? "Post Likes (Real)" : "Page Likes",
-            value: hasFetchedRealData ? totalLikes.toLocaleString() : (realStats?.page_fan_adds_unique?.toString() || "2,453"),
-            change: hasFetchedRealData ? "Live" : "+12%",
+            value: hasFetchedRealData ? totalLikes.toLocaleString() : (realStats?.page_fan_adds_unique?.toString() || "0"),
+            change: hasFetchedRealData ? "Live" : "+0%",
             icon: Facebook,
             color: "text-[#1877F2]"
         },
         {
             label: hasFetchedRealData ? "Post Reach (Real)" : "Post Reach",
-            value: hasFetchedRealData ? totalReach.toLocaleString() : (realStats?.page_impressions_unique?.toString() || "15.2K"),
-            change: hasFetchedRealData ? "Live" : "+24%",
+            value: hasFetchedRealData ? totalReach.toLocaleString() : (realStats?.page_impressions_unique?.toString() || "0"),
+            change: hasFetchedRealData ? "Live" : "+0%",
             icon: Users,
             color: "text-green-500"
         },
         {
             label: hasFetchedRealData ? "Engagement (Real)" : "Engagement",
-            value: hasFetchedRealData ? (totalLikes + totalComments).toLocaleString() : (realStats?.page_post_engagements?.toString() || "892"),
-            change: hasFetchedRealData ? "Live" : "+8%",
+            value: hasFetchedRealData ? (totalLikes + totalComments).toLocaleString() : (realStats?.page_post_engagements?.toString() || "0"),
+            change: hasFetchedRealData ? "Live" : "+0%",
             icon: Heart,
             color: "text-pink-500"
         },
         {
             label: hasFetchedRealData ? "Comments (Real)" : "Comments",
-            value: hasFetchedRealData ? totalComments.toLocaleString() : "156",
-            change: hasFetchedRealData ? "Live" : "+5%",
+            value: hasFetchedRealData ? totalComments.toLocaleString() : "0",
+            change: hasFetchedRealData ? "Live" : "+0%",
             icon: MessageCircle,
             color: "text-purple-500"
         },
-    ] : [
-        { label: "Total Posts", value: "156", change: "+12%", icon: LayoutDashboard, color: "text-[#E1C37A]" },
-        { label: "Engagement", value: "12.4K", change: "+8%", icon: Heart, color: "text-pink-500" },
-        { label: "Followers", value: "8,234", change: "+15%", icon: Users, color: "text-green-500" },
-        { label: "Comments", value: "1,892", change: "+5%", icon: MessageCircle, color: "text-purple-500" },
     ];
 
-    const recentPosts = (selectedPage && hasFetchedRealData) ? realPosts : [
-        {
-            platform: "Facebook",
-            content: selectedPage ? `New update from ${selectedPage.name}! Check out our latest features...` : "Waiting for login...",
-            engagement: "45 likes • 12 comments",
-            time: "2 hours ago",
-            type: "image",
-            caption: "Reviewing our Q3 roadmap with the team. Exciting times ahead! #growth"
-        },
-        {
-            platform: "Facebook",
-            content: "Community spotlight: Thanks to everyone who attended...",
-            engagement: "128 likes • 34 comments",
-            time: "1 day ago",
-            type: "video",
-            caption: "Highlights from our community meetup. Tag yourself if you were here!"
-        },
-        {
-            platform: "Facebook",
-            content: "We are hiring! Join our growing team today.",
-            engagement: "89 likes • 56 shares",
-            time: "2 days ago",
-            type: "link",
-            caption: "Open positions in Engineering and Design. Apply now."
-        },
-    ];
+    const recentPosts = hasFetchedRealData ? realPosts : [];
 
     return (
         <div className="text-[#D6D7D8]">
@@ -182,37 +169,33 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
                 </div>
                 <div>
                     <h2 className="text-2xl font-bold text-[#D6D7D8]">
-                        {selectedPage ? `${selectedPage.name} Content Library` : "Dashboard"}
+                        {selectedPage.name} Content Library
                     </h2>
                     <p className="text-[#A9AAAC] text-sm">
-                        {selectedPage
-                            ? "Managing Page content via pages_read_user_content"
-                            : "Track your social media performance"}
+                        Managing Page content via pages_read_user_content
                     </p>
                 </div>
             </div>
 
             {/* Meta Requirement: Explicitly show we are using the permission */}
-            {selectedPage && (
-                <div className="mb-6 p-4 rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/20 flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-3">
-                        <Info className="w-5 h-5 text-[#1877F2] shrink-0 mt-0.5" />
-                        <div>
-                            <h4 className="text-[#D6D7D8] font-semibold text-sm">Reading Page Content</h4>
-                            <p className="text-[#A9AAAC] text-xs mt-1">
-                                Retrieving posts, captions, and media from <b>{selectedPage.name}</b> (ID: {selectedPage.id}).
-                                This workflow uses the <code>pages_read_user_content</code> permission to manage published content.
-                            </p>
-                        </div>
+            <div className="mb-6 p-4 rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/20 flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-[#1877F2] shrink-0 mt-0.5" />
+                    <div>
+                        <h4 className="text-[#D6D7D8] font-semibold text-sm">Reading Page Content</h4>
+                        <p className="text-[#A9AAAC] text-xs mt-1">
+                            Retrieving posts, captions, and media from <b>{selectedPage.name}</b> (ID: {selectedPage.id}).
+                            This workflow uses the <code>pages_read_user_content</code> permission to manage published content.
+                        </p>
                     </div>
-                    {isLoadingRealData && (
-                        <div className="flex items-center gap-2 text-xs text-[#1877F2]">
-                            <TrendingUp className="w-4 h-4 animate-pulse" />
-                            <span>Fetching live data...</span>
-                        </div>
-                    )}
                 </div>
-            )}
+                {isLoadingRealData && (
+                    <div className="flex items-center gap-2 text-xs text-[#1877F2]">
+                        <TrendingUp className="w-4 h-4 animate-pulse" />
+                        <span>Fetching live data...</span>
+                    </div>
+                )}
+            </div>
 
             {/* API Debug Error Display */}
             {apiError && (
@@ -221,7 +204,7 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
                     <div>
                         <h4 className="text-[#D6D7D8] font-semibold text-sm">Real Data Notice</h4>
                         <p className="text-[#A9AAAC] text-xs mt-1">
-                            {apiError}. Showing example data instead.
+                            {apiError}. Showing current local state instead.
                         </p>
                     </div>
                 </div>
@@ -240,7 +223,7 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
                             <CardContent className="p-6">
                                 <div className="flex items-center justify-between mb-2">
                                     <stat.icon className={`w-8 h-8 ${stat.color}`} />
-                                    <span className="text-sm font-semibold text-green-400">{stat.change}</span>
+                                    <span className={`text-sm font-semibold ${stat.change === 'Live' ? 'text-blue-400' : 'text-green-400'}`}>{stat.change}</span>
                                 </div>
                                 <div className="text-3xl font-bold text-[#D6D7D8] mb-1">{stat.value}</div>
                                 <div className="text-sm text-[#A9AAAC]">{stat.label}</div>
@@ -254,17 +237,21 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
             <Card className="bg-[#3B3C3E]/30 backdrop-blur-sm border-white/5">
                 <CardHeader className="border-b border-white/5 p-4 flex flex-row items-center justify-between">
                     <h3 className="text-lg font-bold text-[#D6D7D8]">Page Content Library</h3>
-                    {selectedPage && (
-                        <span className="text-xs px-2 py-1 rounded bg-[#1877F2]/20 text-[#1877F2] border border-[#1877F2]/30">
-                            Reading /me/feed
-                        </span>
-                    )}
+                    <span className="text-xs px-2 py-1 rounded bg-[#1877F2]/20 text-[#1877F2] border border-[#1877F2]/30">
+                        Reading /me/feed
+                    </span>
                 </CardHeader>
                 <CardContent className="p-4">
                     <div className="space-y-4">
-                        {recentPosts.length === 0 && (
+                        {recentPosts.length === 0 && !isLoadingRealData && (
                             <div className="text-center py-8 text-[#5B5C60] italic">
                                 No posts found on this page. Create a post on Facebook to see it here!
+                            </div>
+                        )}
+                        {isLoadingRealData && (
+                            <div className="flex flex-col items-center justify-center py-8 gap-3">
+                                <TrendingUp className="w-8 h-8 text-[#1877F2] animate-bounce" />
+                                <p className="text-sm text-[#A9AAAC] animate-pulse">Scanning Page feed...</p>
                             </div>
                         )}
                         {recentPosts.map((post, index) => (
@@ -277,10 +264,16 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
                             >
                                 {/* Media Preview Placeholder */}
                                 <div className="w-16 h-16 rounded-lg bg-[#1A1A1C] flex items-center justify-center shrink-0 border border-white/5 group-hover:border-[#E1C37A]/30">
-                                    {post.type === 'image' && <LayoutDashboard className="w-6 h-6 text-[#5B5C60]" />}
-                                    {post.type === 'video' && <TrendingUp className="w-6 h-6 text-[#5B5C60]" />}
-                                    {post.type === 'link' && <Users className="w-6 h-6 text-[#5B5C60]" />}
-                                    {post.type === 'text' && <MessageCircle className="w-6 h-6 text-[#5B5C60]" />}
+                                    {post.image ? (
+                                        <img src={post.image} className="w-full h-full object-cover rounded-md" alt="Post preview" />
+                                    ) : (
+                                        <>
+                                            {post.type === 'image' && <LayoutDashboard className="w-6 h-6 text-[#5B5C60]" />}
+                                            {post.type === 'video' && <TrendingUp className="w-6 h-6 text-[#5B5C60]" />}
+                                            {post.type === 'link' && <Users className="w-6 h-6 text-[#5B5C60]" />}
+                                            {post.type === 'text' && <MessageCircle className="w-6 h-6 text-[#5B5C60]" />}
+                                        </>
+                                    )}
                                 </div>
 
                                 <div className="flex-1">
@@ -297,7 +290,7 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
                                     )}
                                     <div className="flex items-center gap-4 text-xs text-[#5B5C60]">
                                         <span>{post.engagement}</span>
-                                        {selectedPage && <span className="text-[#1877F2]">Read from API</span>}
+                                        <span className="text-[#1877F2]">Read from API</span>
                                     </div>
                                 </div>
                             </motion.div>
