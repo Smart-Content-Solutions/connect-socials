@@ -106,21 +106,7 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
     };
 
     if (!selectedPage) {
-        return (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-20 h-20 rounded-full bg-[#1877F2]/10 flex items-center justify-center mb-6">
-                    <Facebook className="w-10 h-10 text-[#1877F2]" />
-                </div>
-                <h2 className="text-2xl font-bold text-[#D6D7D8] mb-2">Connect Your Facebook Page</h2>
-                <p className="text-[#A9AAAC] max-w-md mx-auto mb-8">
-                    Connect your account and select a page to view real-time engagement metrics and manage your content library.
-                </p>
-                <div className="flex items-center gap-3 p-4 rounded-xl bg-[#3B3C3E]/30 border border-white/5 text-xs text-[#5B5C60]">
-                    <Info className="w-4 h-4 shrink-0" />
-                    <p>Metrics are retrieved using <code>pages_read_engagement</code> and <code>pages_read_user_content</code> permissions.</p>
-                </div>
-            </div>
-        );
+        return null; // Hide everything if no page is selected
     }
 
     // Calculate aggregate metrics from posts
