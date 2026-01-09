@@ -5,31 +5,74 @@ import { LayoutDashboard, TrendingUp, Users, Heart, MessageCircle, Facebook, Inf
 import { motion } from "framer-motion";
 import { getFacebookAuthData, type FacebookPage } from "@/utils/facebookOAuth";
 
-export default function DashboardContent(): JSX.Element {
-    const [selectedPage, setSelectedPage] = useState<FacebookPage | null>(null);
+interface DashboardContentProps {
+    selectedPage: FacebookPage | null;
+}
 
-    // Check for selected Facebook page on mount
+export default function DashboardContent({ selectedPage }: DashboardContentProps): JSX.Element {
+    const [realPosts, setRealPosts] = useState<any[]>([]);
+    const [realStats, setRealStats] = useState<any>(null);
+    const [isLoadingRealData, setIsLoadingRealData] = useState(false);
+
+    // Watch for prop changes to fetch data
     useEffect(() => {
-        const storedPage = localStorage.getItem('facebook_selected_page');
-        if (storedPage) {
-            try {
-                setSelectedPage(JSON.parse(storedPage));
-            } catch (e) {
-                console.error("Error parsing stored page", e);
-            }
+        if (selectedPage?.access_token) {
+            fetchRealFacebookData(selectedPage);
+        } else {
+            setRealPosts([]);
+            setRealStats(null);
         }
-    }, []);
+    }, [selectedPage]);
 
-    // Mock data - IF a page is selected, we show "Page Specific" data
-    // Otherwise we show generic aggregate data
+    const fetchRealFacebookData = async (page: FacebookPage) => {
+        if (!page.access_token) return;
+        setIsLoadingRealData(true);
+        try {
+            // 1. Fetch real posts
+            const postsRes = await fetch(
+                `https://graph.facebook.com/v19.0/${page.id}/feed?fields=id,message,created_time,full_picture,type,caption,shares,comments.summary(true),likes.summary(true)&limit=5&access_token=${page.access_token}`
+            );
+            const postsData = await postsRes.json();
 
-    // This is the key change for Meta:
-    // If we have a selectedPage, we display it prominent at the top
+            if (postsData.data) {
+                const formattedPosts = postsData.data.map((p: any) => ({
+                    platform: "Facebook",
+                    content: p.message || "No content",
+                    engagement: `${p.likes?.summary?.total_count || 0} likes • ${p.comments?.summary?.total_count || 0} comments`,
+                    time: new Date(p.created_time).toLocaleDateString(),
+                    type: p.type || "text",
+                    caption: p.caption || "",
+                    id: p.id
+                }));
+                setRealPosts(formattedPosts);
+            }
 
+            // 2. Fetch basic page metrics (Insights)
+            // Note: Insights require specific page categories, fallback to 0 if not available
+            const insightsRes = await fetch(
+                `https://graph.facebook.com/v19.0/${page.id}/insights?metric=page_impressions_unique,page_post_engagements,page_fan_adds_unique&period=day&access_token=${page.access_token}`
+            );
+            const insightsData = await insightsRes.json();
+
+            if (insightsData.data) {
+                const statsMap: any = {};
+                insightsData.data.forEach((item: any) => {
+                    statsMap[item.name] = item.values[0]?.value || 0;
+                });
+                setRealStats(statsMap);
+            }
+        } catch (error) {
+            console.error("Error fetching real FB data:", error);
+        } finally {
+            setIsLoadingRealData(false);
+        }
+    };
+
+    // Prioritize real data if available, otherwise fallback to mock
     const stats = selectedPage ? [
-        { label: "Page Likes", value: "2,453", change: "+12%", icon: Facebook, color: "text-[#1877F2]" },
-        { label: "Post Reach", value: "15.2K", change: "+24%", icon: Users, color: "text-green-500" },
-        { label: "Engagement", value: "892", change: "+8%", icon: Heart, color: "text-pink-500" },
+        { label: "Page Likes", value: realStats?.page_fan_adds_unique?.toString() || "2,453", change: "+12%", icon: Facebook, color: "text-[#1877F2]" },
+        { label: "Post Reach", value: realStats?.page_impressions_unique?.toString() || "15.2K", change: "+24%", icon: Users, color: "text-green-500" },
+        { label: "Engagement", value: realStats?.page_post_engagements?.toString() || "892", change: "+8%", icon: Heart, color: "text-pink-500" },
         { label: "Comments", value: "156", change: "+5%", icon: MessageCircle, color: "text-purple-500" },
     ] : [
         { label: "Total Posts", value: "156", change: "+12%", icon: LayoutDashboard, color: "text-[#E1C37A]" },
@@ -38,10 +81,10 @@ export default function DashboardContent(): JSX.Element {
         { label: "Comments", value: "1,892", change: "+5%", icon: MessageCircle, color: "text-purple-500" },
     ];
 
-    const recentPosts = selectedPage ? [
+    const recentPosts = (selectedPage && realPosts.length > 0) ? realPosts : [
         {
             platform: "Facebook",
-            content: `New update from ${selectedPage.name}! Check out our latest features...`,
+            content: selectedPage ? `New update from ${selectedPage.name}! Check out our latest features...` : "Waiting for login...",
             engagement: "45 likes • 12 comments",
             time: "2 hours ago",
             type: "image",
@@ -63,10 +106,6 @@ export default function DashboardContent(): JSX.Element {
             type: "link",
             caption: "Open positions in Engineering and Design. Apply now."
         },
-    ] : [
-        { platform: "Instagram", content: "Behind the scenes at our office 📸", engagement: "567 likes", time: "5 hours ago", type: "image", caption: "" },
-        { platform: "LinkedIn", content: "Exciting news about our company growth", engagement: "123 likes", time: "1 day ago", type: "text", caption: "" },
-        { platform: "Twitter", content: "Join us for our upcoming webinar!", engagement: "89 retweets", time: "2 days ago", type: "link", caption: "" },
     ];
 
     return (
@@ -89,15 +128,23 @@ export default function DashboardContent(): JSX.Element {
 
             {/* Meta Requirement: Explicitly show we are using the permission */}
             {selectedPage && (
-                <div className="mb-6 p-4 rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/20 flex items-start gap-3">
-                    <Info className="w-5 h-5 text-[#1877F2] shrink-0 mt-0.5" />
-                    <div>
-                        <h4 className="text-[#D6D7D8] font-semibold text-sm">Reading Page Content</h4>
-                        <p className="text-[#A9AAAC] text-xs mt-1">
-                            Retrieving posts, captions, and media from <b>{selectedPage.name}</b> (ID: {selectedPage.id}).
-                            This workflow uses the <code>pages_read_user_content</code> permission to manage published content.
-                        </p>
+                <div className="mb-6 p-4 rounded-xl bg-[#1877F2]/10 border border-[#1877F2]/20 flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3">
+                        <Info className="w-5 h-5 text-[#1877F2] shrink-0 mt-0.5" />
+                        <div>
+                            <h4 className="text-[#D6D7D8] font-semibold text-sm">Reading Page Content</h4>
+                            <p className="text-[#A9AAAC] text-xs mt-1">
+                                Retrieving posts, captions, and media from <b>{selectedPage.name}</b> (ID: {selectedPage.id}).
+                                This workflow uses the <code>pages_read_user_content</code> permission to manage published content.
+                            </p>
+                        </div>
                     </div>
+                    {isLoadingRealData && (
+                        <div className="flex items-center gap-2 text-xs text-[#1877F2]">
+                            <TrendingUp className="w-4 h-4 animate-pulse" />
+                            <span>Fetching live data...</span>
+                        </div>
+                    )}
                 </div>
             )}
 

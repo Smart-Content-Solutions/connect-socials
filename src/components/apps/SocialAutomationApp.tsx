@@ -665,7 +665,7 @@ export default function SocialMediaTool() {
               transition={{ duration: 0.3 }}
               className="space-y-8"
             >
-              <DashboardContent />
+              <DashboardContent selectedPage={selectedFacebookPage} />
 
               <div className="flex items-center gap-3 mb-4">
                 <LinkIcon className="w-5 h-5 text-[#E1C37A]" />
