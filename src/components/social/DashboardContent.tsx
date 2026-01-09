@@ -14,55 +14,77 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
     const [realStats, setRealStats] = useState<any>(null);
     const [isLoadingRealData, setIsLoadingRealData] = useState(false);
 
+    const [apiError, setApiError] = useState<string | null>(null);
+
     // Watch for prop changes to fetch data
     useEffect(() => {
         if (selectedPage?.access_token) {
+            console.log("DEBUG: Fetching real data for page:", selectedPage.name);
             fetchRealFacebookData(selectedPage);
         } else {
             setRealPosts([]);
             setRealStats(null);
+            if (selectedPage) {
+                console.warn("DEBUG: No access_token found for selected page");
+                setApiError("No Page Access Token found. Please reconnect Facebook.");
+            }
         }
     }, [selectedPage]);
 
     const fetchRealFacebookData = async (page: FacebookPage) => {
         if (!page.access_token) return;
         setIsLoadingRealData(true);
+        setApiError(null);
         try {
             // 1. Fetch real posts
+            console.log("DEBUG: Requesting feed for ID:", page.id);
             const postsRes = await fetch(
                 `https://graph.facebook.com/v19.0/${page.id}/feed?fields=id,message,created_time,full_picture,type,caption,shares,comments.summary(true),likes.summary(true)&limit=5&access_token=${page.access_token}`
             );
             const postsData = await postsRes.json();
 
-            if (postsData.data) {
+            if (postsData.error) {
+                console.error("DEBUG: FB API Posts Error:", postsData.error);
+                throw new Error(postsData.error.message);
+            }
+
+            if (postsData.data && postsData.data.length > 0) {
+                console.log("DEBUG: Found posts from API:", postsData.data.length);
                 const formattedPosts = postsData.data.map((p: any) => ({
                     platform: "Facebook",
-                    content: p.message || "No content",
+                    content: p.message || "No text content",
                     engagement: `${p.likes?.summary?.total_count || 0} likes • ${p.comments?.summary?.total_count || 0} comments`,
                     time: new Date(p.created_time).toLocaleDateString(),
                     type: p.type || "text",
-                    caption: p.caption || "",
+                    caption: p.caption || "No caption data",
                     id: p.id
                 }));
                 setRealPosts(formattedPosts);
+            } else {
+                console.warn("DEBUG: API returned empty list for feed");
+                // We keep mock data but log the event
             }
 
             // 2. Fetch basic page metrics (Insights)
-            // Note: Insights require specific page categories, fallback to 0 if not available
             const insightsRes = await fetch(
                 `https://graph.facebook.com/v19.0/${page.id}/insights?metric=page_impressions_unique,page_post_engagements,page_fan_adds_unique&period=day&access_token=${page.access_token}`
             );
             const insightsData = await insightsRes.json();
 
-            if (insightsData.data) {
+            if (insightsData.error) {
+                console.error("DEBUG: FB API Insights Error:", insightsData.error);
+                // Don't throw here, just log, so posts still show
+            } else if (insightsData.data) {
+                console.log("DEBUG: Found insights data");
                 const statsMap: any = {};
                 insightsData.data.forEach((item: any) => {
                     statsMap[item.name] = item.values[0]?.value || 0;
                 });
                 setRealStats(statsMap);
             }
-        } catch (error) {
-            console.error("Error fetching real FB data:", error);
+        } catch (error: any) {
+            console.error("DEBUG: fetchRealFacebookData Exception:", error);
+            setApiError(error.message || "Failed to fetch data from Facebook.");
         } finally {
             setIsLoadingRealData(false);
         }
@@ -145,6 +167,19 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
                             <span>Fetching live data...</span>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* API Debug Error Display */}
+            {apiError && (
+                <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-start gap-3">
+                    <Info className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                        <h4 className="text-[#D6D7D8] font-semibold text-sm">Real Data Notice</h4>
+                        <p className="text-[#A9AAAC] text-xs mt-1">
+                            {apiError}. Showing example data instead.
+                        </p>
+                    </div>
                 </div>
             )}
 
