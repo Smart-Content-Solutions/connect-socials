@@ -41,10 +41,11 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
         setHasFetchedRealData(false); // reset before fetch
 
         try {
-            // 1. Fetch real posts
-            console.log("DEBUG: Requesting feed for ID:", page.id);
+            // 1. Fetch real posts + engagement
+            console.log("DEBUG: Requesting feed + engagement for ID:", page.id);
+            // We use summary(total_count) which is the modern way to get counts safely
             const postsRes = await fetch(
-                `https://graph.facebook.com/v19.0/${page.id}/feed?fields=id,message,created_time,full_picture&limit=5&access_token=${page.access_token}`
+                `https://graph.facebook.com/v19.0/${page.id}/feed?fields=id,message,created_time,full_picture,likes.summary(total_count),comments.summary(total_count)&limit=10&access_token=${page.access_token}`
             );
             const postsData = await postsRes.json();
 
@@ -55,16 +56,23 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
 
             if (postsData.data) {
                 console.log("DEBUG: Found posts from API:", postsData.data.length);
-                const formattedPosts = postsData.data.map((p: any) => ({
-                    platform: "Facebook",
-                    content: p.message || "No text content",
-                    engagement: "View on Facebook",
-                    time: new Date(p.created_time).toLocaleDateString(),
-                    type: p.full_picture ? "image" : "text",
-                    caption: "",
-                    id: p.id,
-                    image: p.full_picture || null
-                }));
+                const formattedPosts = postsData.data.map((p: any) => {
+                    const likeCount = p.likes?.summary?.total_count || 0;
+                    const commentCount = p.comments?.summary?.total_count || 0;
+
+                    return {
+                        platform: "Facebook",
+                        content: p.message || "No text content",
+                        engagement: `${likeCount} likes • ${commentCount} comments`,
+                        time: new Date(p.created_time).toLocaleDateString(),
+                        type: p.full_picture ? "image" : "text",
+                        caption: "",
+                        id: p.id,
+                        image: p.full_picture || null,
+                        likes: likeCount,
+                        comments: commentCount
+                    };
+                });
                 setRealPosts(formattedPosts);
                 setHasFetchedRealData(true); // Mark as successfully fetched (even if 0 items)
             }
@@ -94,13 +102,40 @@ export default function DashboardContent({ selectedPage }: DashboardContentProps
         }
     };
 
+    // Calculate aggregate engagement from posts
+    const totalLikes = realPosts.reduce((acc, p) => acc + (p.likes || 0), 0);
+    const totalComments = realPosts.reduce((acc, p) => acc + (p.comments || 0), 0);
 
     // Prioritize real data if available, otherwise fallback to mock
     const stats = selectedPage ? [
-        { label: "Page Likes", value: realStats?.page_fan_adds_unique?.toString() || "2,453", change: "+12%", icon: Facebook, color: "text-[#1877F2]" },
-        { label: "Post Reach", value: realStats?.page_impressions_unique?.toString() || "15.2K", change: "+24%", icon: Users, color: "text-green-500" },
-        { label: "Engagement", value: realStats?.page_post_engagements?.toString() || "892", change: "+8%", icon: Heart, color: "text-pink-500" },
-        { label: "Comments", value: "156", change: "+5%", icon: MessageCircle, color: "text-purple-500" },
+        {
+            label: hasFetchedRealData ? "Post Likes (Real)" : "Page Likes",
+            value: hasFetchedRealData ? totalLikes.toLocaleString() : (realStats?.page_fan_adds_unique?.toString() || "2,453"),
+            change: hasFetchedRealData ? "Live" : "+12%",
+            icon: Facebook,
+            color: "text-[#1877F2]"
+        },
+        {
+            label: "Post Reach",
+            value: realStats?.page_impressions_unique?.toString() || "15.2K",
+            change: "+24%",
+            icon: Users,
+            color: "text-green-500"
+        },
+        {
+            label: hasFetchedRealData ? "Engagement (Real)" : "Engagement",
+            value: hasFetchedRealData ? (totalLikes + totalComments).toLocaleString() : (realStats?.page_post_engagements?.toString() || "892"),
+            change: hasFetchedRealData ? "Live" : "+8%",
+            icon: Heart,
+            color: "text-pink-500"
+        },
+        {
+            label: hasFetchedRealData ? "Comments (Real)" : "Comments",
+            value: hasFetchedRealData ? totalComments.toLocaleString() : "156",
+            change: hasFetchedRealData ? "Live" : "+5%",
+            icon: MessageCircle,
+            color: "text-purple-500"
+        },
     ] : [
         { label: "Total Posts", value: "156", change: "+12%", icon: LayoutDashboard, color: "text-[#E1C37A]" },
         { label: "Engagement", value: "12.4K", change: "+8%", icon: Heart, color: "text-pink-500" },
