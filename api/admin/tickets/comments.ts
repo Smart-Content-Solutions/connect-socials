@@ -1,0 +1,162 @@
+import { clerkClient } from "@clerk/clerk-sdk-node";
+import { verifyToken } from "@clerk/backend";
+import { createClient } from "@supabase/supabase-js";
+import { sendTicketEmailEvent } from "../../utils/ticket-email";
+
+function getBearerToken(req: any): string | null {
+  const header = req.headers?.authorization || req.headers?.Authorization;
+  if (!header || typeof header !== "string") return null;
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match ? match[1] : null;
+}
+
+async function readJsonBody(req: any): Promise<any> {
+  if (req.body && typeof req.body === "object") return req.body;
+  if (req.body && typeof req.body === "string") {
+    try {
+      return JSON.parse(req.body);
+    } catch {
+      return null;
+    }
+  }
+
+  try {
+    const chunks: Buffer[] = [];
+    for await (const chunk of req) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    if (chunks.length === 0) return null;
+    const text = Buffer.concat(chunks).toString("utf8");
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+async function requireAdmin(req: any) {
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY");
+
+  const token = getBearerToken(req);
+  if (!token) {
+    return { ok: false as const, status: 401, error: "Missing Authorization token" };
+  }
+
+  const verified = await verifyToken(token, { secretKey });
+  const userId = (verified?.sub as string) || null;
+  if (!userId) {
+    return { ok: false as const, status: 401, error: "Invalid token" };
+  }
+
+  const user = await clerkClient.users.getUser(userId);
+  const role = (user.publicMetadata as any)?.role;
+
+  if (role !== "admin") {
+    return { ok: false as const, status: 403, error: "Admins only" };
+  }
+
+  return { ok: true as const, userId };
+}
+
+function getSupabaseServiceRole() {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Missing Supabase environment variables (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)");
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
+export default async function handler(req: any, res: any) {
+  res.setHeader("Content-Type", "application/json");
+
+  try {
+    const auth = await requireAdmin(req);
+    if (!auth.ok) {
+      return res.status(auth.status).json({ error: auth.error });
+    }
+
+    const { userId } = auth;
+    const supabase = getSupabaseServiceRole();
+    const ticketId = req.query?.ticketId || req.query?.id;
+
+    if (!ticketId) {
+      return res.status(400).json({ error: "Missing ticketId parameter" });
+    }
+
+    // Verify ticket exists and fetch full ticket data
+    const { data: ticket, error: ticketError } = await supabase
+      .from("tickets")
+      .select("*")
+      .eq("id", ticketId)
+      .single();
+
+    if (ticketError || !ticket) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
+
+    // POST: Create admin comment
+    if (req.method === "POST") {
+      const body = await readJsonBody(req);
+      if (!body) {
+        return res.status(400).json({ error: "Invalid JSON body" });
+      }
+
+      const { body: commentBody } = body;
+
+      if (!commentBody || typeof commentBody !== "string" || commentBody.trim().length === 0) {
+        return res.status(400).json({ error: "Comment body is required" });
+      }
+
+      // Insert comment with author_role='admin'
+      const { data: comment, error: commentError } = await supabase
+        .from("ticket_comments")
+        .insert({
+          ticket_id: ticketId,
+          author_user_id: userId,
+          author_role: "admin",
+          body: commentBody.trim(),
+        })
+        .select()
+        .single();
+
+      if (commentError) {
+        console.error("Error creating comment:", commentError);
+        return res.status(500).json({ error: commentError.message || "Failed to create comment" });
+      }
+
+      // Update ticket status to 'waiting_on_customer' and last_activity_at
+      // The trigger will update last_activity_at, but we'll also update status
+      const { data: updatedTicket } = await supabase
+        .from("tickets")
+        .update({
+          status: "waiting_on_customer",
+          last_activity_at: new Date().toISOString(),
+        })
+        .eq("id", ticketId)
+        .select()
+        .single();
+
+      // Send email notification (fire and forget - don't block response)
+      // Use updated ticket if available, otherwise use original ticket
+      const ticketForEmail = updatedTicket || ticket;
+      sendTicketEmailEvent("admin_replied", ticketForEmail, comment).catch((err) => {
+        console.error("[Admin/Tickets/Comments] Failed to send admin_replied email:", err);
+      });
+
+      return res.status(201).json({ comment });
+    }
+
+    return res.status(405).json({ error: "Method not allowed" });
+  } catch (err: any) {
+    console.error("admin/tickets/comments API error:", err);
+    return res.status(500).json({ error: err?.message || "Internal server error" });
+  }
+}

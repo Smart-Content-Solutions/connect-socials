@@ -58,6 +58,12 @@ import Login from "./pages/base44/Login";
 import NotFound from "./pages/NotFound";
 import WordpressAutomationApp from "./components/apps/WordpressAutomationApp";
 
+// ✅ Support
+import MyTickets from "./pages/support/MyTickets";
+import NewTicket from "./pages/support/NewTicket";
+import TicketDetail from "./pages/support/TicketDetail";
+import AdminTicketDetail from "./pages/admin/AdminTicketDetail";
+
 // ✅ Admin
 import AdminRoute from "./components/admin/AdminRoute";
 import { AdminLayout } from "./components/admin/AdminLayout";
@@ -330,6 +336,16 @@ const App = () => (
 
 
 
+            {/* ✅ ADMIN TICKET DETAIL (before catch-all admin route) */}
+            <Route
+              path="/admin/tickets/:id"
+              element={
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              }
+            />
+
             <Route
               path="/admin/*"
               element={
@@ -345,6 +361,38 @@ const App = () => (
                 <ProtectedRoute>
                   <Layout>
                     <Account />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+
+            {/* ✅ SUPPORT TICKETS */}
+            <Route
+              path="/support"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <MyTickets />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/support/new"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <NewTicket />
+                  </Layout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/support/:id"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <TicketDetail />
                   </Layout>
                 </ProtectedRoute>
               }

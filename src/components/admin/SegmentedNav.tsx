@@ -1,14 +1,14 @@
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Settings, CreditCard, LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, CreditCard, Ticket, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SegmentedNavProps {
-  activeSection: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'settings';
-  onSectionChange: (section: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'settings') => void;
+  activeSection: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'settings';
+  onSectionChange: (section: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'settings') => void;
 }
 
 interface NavItem {
-  id: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'settings';
+  id: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'settings';
   label: string;
   icon: LucideIcon;
 }
@@ -18,6 +18,7 @@ const navItems: NavItem[] = [
   { id: 'leads', label: 'Leads', icon: Users },
   { id: 'subscribers', label: 'Subscribers', icon: CreditCard },
   { id: 'users', label: 'Users', icon: Users },
+  { id: 'tickets', label: 'Tickets', icon: Ticket },
   { id: 'settings', label: 'Staff & Settings', icon: Settings },
 ];
 

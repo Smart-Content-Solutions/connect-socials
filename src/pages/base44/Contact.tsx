@@ -9,13 +9,18 @@ import {
   MessageSquare,
   Clock,
   CheckCircle,
+  Ticket,
+  LogIn,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import SectionHeading from "../../components/shared/SectionHeading";
+import { useUser } from "@clerk/clerk-react";
+import { Link } from "react-router-dom";
 
 export default function Contact() {
+  const { isSignedIn, isLoaded } = useUser();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -239,6 +244,59 @@ export default function Contact() {
               </div>
             </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* SUPPORT TICKETS SECTION */}
+      <section className="py-12">
+        <div className="max-w-6xl mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="glass-card rounded-3xl p-8"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <Ticket className="w-6 h-6 text-[#E1C37A]" />
+              <h3 className="text-xl font-semibold">Support Tickets</h3>
+            </div>
+
+            {!isLoaded ? (
+              <div className="text-center py-8">
+                <p className="text-[#A9AAAC]">Loading...</p>
+              </div>
+            ) : !isSignedIn ? (
+              <div className="text-center py-8">
+                <p className="text-[#D6D7D8] mb-6">
+                  Need help? Sign in to open a support ticket or view your existing tickets.
+                </p>
+                <Link to="/login">
+                  <Button className="btn-gold inline-flex items-center gap-2">
+                    <LogIn className="w-4 h-4" />
+                    Sign in to open a ticket
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link to="/support/new" className="flex-1">
+                  <Button className="btn-gold w-full inline-flex items-center justify-center gap-2">
+                    <Ticket className="w-4 h-4" />
+                    Open a Ticket
+                  </Button>
+                </Link>
+                <Link to="/support" className="flex-1">
+                  <Button
+                    variant="outline"
+                    className="w-full inline-flex items-center justify-center gap-2 border-[#3B3C3E] text-[#D6D7D8] hover:bg-[#2A2A2C]"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    View My Tickets
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </motion.div>
         </div>
       </section>
     </div>

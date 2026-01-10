@@ -12,11 +12,13 @@ import LeadDetailPage from '@/pages/admin/LeadDetailPage';
 import StrategyCallDetailPage from '@/pages/admin/StrategyCallDetailPage';
 import SubscribersPage from '@/pages/admin/subscriberspage'; // ✅ NEW
 import UsersPage from '@/pages/admin/UsersPage'; // ✅ ADD
+import AdminTicketsPage from '@/pages/admin/AdminTickets'; // ✅ ADD
+import AdminTicketDetail from '@/pages/admin/AdminTicketDetail'; // ✅ ADD
 import '@/styles/admin.css';
 
-type Section = 'dashboard' | 'leads' | 'subscribers' | 'users' | 'settings'; // ✅ ADD 'users'
+type Section = 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'settings'; // ✅ ADD 'tickets'
 
-const sectionOrder: Section[] = ['dashboard', 'leads', 'subscribers', 'users', 'settings']; // ✅ include users
+const sectionOrder: Section[] = ['dashboard', 'leads', 'subscribers', 'users', 'tickets', 'settings']; // ✅ include tickets
 
 const slideVariants = {
   enter: (direction: number) => ({
@@ -46,11 +48,17 @@ export function AdminLayout() {
     if (location.pathname.startsWith('/admin/strategy-calls/')) {
       return 'leads';
     }
+    if (location.pathname.startsWith('/admin/tickets/')) { // ✅ ADD: Check detail page first
+      return 'tickets';
+    }
     if (location.pathname === '/admin/subscribers') { // ✅ NEW
       return 'subscribers';
     }
     if (location.pathname === '/admin/users') { // ✅ ADD
       return 'users';
+    }
+    if (location.pathname === '/admin/tickets') { // ✅ ADD
+      return 'tickets';
     }
     if (location.pathname === '/admin/settings') {
       return 'settings';
@@ -81,6 +89,7 @@ export function AdminLayout() {
       else if (newSection === 'leads') navigate('/admin/leads');
       else if (newSection === 'subscribers') navigate('/admin/subscribers'); // ✅ NEW
       else if (newSection === 'users') navigate('/admin/users'); // ✅ ADD
+      else if (newSection === 'tickets') navigate('/admin/tickets'); // ✅ ADD
       else if (newSection === 'settings') navigate('/admin/settings');
     },
     [activeSection, navigate]
@@ -102,6 +111,11 @@ export function AdminLayout() {
         return <SubscribersPage />;
       case 'users': // ✅ ADD
         return <UsersPage />;
+      case 'tickets': // ✅ ADD
+        if (location.pathname.startsWith('/admin/tickets/') && location.pathname !== '/admin/tickets') {
+          return <AdminTicketDetail />;
+        }
+        return <AdminTicketsPage />;
       case 'settings':
         return <SettingsPage />;
       default:
