@@ -107,11 +107,8 @@ function ToolCard({
 
           {/* ================= CONTENT ================= */}
           <div className={!hasAccess ? "opacity-60" : ""}>
-            <div
-              className={`w-12 h-12 rounded-xl mb-4 flex items-center justify-center ${tier === "Corporate" ? "gold-gradient" : "metallic-gradient"
-                }`}
-            >
-              <Icon className="w-6 h-6 text-white" />
+            <div className="w-12 h-12 rounded-xl mb-4 flex items-center justify-center gold-gradient">
+              <Icon className="w-6 h-6 text-[#1A1A1C]" />
             </div>
 
             <div className="flex items-center gap-2 mb-2">
