@@ -38,9 +38,8 @@ export default function PricingCardsSection({
 
     setHighlightStyle({
       opacity: 1,
-      transform: `translate(${cardRect.left - gridRect.left}px, ${
-        cardRect.top - gridRect.top
-      }px)`,
+      transform: `translate(${cardRect.left - gridRect.left}px, ${cardRect.top - gridRect.top
+        }px)`,
       width: `${cardRect.width}px`,
       height: `${cardRect.height}px`,
     });
@@ -128,11 +127,10 @@ export default function PricingCardsSection({
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
                 onMouseEnter={() => setActiveIndex(index)}
-                className={`relative rounded-[2rem] border px-7 py-8 flex flex-col ${
-                  isActive
+                className={`relative rounded-[2rem] border px-7 py-8 flex flex-col ${isActive
                     ? "border-[#E1C37A] bg-[#141414]"
                     : "border-[#3B3C3E] bg-[#1A1A1C]"
-                }`}
+                  }`}
               >
                 <div className="w-14 h-14 rounded-2xl mb-6 flex items-center justify-center metallic-gradient">
                   <Icon className="w-7 h-7 text-[#1A1A1C]" />
@@ -164,28 +162,55 @@ export default function PricingCardsSection({
           })}
         </div>
 
-        <div className="relative z-10 mt-16 max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Early Access Plan
-          </h2>
-
-          <p className="text-[#A9AAAC] mb-6">
-            3-day free trial, then £20/month. Cancel anytime.
-          </p>
-
-          <div className="mb-8 inline-block">
-            <div className="flex gap-3 items-center justify-center text-left">
-              <Check className="w-5 h-5 text-[#E1C37A] flex-shrink-0" />
-              <span className="text-base text-[#D6D7D8]">WordPress SEO Optimisation and Post</span>
-            </div>
-          </div>
-
-          <button
-            onClick={handleStartTrial}
-            className="px-8 h-12 rounded-xl btn-gold"
+        <div className="relative z-10 mt-16 max-w-2xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="relative rounded-[2rem] border border-[#E1C37A] bg-gradient-to-br from-[#1A1A1C] to-[#141414] px-8 py-10"
+            style={{
+              boxShadow: "0 0 40px rgba(225,195,122,0.2)",
+            }}
           >
-            Start 3-Day Free Trial
-          </button>
+            {/* Header Section */}
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-white mb-3">
+                Early Access Plan
+              </h2>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <span className="text-4xl font-bold text-[#E1C37A]">£20</span>
+                <span className="text-[#A9AAAC]">/month</span>
+              </div>
+              <p className="text-sm text-[#A9AAAC]">
+                3-day free trial • Cancel anytime
+              </p>
+            </div>
+
+            {/* Features Section */}
+            <div className="mb-8 bg-[#0F0F0F]/50 rounded-2xl p-6 border border-[#2A2A2C]">
+              <h3 className="text-sm font-semibold text-[#E1C37A] uppercase tracking-wider mb-4">
+                Included Tools
+              </h3>
+              <div className="space-y-3">
+                <div className="flex gap-3 items-start">
+                  <Check className="w-5 h-5 text-[#E1C37A] flex-shrink-0 mt-0.5" />
+                  <span className="text-base text-[#D6D7D8]">
+                    WordPress SEO Optimisation and Post
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA Button */}
+            <div className="text-center">
+              <button
+                onClick={handleStartTrial}
+                className="w-full h-14 rounded-xl btn-gold text-base font-semibold hover:scale-[1.02] transition-transform"
+              >
+                Start 3-Day Free Trial
+              </button>
+            </div>
+          </motion.div>
         </div>
       </div>
     </section>
