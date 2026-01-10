@@ -6,23 +6,26 @@ import DashboardContent from './DashboardContent';
 import AnimatedBackground from './AnimatedBackground';
 import { WordPressSite } from './WordPressSiteCard';
 import { toast } from "sonner";
+import { useUser } from "@clerk/clerk-react";
 
 export default function WordPressTool() {
     const [activeTab, setActiveTab] = useState<'create' | 'dashboard'>('dashboard');
     const [sites, setSites] = useState<WordPressSite[]>([]);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+    const { user, isLoaded } = useUser();
+
     useEffect(() => {
-        // Load from localStorage
+        // 1. Load from localStorage first (for immediate instant load)
         const savedSites = localStorage.getItem('wordpress_sites');
-        let loadedSites: WordPressSite[] = [];
+        let localSites: WordPressSite[] = [];
         let hasMigration = false;
 
         if (savedSites) {
             try {
-                loadedSites = JSON.parse(savedSites);
+                localSites = JSON.parse(savedSites);
             } catch (e) {
-                console.error("Failed to parse sites", e);
+                console.error("Failed to parse sites from LS", e);
             }
         }
 
@@ -32,8 +35,7 @@ export default function WordPressTool() {
         const oldPass = localStorage.getItem('wp_app_password');
 
         if (oldUrl && oldUser && oldPass) {
-            // Check if already in array
-            const exists = loadedSites.find(s => s.site_url === oldUrl && s.username === oldUser);
+            const exists = localSites.find(s => s.site_url === oldUrl && s.username === oldUser);
             if (!exists) {
                 const newSite: WordPressSite = {
                     id: Date.now().toString(),
@@ -42,18 +44,39 @@ export default function WordPressTool() {
                     username: oldUser,
                     app_password: oldPass
                 };
-                loadedSites.push(newSite);
+                localSites.push(newSite);
                 hasMigration = true;
             }
         }
 
-        setSites(loadedSites);
+        // 2. If User is loaded and has cloud data, Prefer Cloud Data
+        if (isLoaded && user) {
+            const cloudSites = user.unsafeMetadata?.wordpress_sites as WordPressSite[] | undefined;
 
-        // If we migrated data, save it back to LS immediately so it persists properly
-        if (hasMigration) {
-            localStorage.setItem('wordpress_sites', JSON.stringify(loadedSites));
+            if (cloudSites && Array.isArray(cloudSites)) {
+                // Cloud has data - Use it (Source of Truth)
+                setSites(cloudSites);
+                // Sync Cloud -> Local (so it's ready next time)
+                localStorage.setItem('wordpress_sites', JSON.stringify(cloudSites));
+                return;
+            } else if (localSites.length > 0) {
+                // Cloud is empty, but Local has data -> Sync Local -> Cloud
+                user.update({
+                    unsafeMetadata: {
+                        ...user.unsafeMetadata,
+                        wordpress_sites: localSites
+                    }
+                }).catch(err => console.error("Auto-sync to cloud failed", err));
+            }
         }
-    }, []);
+
+        // Fallback: If no user or no cloud data yet, show local data
+        setSites(localSites);
+
+        if (hasMigration) {
+            localStorage.setItem('wordpress_sites', JSON.stringify(localSites));
+        }
+    }, [user, isLoaded]);
 
     useEffect(() => {
         if (scrollContainerRef.current) {
@@ -86,9 +109,26 @@ export default function WordPressTool() {
         }
     }, [activeTab]);
 
-    const saveSites = (newSites: WordPressSite[]) => {
+    const saveSites = async (newSites: WordPressSite[]) => {
+        // 1. Update State & Local Storage (Instant UI update)
         setSites(newSites);
         localStorage.setItem('wordpress_sites', JSON.stringify(newSites));
+
+        // 2. Sync to Cloud (Clerk User Metadata)
+        if (user) {
+            try {
+                await user.update({
+                    unsafeMetadata: {
+                        ...user.unsafeMetadata,
+                        wordpress_sites: newSites
+                    }
+                });
+                console.log("Synced sites to cloud account");
+            } catch (err) {
+                console.error("Failed to sync sites to cloud", err);
+                toast.error("Saved locally, but failed to sync to your account. Check connection.");
+            }
+        }
 
         // Also sync the first site to the old keys for backward compatibility
         if (newSites.length > 0) {
