@@ -70,6 +70,9 @@ import { AdminLayout } from "./components/admin/AdminLayout";
 import PlannerApp from "./planner_section/PlannerApp";
 import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
 
+// ✅ Feedback
+import FeedbackPrompt from "./components/feedback/FeedbackPrompt";
+
 
 // ✅ NEW: Stripe success / cancel pages
 import SuccessPage from "./pages/success/Index";
@@ -452,6 +455,9 @@ const App = () => (
             {/* ✅ 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+
+          {/* ✅ Global Feedback Prompt */}
+          <FeedbackPrompt />
         </BrowserRouter>
       </SubscriptionProvider>
     </TooltipProvider>

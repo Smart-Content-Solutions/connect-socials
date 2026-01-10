@@ -1,14 +1,14 @@
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Settings, CreditCard, Ticket, LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, CreditCard, Ticket, MessageCircle, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SegmentedNavProps {
-  activeSection: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'settings';
-  onSectionChange: (section: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'settings') => void;
+  activeSection: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'feedback' | 'settings';
+  onSectionChange: (section: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'feedback' | 'settings') => void;
 }
 
 interface NavItem {
-  id: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'settings';
+  id: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'feedback' | 'settings';
   label: string;
   icon: LucideIcon;
 }
@@ -19,6 +19,7 @@ const navItems: NavItem[] = [
   { id: 'subscribers', label: 'Subscribers', icon: CreditCard },
   { id: 'users', label: 'Users', icon: Users },
   { id: 'tickets', label: 'Tickets', icon: Ticket },
+  { id: 'feedback', label: 'Feedback', icon: MessageCircle },
   { id: 'settings', label: 'Staff & Settings', icon: Settings },
 ];
 

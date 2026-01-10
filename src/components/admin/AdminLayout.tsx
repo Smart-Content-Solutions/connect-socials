@@ -14,11 +14,12 @@ import SubscribersPage from '@/pages/admin/subscriberspage'; // ✅ NEW
 import UsersPage from '@/pages/admin/UsersPage'; // ✅ ADD
 import AdminTicketsPage from '@/pages/admin/AdminTickets'; // ✅ ADD
 import AdminTicketDetail from '@/pages/admin/AdminTicketDetail'; // ✅ ADD
+import AdminFeedbackPage from '@/pages/admin/AdminFeedback'; // ✅ ADD
 import '@/styles/admin.css';
 
-type Section = 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'settings'; // ✅ ADD 'tickets'
+type Section = 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'feedback' | 'settings'; // ✅ ADD 'feedback'
 
-const sectionOrder: Section[] = ['dashboard', 'leads', 'subscribers', 'users', 'tickets', 'settings']; // ✅ include tickets
+const sectionOrder: Section[] = ['dashboard', 'leads', 'subscribers', 'users', 'tickets', 'feedback', 'settings']; // ✅ include feedback
 
 const slideVariants = {
   enter: (direction: number) => ({
@@ -60,6 +61,9 @@ export function AdminLayout() {
     if (location.pathname === '/admin/tickets') { // ✅ ADD
       return 'tickets';
     }
+    if (location.pathname === '/admin/feedback') { // ✅ ADD
+      return 'feedback';
+    }
     if (location.pathname === '/admin/settings') {
       return 'settings';
     }
@@ -90,6 +94,7 @@ export function AdminLayout() {
       else if (newSection === 'subscribers') navigate('/admin/subscribers'); // ✅ NEW
       else if (newSection === 'users') navigate('/admin/users'); // ✅ ADD
       else if (newSection === 'tickets') navigate('/admin/tickets'); // ✅ ADD
+      else if (newSection === 'feedback') navigate('/admin/feedback'); // ✅ ADD
       else if (newSection === 'settings') navigate('/admin/settings');
     },
     [activeSection, navigate]
@@ -116,6 +121,8 @@ export function AdminLayout() {
           return <AdminTicketDetail />;
         }
         return <AdminTicketsPage />;
+      case 'feedback': // ✅ ADD
+        return <AdminFeedbackPage />;
       case 'settings':
         return <SettingsPage />;
       default:

@@ -17,10 +17,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import SectionHeading from "../../components/shared/SectionHeading";
 import { useUser } from "@clerk/clerk-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import FeedbackForm from "../../components/feedback/FeedbackForm";
+import { MessageCircle } from "lucide-react";
 
 export default function Contact() {
   const { isSignedIn, isLoaded } = useUser();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -296,6 +299,27 @@ export default function Contact() {
                 </Link>
               </div>
             )}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* FEEDBACK SECTION */}
+      <section className="py-12">
+        <div className="max-w-6xl mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="glass-card rounded-3xl p-8"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <MessageCircle className="w-6 h-6 text-[#E1C37A]" />
+              <h3 className="text-xl font-semibold">Feedback</h3>
+            </div>
+            <p className="text-[#A9AAAC] mb-6">
+              Help us improve Smart Content Solutions by sharing your feedback.
+            </p>
+            <FeedbackForm pageUrl={`${window.location.origin}${location.pathname}${location.search}`} />
           </motion.div>
         </div>
       </section>
