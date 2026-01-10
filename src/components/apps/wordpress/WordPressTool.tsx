@@ -37,9 +37,17 @@ export default function WordPressTool() {
         if (oldUrl && oldUser && oldPass) {
             const exists = localSites.find(s => s.site_url === oldUrl && s.username === oldUser);
             if (!exists) {
+                let hostname = oldUrl;
+                try {
+                    hostname = new URL(oldUrl).hostname;
+                } catch (e) {
+                    // If URL is invalid (e.g. missing https://), just use the string as-is
+                    console.warn("Invalid saved URL, using raw string", oldUrl);
+                }
+
                 const newSite: WordPressSite = {
                     id: Date.now().toString(),
-                    site_name: new URL(oldUrl).hostname,
+                    site_name: hostname,
                     site_url: oldUrl,
                     username: oldUser,
                     app_password: oldPass
