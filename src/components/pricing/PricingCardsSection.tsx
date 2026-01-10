@@ -173,6 +173,13 @@ export default function PricingCardsSection({
             3-day free trial, then £20/month. Cancel anytime.
           </p>
 
+          <div className="mb-8 inline-block">
+            <div className="flex gap-3 items-center justify-center text-left">
+              <Check className="w-5 h-5 text-[#E1C37A] flex-shrink-0" />
+              <span className="text-base text-[#D6D7D8]">WordPress SEO Optimisation and Post</span>
+            </div>
+          </div>
+
           <button
             onClick={handleStartTrial}
             className="px-8 h-12 rounded-xl btn-gold"
