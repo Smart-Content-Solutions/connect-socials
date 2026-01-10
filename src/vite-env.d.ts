@@ -11,3 +11,8 @@ interface ImportMeta {
 }
 
 declare module 'heic2any';
+
+interface Window {
+  SpeechRecognition: any;
+  webkitSpeechRecognition: any;
+}

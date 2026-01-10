@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Loader2, Send, AlertCircle, CheckCircle, Globe, Info } from 'lucide-react';
+import { FileText, Loader2, Send, AlertCircle, CheckCircle, Globe, Info, Mic, MicOff } from 'lucide-react';
 import GlassCard from './GlassCard';
 import GoldButton from './GoldButton';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,88 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
     const [showSuccess, setShowSuccess] = useState(false);
     const [isTopicFocused, setIsTopicFocused] = useState(false);
     const [progress, setProgress] = useState(0);
+
+    // Voice Input State
+    const [isListening, setIsListening] = useState(false);
+    const recognitionRef = React.useRef<any>(null);
+
+    const toggleVoiceInput = () => {
+        if (isListening) {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+            setIsListening(false);
+        } else {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                toast.error("Voice input is not supported in this browser. Please use Chrome or Edge.");
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                setIsListening(true);
+                toast.info("Listening... Speak now.");
+            };
+
+            recognition.onerror = (event: any) => {
+                console.error("Speech recognition error", event.error);
+                setIsListening(false);
+                toast.error("Voice input failed. Please try again.");
+            };
+
+            recognition.onend = () => {
+                setIsListening(false);
+            };
+
+            let finalTranscript = topic; // Start with existing text
+            // If the field was empty, we start fresh. If not, we might want to append a space if needed.
+            if (finalTranscript && !finalTranscript.endsWith(' ')) {
+                finalTranscript += ' ';
+            }
+
+            const initialText = finalTranscript; // Snapshot of text before this session
+
+            recognition.onresult = (event: any) => {
+                let interimTranscript = '';
+                let newFinalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        newFinalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+
+                // We update the state with: Initial Text + Any New Final Segments + Current Interim
+                // This is a bit simplified, but works for basic dictation.
+                // A better way for pure "append" is just to accumulate.
+
+                // Let's just append the *current* session's result to the *initial* text.
+                // But `event.results` contains everything since `start()` if continuous=true? 
+                // actually event.resultIndex tells us where the new results start.
+                // Web Speech API is tricky. 
+
+                // Simpler approach for React Controlled Input:
+                // Just use the latest result from the api which usually accumulates if continuous=true?
+                // No, continuous=true means it keeps going, but results array grows.
+
+                const currentTranscript = Array.from(event.results)
+                    .map((result: any) => result[0].transcript)
+                    .join('');
+
+                setTopic(initialText + currentTranscript);
+            };
+
+            recognitionRef.current = recognition;
+            recognition.start();
+        }
+    };
 
     useEffect(() => {
         // Select the first site by default if none selected and sites exist
@@ -237,7 +319,31 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
                         <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Post Content</h3>
                         <div className="space-y-4">
                             <div className="space-y-2">
-                                <label className="text-sm text-gray-400">Topic / Title</label>
+                                <div className="flex items-center justify-between">
+                                    <label className="text-sm text-gray-400">Topic / Title</label>
+                                    <button
+                                        onClick={toggleVoiceInput}
+                                        className={cn(
+                                            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-300",
+                                            isListening
+                                                ? "bg-red-500/20 text-red-400 border border-red-500/50 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.4)]"
+                                                : "bg-[#E1C37A]/10 text-[#E1C37A] border border-[#E1C37A]/20 hover:bg-[#E1C37A]/20"
+                                        )}
+                                        title={isListening ? "Stop Listening" : "Start Voice Input"}
+                                    >
+                                        {isListening ? (
+                                            <>
+                                                <MicOff className="w-3 h-3" />
+                                                <span>Listening...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Mic className="w-3 h-3" />
+                                                <span>Voice Input</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
                                 <textarea
                                     className="w-full p-4 rounded-xl bg-[#1A1A1C] border border-[#333] text-white focus:border-[#E1C37A] transition-colors"
                                     rows={3}
