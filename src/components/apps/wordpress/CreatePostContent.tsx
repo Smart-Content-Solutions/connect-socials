@@ -65,12 +65,27 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
             recognition.onerror = (event: any) => {
                 console.error("Speech recognition error", event.error);
                 setIsListening(false);
-                toast.error("Voice input failed. Please try again.");
+
+                if (event.error === 'network') {
+                    toast.error("Network error: Please check your internet connection. Voice input requires online access.");
+                } else if (event.error === 'not-allowed') {
+                    toast.error("Microphone access denied. Please allow microphone permissions in your browser settings.");
+                } else if (event.error === 'no-speech') {
+                    toast.error("No speech detected. Please try again.");
+                } else {
+                    toast.error(`Voice input failed (${event.error}). Please try again.`);
+                }
             };
 
             recognition.onend = () => {
                 setIsListening(false);
             };
+
+            // Check for internet connection first
+            if (!navigator.onLine) {
+                toast.error("You are offline. Voice input requires an internet connection.");
+                return;
+            }
 
             let finalTranscript = topic; // Start with existing text
             // If the field was empty, we start fresh. If not, we might want to append a space if needed.
