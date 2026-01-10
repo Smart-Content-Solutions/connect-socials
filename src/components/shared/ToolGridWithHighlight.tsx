@@ -111,7 +111,7 @@ function ToolCard({
               className={`w-12 h-12 rounded-xl mb-4 flex items-center justify-center ${tier === "Corporate" ? "gold-gradient" : "metallic-gradient"
                 }`}
             >
-              <Icon className="w-6 h-6 text-[#1A1A1C]" />
+              <Icon className="w-6 h-6 text-white" />
             </div>
 
             <div className="flex items-center gap-2 mb-2">
