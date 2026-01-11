@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { LayoutDashboard, Users, Settings, CreditCard, Ticket, MessageCircle, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useRef, useLayoutEffect, useState } from 'react';
 
 interface SegmentedNavProps {
   activeSection: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'feedback' | 'settings';
@@ -25,7 +26,34 @@ const navItems: NavItem[] = [
 
 export function SegmentedNav({ activeSection, onSectionChange }: SegmentedNavProps) {
   const activeIndex = navItems.findIndex(item => item.id === activeSection);
-  const itemCount = navItems.length;
+  const containerRef = useRef<HTMLDivElement>(null);
+  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0 });
+
+  useLayoutEffect(() => {
+    const measureIndicator = () => {
+      const container = containerRef.current;
+      const activeEl = itemRefs.current[activeIndex];
+      
+      if (!container || !activeEl || activeIndex < 0) return;
+      
+      const containerRect = container.getBoundingClientRect();
+      const activeRect = activeEl.getBoundingClientRect();
+      
+      setIndicatorStyle({
+        left: activeRect.left - containerRect.left,
+        width: activeRect.width,
+      });
+    };
+
+    // Use requestAnimationFrame to ensure DOM is fully laid out
+    requestAnimationFrame(() => {
+      measureIndicator();
+    });
+    
+    window.addEventListener('resize', measureIndicator);
+    return () => window.removeEventListener('resize', measureIndicator);
+  }, [activeIndex]);
 
   return (
     <motion.div
@@ -34,16 +62,15 @@ export function SegmentedNav({ activeSection, onSectionChange }: SegmentedNavPro
       transition={{ duration: 0.3, delay: 0.15 }}
       className="flex justify-center px-6 py-4"
     >
-      <div className="relative glass rounded-xl p-1.5 flex gap-1">
+      <div ref={containerRef} className="relative glass rounded-xl p-1.5 flex gap-1">
         {/* Sliding indicator */}
-        {activeIndex >= 0 && (
+        {activeIndex >= 0 && indicatorStyle.width > 0 && (
           <motion.div
             className="absolute top-1.5 bottom-1.5 rounded-lg bg-gold-gradient gold-glow-sm"
-            layoutId="segmentIndicator"
             initial={false}
-            style={{
-              width: `calc((100% - 12px) / ${itemCount})`,
-              left: `calc(${activeIndex * (100 / itemCount)}% + 6px)`,
+            animate={{
+              x: indicatorStyle.left,
+              width: indicatorStyle.width,
             }}
             transition={{
               type: 'spring',
@@ -53,13 +80,14 @@ export function SegmentedNav({ activeSection, onSectionChange }: SegmentedNavPro
           />
         )}
 
-        {navItems.map((item) => {
+        {navItems.map((item, index) => {
           const isActive = activeSection === item.id;
           const IconComponent = item.icon;
 
           return (
             <button
               key={item.id}
+              ref={(el) => (itemRefs.current[index] = el)}
               onClick={() => onSectionChange(item.id)}
               className={cn(
                 'relative z-10 flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200',
