@@ -21,19 +21,27 @@ type Section = 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'fe
 
 const sectionOrder: Section[] = ['dashboard', 'leads', 'subscribers', 'users', 'tickets', 'feedback', 'settings']; // ✅ include feedback
 
+// Slide animation variants matching WordPress tool feel
 const slideVariants = {
   enter: (direction: number) => ({
-    x: direction > 0 ? 80 : -80,
-    opacity: 0,
+    x: direction > 0 ? 24 : -24,
+    opacity: 0.85,
   }),
   center: {
     x: 0,
     opacity: 1,
   },
   exit: (direction: number) => ({
-    x: direction > 0 ? -80 : 80,
-    opacity: 0,
+    x: direction > 0 ? -24 : 24,
+    opacity: 0.85,
   }),
+};
+
+// Reduced motion variants (for accessibility)
+const reducedMotionVariants = {
+  enter: { opacity: 0 },
+  center: { opacity: 1 },
+  exit: { opacity: 0 },
 };
 
 export function AdminLayout() {
@@ -72,6 +80,20 @@ export function AdminLayout() {
 
   const [activeSection, setActiveSection] = useState<Section>(getInitialSection);
   const [direction, setDirection] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  // Check for reduced motion preference
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setPrefersReducedMotion(e.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   // Sync active section with URL changes
   useEffect(() => {
@@ -79,6 +101,7 @@ export function AdminLayout() {
     if (section !== activeSection) {
       setActiveSection(section);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
   const handleSectionChange = useCallback(
@@ -153,14 +176,18 @@ export function AdminLayout() {
             <motion.div
               key={activeSection}
               custom={direction}
-              variants={slideVariants}
+              variants={prefersReducedMotion ? reducedMotionVariants : slideVariants}
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{
-                x: { type: 'tween', duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
-                opacity: { duration: 0.25 },
-              }}
+              transition={
+                prefersReducedMotion
+                  ? { duration: 0.2, ease: 'easeInOut' }
+                  : {
+                      x: { type: 'tween', duration: 0.35, ease: [0.25, 0.1, 0.25, 1] },
+                      opacity: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
+                    }
+              }
               className="will-change-transform"
             >
               {renderSection}
