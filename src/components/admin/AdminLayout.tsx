@@ -1,6 +1,5 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { MinimalSidebar } from './MinimalSidebar';
 import { AdminHeader } from './AdminHeader';
 import { AnimatedBackground } from './AnimatedBackground';
@@ -21,33 +20,12 @@ type Section = 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'fe
 
 const sectionOrder: Section[] = ['dashboard', 'leads', 'subscribers', 'users', 'tickets', 'feedback', 'settings']; // ✅ include feedback
 
-// Slide animation variants matching WordPress tool feel
-const slideVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? 24 : -24,
-    opacity: 0.85,
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-  },
-  exit: (direction: number) => ({
-    x: direction > 0 ? -24 : 24,
-    opacity: 0.85,
-  }),
-};
-
-// Reduced motion variants (for accessibility)
-const reducedMotionVariants = {
-  enter: { opacity: 0 },
-  center: { opacity: 1 },
-  exit: { opacity: 0 },
-};
+// Easing function matching WordPress tool
+const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 export function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
 
   // Determine initial section from URL
   const getInitialSection = (): Section => {
@@ -79,21 +57,8 @@ export function AdminLayout() {
   };
 
   const [activeSection, setActiveSection] = useState<Section>(getInitialSection);
-  const [direction, setDirection] = useState(0);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
-
-  // Check for reduced motion preference
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setPrefersReducedMotion(mediaQuery.matches);
-
-    const handleChange = (e: MediaQueryListEvent) => {
-      setPrefersReducedMotion(e.matches);
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isInitialMount = useRef(true);
 
   // Sync active section with URL changes
   useEffect(() => {
@@ -104,11 +69,48 @@ export function AdminLayout() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
+  // Scroll animation effect - matches WordPress tool behavior
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const activeIndex = sectionOrder.indexOf(activeSection);
+      const scrollTo = scrollContainerRef.current.clientWidth * activeIndex;
+
+      // On initial mount, set position immediately without animation
+      if (isInitialMount.current) {
+        scrollContainerRef.current.scrollLeft = scrollTo;
+        isInitialMount.current = false;
+        return;
+      }
+
+      // Otherwise, animate the scroll
+      const start = scrollContainerRef.current.scrollLeft;
+      const end = scrollTo;
+      const duration = 800;
+      const startTime = performance.now();
+
+      const animateScroll = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeInOutCubic(progress);
+
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollLeft = start + (end - start) * easedProgress;
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        }
+      };
+
+      requestAnimationFrame(animateScroll);
+
+      // Scroll page to top on section change
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [activeSection]);
+
   const handleSectionChange = useCallback(
     (newSection: Section) => {
-      const currentIndex = sectionOrder.indexOf(activeSection);
-      const newIndex = sectionOrder.indexOf(newSection);
-      setDirection(newIndex > currentIndex ? 1 : -1);
       setActiveSection(newSection);
 
       // Update URL for bookmarking/refresh support
@@ -120,11 +122,12 @@ export function AdminLayout() {
       else if (newSection === 'feedback') navigate('/admin/feedback'); // ✅ ADD
       else if (newSection === 'settings') navigate('/admin/settings');
     },
-    [activeSection, navigate]
+    [navigate]
   );
 
-  const renderSection = useMemo(() => {
-    switch (activeSection) {
+  // Render content for a specific section (handles detail routes)
+  const renderSectionContent = useCallback((section: Section) => {
+    switch (section) {
       case 'dashboard':
         return <Dashboard />;
       case 'leads':
@@ -135,23 +138,23 @@ export function AdminLayout() {
           return <StrategyCallDetailPage />;
         }
         return <LeadsPage />;
-      case 'subscribers': // ✅ NEW
+      case 'subscribers':
         return <SubscribersPage />;
-      case 'users': // ✅ ADD
+      case 'users':
         return <UsersPage />;
-      case 'tickets': // ✅ ADD
+      case 'tickets':
         if (location.pathname.startsWith('/admin/tickets/') && location.pathname !== '/admin/tickets') {
           return <AdminTicketDetail />;
         }
         return <AdminTicketsPage />;
-      case 'feedback': // ✅ ADD
+      case 'feedback':
         return <AdminFeedbackPage />;
       case 'settings':
         return <SettingsPage />;
       default:
         return <Dashboard />;
     }
-  }, [activeSection, location.pathname]);
+  }, [location.pathname]);
 
   return (
     <div className="admin-theme min-h-screen bg-background">
@@ -170,29 +173,23 @@ export function AdminLayout() {
           onSectionChange={handleSectionChange}
         />
 
-        {/* Main Content with horizontal slide animation */}
-        <main className="flex-1 px-6 pb-6 overflow-hidden">
-          <AnimatePresence mode="wait" custom={direction} initial={false}>
-            <motion.div
-              key={activeSection}
-              custom={direction}
-              variants={prefersReducedMotion ? reducedMotionVariants : slideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={
-                prefersReducedMotion
-                  ? { duration: 0.2, ease: 'easeInOut' }
-                  : {
-                      x: { type: 'tween', duration: 0.35, ease: [0.25, 0.1, 0.25, 1] },
-                      opacity: { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] },
-                    }
-              }
-              className="will-change-transform"
-            >
-              {renderSection}
-            </motion.div>
-          </AnimatePresence>
+        {/* Main Content with horizontal scroll slide animation */}
+        <main className="flex-1 overflow-hidden">
+          <div
+            ref={scrollContainerRef}
+            className="flex overflow-x-hidden scroll-smooth h-full"
+            style={{ scrollSnapType: 'x mandatory' }}
+          >
+            {sectionOrder.map((section) => (
+              <section
+                key={section}
+                className="w-full flex-shrink-0 px-6 pb-6"
+                style={{ scrollSnapAlign: 'start' }}
+              >
+                {renderSectionContent(section)}
+              </section>
+            ))}
+          </div>
         </main>
       </div>
     </div>
