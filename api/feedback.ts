@@ -1,6 +1,7 @@
 import { clerkClient } from "@clerk/clerk-sdk-node";
 import { verifyToken } from "@clerk/backend";
 import { createClient } from "@supabase/supabase-js";
+import { sendFeedbackNotification } from "./utils/feedback-notifications";
 
 function getBearerToken(req: any): string | null {
   const header = req.headers?.authorization || req.headers?.Authorization;
@@ -150,7 +151,7 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    const { sendFeedbackNotification } = await import("./utils/feedback-notifications");
+    // Send notification (fire and forget)
     sendFeedbackNotification(data).catch((err) => {
       console.error("[Feedback] Failed to send notification:", err);
     });
