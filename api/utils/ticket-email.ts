@@ -27,6 +27,9 @@ interface TicketEmailPayload {
     author_role: string;
     created_at: string;
   };
+  // Pre-formatted messages to make n8n setup easier
+  email_body_html: string;
+  email_subject: string;
   recipients: {
     userEmail: string | null;
     supportEmail: string;
@@ -55,6 +58,48 @@ export async function sendTicketEmailEvent(
   }
 
   try {
+    const userTicketUrl = `${BASE_URL}/support/${ticket.id}`;
+    const adminTicketUrl = `${BASE_URL}/admin/tickets/${ticket.id}`;
+
+    // Generate context-aware email content
+    let emailSubject = `Update on Ticket: ${ticket.subject}`;
+    let emailBodyHtml = `<p>There is an update on your ticket.</p>`;
+
+    if (event === "ticket_created") {
+      emailSubject = `Ticket Received: ${ticket.subject}`;
+      emailBodyHtml = `
+        <p>Hi ${ticket.created_by_name || 'there'},</p>
+        <p>We have received your ticket <strong>"${ticket.subject}"</strong>.</p>
+        <p>Our team will review it shortly. You can view the status of your ticket here:</p>
+        <p><a href="${userTicketUrl}">View Ticket</a></p>
+        <hr />
+        <p><strong>Description:</strong></p>
+        <p>${ticket.description}</p>
+      `;
+    } else if (event === "ticket_status_updated") {
+      emailSubject = `Ticket Status Updated: ${ticket.subject}`;
+      emailBodyHtml = `
+        <p>Hi ${ticket.created_by_name || 'there'},</p>
+        <p>The status of your ticket <strong>"${ticket.subject}"</strong> has been updated to <strong>${ticket.status.toUpperCase().replace(/_/g, " ")}</strong>.</p>
+        <p><a href="${userTicketUrl}">View Ticket</a></p>
+      `;
+    } else if (event === "admin_replied") {
+      emailSubject = `New Reply: ${ticket.subject}`;
+      emailBodyHtml = `
+        <p>Hi ${ticket.created_by_name || 'there'},</p>
+        <p>Support has replied to your ticket:</p>
+        <blockquote>${comment?.body || 'New comment'}</blockquote>
+        <p><a href="${userTicketUrl}">Click here to reply</a></p>
+      `;
+    } else if (event === "user_replied") {
+      emailSubject = `User Replied: ${ticket.subject}`;
+      emailBodyHtml = `
+        <p>User <strong>${ticket.created_by_name}</strong> replied:</p>
+        <blockquote>${comment?.body || 'New comment'}</blockquote>
+        <p><a href="${adminTicketUrl}">View in Admin Dashboard</a></p>
+      `;
+    }
+
     const payload: TicketEmailPayload = {
       event,
       ticket: {
@@ -73,14 +118,16 @@ export async function sendTicketEmailEvent(
         assigned_to_email: ticket.assigned_to_email || null,
         assigned_to_name: ticket.assigned_to_name || null,
       },
+      email_body_html: emailBodyHtml,
+      email_subject: emailSubject,
       recipients: {
         userEmail: ticket.created_by_email || null,
         supportEmail,
         assignedAdminEmail: ticket.assigned_to_email || null,
       },
       links: {
-        userTicketUrl: `${BASE_URL}/support/${ticket.id}`,
-        adminTicketUrl: `${BASE_URL}/admin/tickets/${ticket.id}`,
+        userTicketUrl,
+        adminTicketUrl,
       },
     };
 
