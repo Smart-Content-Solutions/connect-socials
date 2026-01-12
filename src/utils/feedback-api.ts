@@ -31,14 +31,16 @@ export async function submitFeedback(
       }),
     });
 
-    // Handle response - try to parse as JSON first
+    // Read response body as text first (can only read once)
+    const responseText = await response.text();
+
+    // Try to parse as JSON
     let responseData: any;
     try {
-      responseData = await response.json();
+      responseData = responseText ? JSON.parse(responseText) : {};
     } catch (parseError) {
-      // If JSON parse fails, try reading as text
-      const text = await response.text();
-      throw new Error(`Server error: ${text || response.statusText || "Unknown error"}`);
+      // If JSON parse fails, throw error with the text response
+      throw new Error(`Server error: ${responseText || response.statusText || "Unknown error"}`);
     }
 
     if (!response.ok) {
