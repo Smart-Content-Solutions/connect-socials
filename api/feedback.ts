@@ -1,7 +1,7 @@
 import { clerkClient } from "@clerk/clerk-sdk-node";
 import { verifyToken } from "@clerk/backend";
 import { createClient } from "@supabase/supabase-js";
-import { sendFeedbackNotification } from "./utils/feedback-notifications";
+import { sendFeedbackNotification } from "./utils/feedback-notifications.js";
 
 function getBearerToken(req: any): string | null {
   const header = req.headers?.authorization || req.headers?.Authorization;
