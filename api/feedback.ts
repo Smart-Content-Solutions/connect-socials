@@ -47,7 +47,6 @@ async function requireAuth(req: any) {
     return { ok: false as const, status: 401, error: "Invalid token" };
   }
 
-  // Get user info for feedback creation
   const user = await clerkClient.users.getUser(userId);
   const primaryEmail =
     user.emailAddresses?.find((e: any) => e.id === user.primaryEmailAddressId)?.emailAddress ||
@@ -79,7 +78,6 @@ export default async function handler(req: any, res: any) {
   res.setHeader("Content-Type", "application/json");
 
   try {
-    // Only POST method supported
     if (req.method !== "POST") {
       return res.status(405).json({ error: "Method not allowed" });
     }
@@ -99,7 +97,6 @@ export default async function handler(req: any, res: any) {
 
     const { rating, category, message, pageUrl } = body;
 
-    // Validation
     if (!rating || typeof rating !== "number" || rating < 1 || rating > 5) {
       return res.status(400).json({
         error: "Invalid or missing rating",
@@ -138,8 +135,8 @@ export default async function handler(req: any, res: any) {
         message: message.trim(),
         page_url: pageUrl ? pageUrl.trim() : null,
         user_id: userId,
-        user_email: email || null, // Handle missing email gracefully
-        user_name: name || null, // Handle missing name gracefully
+        user_email: email || null, 
+        user_name: name || null,
         status: "new",
       })
       .select()
@@ -153,7 +150,6 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // Send notification (fire and forget)
     const { sendFeedbackNotification } = await import("./utils/feedback-notifications");
     sendFeedbackNotification(data).catch((err) => {
       console.error("[Feedback] Failed to send notification:", err);
