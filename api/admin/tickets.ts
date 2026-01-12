@@ -224,6 +224,13 @@ export default async function handler(req: any, res: any) {
         });
       }
 
+      // Send email notification for status changes
+      if (updates.status) {
+        sendTicketEmailEvent("ticket_status_updated", data).catch((err) => {
+          console.error("[Admin Tickets] Failed to send status update email:", err);
+        });
+      }
+
       return res.status(200).json({ ticket: data });
     }
 

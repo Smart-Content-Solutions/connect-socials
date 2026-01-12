@@ -1,13 +1,14 @@
 // Server-side utility for sending ticket email notifications via n8n webhook
 // This is a fire-and-forget operation - errors should not break ticket operations
 
-type TicketEmailEvent = "ticket_created" | "user_replied" | "admin_replied" | "ticket_assigned";
+type TicketEmailEvent = "ticket_created" | "user_replied" | "admin_replied" | "ticket_assigned" | "ticket_status_updated";
 
 interface TicketEmailPayload {
   event: TicketEmailEvent;
   ticket: {
     id: string;
     subject: string;
+    description: string;
     type: string;
     status: string;
     priority: string;
@@ -59,6 +60,7 @@ export async function sendTicketEmailEvent(
       ticket: {
         id: ticket.id,
         subject: ticket.subject,
+        description: ticket.description,
         type: ticket.type,
         status: ticket.status,
         priority: ticket.priority,
