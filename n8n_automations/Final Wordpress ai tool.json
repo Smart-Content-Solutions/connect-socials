@@ -249,7 +249,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"meta\": {\n    \"_yoast_wpseo_title\": \"{{ $json.meta_title }}\",\n    \"_yoast_wpseo_metadesc\": \"{{ $json.meta_description }}\"\n  }\n}",
+        "jsonBody": "={\n  \"meta\": {\n    \"rank_math_title\": \"{{ $json.meta_title }}\",\n    \"rank_math_description\": \"{{ $json.meta_description }}\",\n    \"rank_math_focus_keyword\": \"{{ $json.keyword_strategy[0] || $json.keywords.split(',')[0] }}\",\n    \"_rank_math_title\": \"{{ $json.meta_title }}\",\n    \"_rank_math_description\": \"{{ $json.meta_description }}\",\n    \"_rank_math_focus_keyword\": \"{{ $json.keyword_strategy[0] || $json.keywords.split(',')[0] }}\"\n  }\n}",
         "options": {
           "response": {
             "response": {
@@ -259,7 +259,7 @@
         }
       },
       "id": "bf73926e-3492-4189-b4d9-16abf43bad76",
-      "name": "Inject Yoast Meta Tags",
+      "name": "Inject Rank Math SEO Data",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -362,7 +362,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{\n{\ntitle: $json.seo_title,\nslug: $json.slug,\ncontent: $(\"Assemble Article HTML\").item.json.article_html,\nstatus: \"draft\",\nfeatured_media: $json.featured_media || 0\n}\n}}",
+        "jsonBody": "={{\n{\ntitle: $json.seo_title,\nslug: $json.slug,\ncontent: $(\"Assemble Article HTML\").item.json.article_html,\nstatus: \"draft\",\nfeatured_media: $json.featured_media || 0,\nmeta: {\n  rank_math_title: $(\"Assemble Article HTML\").item.json.meta_title,\n  rank_math_description: $(\"Assemble Article HTML\").item.json.meta_description,\n  rank_math_focus_keyword: $(\"Assemble Article HTML\").item.json.keyword_strategy[0] || $(\"Assemble Article HTML\").item.json.keywords.split(',')[0],\n  _rank_math_title: $(\"Assemble Article HTML\").item.json.meta_title,\n  _rank_math_description: $(\"Assemble Article HTML\").item.json.meta_description,\n  _rank_math_focus_keyword: $(\"Assemble Article HTML\").item.json.keyword_strategy[0] || $(\"Assemble Article HTML\").item.json.keywords.split(',')[0]\n}\n}\n}}",
         "options": {
           "response": {
             "response": {
