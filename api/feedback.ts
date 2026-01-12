@@ -101,31 +101,31 @@ export default async function handler(req: any, res: any) {
 
     // Validation
     if (!rating || typeof rating !== "number" || rating < 1 || rating > 5) {
-      return res.status(400).json({ 
-        error: "Invalid or missing rating", 
-        details: "Rating must be a number between 1 and 5" 
+      return res.status(400).json({
+        error: "Invalid or missing rating",
+        details: "Rating must be a number between 1 and 5"
       });
     }
 
     if (!category || !["General", "Bug", "Feature", "Billing"].includes(category)) {
-      return res.status(400).json({ 
-        error: "Invalid or missing category", 
-        details: "Category must be one of: General, Bug, Feature, Billing" 
+      return res.status(400).json({
+        error: "Invalid or missing category",
+        details: "Category must be one of: General, Bug, Feature, Billing"
       });
     }
 
     if (!message || typeof message !== "string" || message.trim().length === 0) {
-      return res.status(400).json({ 
-        error: "Message is required", 
-        details: "Message cannot be empty" 
+      return res.status(400).json({
+        error: "Message is required",
+        details: "Message cannot be empty"
       });
     }
 
     // pageUrl is optional, but if provided should be a valid string
     if (pageUrl !== undefined && (typeof pageUrl !== "string" || pageUrl.trim().length === 0)) {
-      return res.status(400).json({ 
-        error: "Invalid pageUrl", 
-        details: "pageUrl must be a non-empty string if provided" 
+      return res.status(400).json({
+        error: "Invalid pageUrl",
+        details: "pageUrl must be a non-empty string if provided"
       });
     }
 
@@ -147,18 +147,24 @@ export default async function handler(req: any, res: any) {
 
     if (error) {
       console.error("Error creating feedback:", error);
-      return res.status(500).json({ 
-        error: error.message || "Failed to create feedback", 
-        details: "Database error occurred" 
+      return res.status(500).json({
+        error: error.message || "Failed to create feedback",
+        details: "Database error occurred"
       });
     }
+
+    // Send notification (fire and forget)
+    const { sendFeedbackNotification } = await import("./utils/feedback-notifications");
+    sendFeedbackNotification(data).catch((err) => {
+      console.error("[Feedback] Failed to send notification:", err);
+    });
 
     return res.status(201).json({ feedback: data });
   } catch (err: any) {
     console.error("feedback API error:", err);
-    return res.status(500).json({ 
-      error: err?.message || "Internal server error", 
-      details: "An unexpected error occurred" 
+    return res.status(500).json({
+      error: err?.message || "Internal server error",
+      details: "An unexpected error occurred"
     });
   }
 }
