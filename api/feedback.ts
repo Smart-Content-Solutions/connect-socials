@@ -76,29 +76,69 @@ function getSupabaseServiceRole() {
 }
 
 export default async function handler(req: any, res: any) {
+  // Set CORS headers for production
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
+  res.setHeader("Access-Control-Allow-Headers", "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization");
   res.setHeader("Content-Type", "application/json");
 
+  // Handle OPTIONS request
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
   try {
+    console.log("[Feedback API] Request received:", req.method);
+
     if (req.method !== "POST") {
+      console.log("[Feedback API] Method not allowed:", req.method);
       return res.status(405).json({ error: "Method not allowed" });
     }
 
+    // Check environment variables
+    console.log("[Feedback API] Checking environment variables...");
+    const hasClerkKey = !!(process.env.CLERK_SECRET_KEY || process.env.VITE_CLERK_SECRET_KEY);
+    const hasSupabaseUrl = !!(process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL);
+    const hasSupabaseKey = !!(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY);
+
+    console.log("[Feedback API] Environment check:", { hasClerkKey, hasSupabaseUrl, hasSupabaseKey });
+
+    if (!hasClerkKey) {
+      console.error("[Feedback API] Missing Clerk secret key");
+      return res.status(500).json({ error: "Server configuration error: Missing authentication key" });
+    }
+
+    if (!hasSupabaseUrl || !hasSupabaseKey) {
+      console.error("[Feedback API] Missing Supabase credentials");
+      return res.status(500).json({ error: "Server configuration error: Missing database credentials" });
+    }
+
+    console.log("[Feedback API] Authenticating user...");
     const auth = await requireAuth(req);
     if (!auth.ok) {
+      console.log("[Feedback API] Authentication failed:", auth.error);
       return res.status(auth.status).json({ error: auth.error });
     }
 
     const { userId, email, name } = auth;
+    console.log("[Feedback API] User authenticated:", { userId, email, name });
+
+    console.log("[Feedback API] Initializing Supabase client...");
     const supabase = getSupabaseServiceRole();
 
+    console.log("[Feedback API] Reading request body...");
     const body = await readJsonBody(req);
     if (!body) {
+      console.log("[Feedback API] Invalid JSON body");
       return res.status(400).json({ error: "Invalid JSON body", details: "Request body must be valid JSON" });
     }
 
     const { rating, category, message, pageUrl } = body;
+    console.log("[Feedback API] Request data:", { rating, category, messageLength: message?.length, pageUrl });
 
     if (!rating || typeof rating !== "number" || rating < 1 || rating > 5) {
+      console.log("[Feedback API] Invalid rating:", rating);
       return res.status(400).json({
         error: "Invalid or missing rating",
         details: "Rating must be a number between 1 and 5"
@@ -106,6 +146,7 @@ export default async function handler(req: any, res: any) {
     }
 
     if (!category || !["General", "Bug", "Feature", "Billing"].includes(category)) {
+      console.log("[Feedback API] Invalid category:", category);
       return res.status(400).json({
         error: "Invalid or missing category",
         details: "Category must be one of: General, Bug, Feature, Billing"
@@ -113,6 +154,7 @@ export default async function handler(req: any, res: any) {
     }
 
     if (!message || typeof message !== "string" || message.trim().length === 0) {
+      console.log("[Feedback API] Invalid message");
       return res.status(400).json({
         error: "Message is required",
         details: "Message cannot be empty"
@@ -121,6 +163,7 @@ export default async function handler(req: any, res: any) {
 
     // pageUrl is optional, but if provided should be a valid string
     if (pageUrl !== undefined && (typeof pageUrl !== "string" || pageUrl.trim().length === 0)) {
+      console.log("[Feedback API] Invalid pageUrl:", pageUrl);
       return res.status(400).json({
         error: "Invalid pageUrl",
         details: "pageUrl must be a non-empty string if provided"
@@ -128,6 +171,7 @@ export default async function handler(req: any, res: any) {
     }
 
     // Insert feedback into Supabase
+    console.log("[Feedback API] Inserting feedback into database...");
     const { data, error } = await supabase
       .from("feedback")
       .insert({
@@ -144,12 +188,15 @@ export default async function handler(req: any, res: any) {
       .single();
 
     if (error) {
-      console.error("Error creating feedback:", error);
+      console.error("[Feedback API] Database error:", error);
       return res.status(500).json({
         error: error.message || "Failed to create feedback",
-        details: "Database error occurred"
+        details: "Database error occurred",
+        code: error.code
       });
     }
+
+    console.log("[Feedback API] Feedback created successfully:", data?.id);
 
     // Send notification (fire and forget)
     sendFeedbackNotification(data).catch((err) => {
@@ -158,10 +205,12 @@ export default async function handler(req: any, res: any) {
 
     return res.status(201).json({ feedback: data });
   } catch (err: any) {
-    console.error("feedback API error:", err);
+    console.error("[Feedback API] Unexpected error:", err);
+    console.error("[Feedback API] Error stack:", err?.stack);
     return res.status(500).json({
       error: err?.message || "Internal server error",
-      details: "An unexpected error occurred"
+      details: "An unexpected error occurred",
+      stack: process.env.NODE_ENV === "development" ? err?.stack : undefined
     });
   }
 }
