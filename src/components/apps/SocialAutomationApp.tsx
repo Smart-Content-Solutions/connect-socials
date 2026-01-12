@@ -676,138 +676,262 @@ export default function SocialMediaTool() {
             >
               <DashboardContent selectedPage={selectedFacebookPage} />
 
-              <div className="flex items-center gap-3 mb-4">
-                <LinkIcon className="w-5 h-5 text-[#E1C37A]" />
-                <h3 className="text-lg font-semibold text-[#D6D7D8]">Connected Accounts</h3>
-                <span className="px-2 py-0.5 rounded-full bg-[#E1C37A]/10 text-[#E1C37A] text-sm">
-                  {connectedCount} / {ALL_PLATFORMS.length}
-                </span>
-              </div>
+              {/* Connected Accounts — Post Image */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <LinkIcon className="w-5 h-5 text-[#E1C37A]" />
+                  <h3 className="text-lg font-semibold text-[#D6D7D8]">Connected Accounts — Post Image</h3>
+                  <span className="px-2 py-0.5 rounded-full bg-[#E1C37A]/10 text-[#E1C37A] text-sm">
+                    {connectedCount} / {ALL_PLATFORMS.length}
+                  </span>
+                </div>
+                <p className="text-sm text-[#A9AAAC] mb-6">Manage accounts for image posts</p>
 
-              <div
-                ref={gridRef}
-                className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-                onMouseLeave={handleGridMouseLeave}
-              >
                 <div
-                  className="absolute pointer-events-none rounded-2xl hidden md:block"
-                  style={{
-                    opacity: highlightStyle.opacity,
-                    transform: highlightStyle.transform,
-                    width: highlightStyle.width,
-                    height: highlightStyle.height,
-                    background: 'linear-gradient(135deg, rgba(225, 195, 122, 0.15) 0%, rgba(182, 148, 76, 0.1) 100%)',
-                    boxShadow: '0 0 40px rgba(225, 195, 122, 0.35), 0 0 80px rgba(212, 175, 55, 0.2)',
-                    border: '1px solid rgba(225, 195, 122, 0.25)',
-                    transition: 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    zIndex: 0,
-                  }}
-                />
+                  ref={gridRef}
+                  className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                  onMouseLeave={handleGridMouseLeave}
+                >
+                  <div
+                    className="absolute pointer-events-none rounded-2xl hidden md:block"
+                    style={{
+                      opacity: highlightStyle.opacity,
+                      transform: highlightStyle.transform,
+                      width: highlightStyle.width,
+                      height: highlightStyle.height,
+                      background: 'linear-gradient(135deg, rgba(225, 195, 122, 0.15) 0%, rgba(182, 148, 76, 0.1) 100%)',
+                      boxShadow: '0 0 40px rgba(225, 195, 122, 0.35), 0 0 80px rgba(212, 175, 55, 0.2)',
+                      border: '1px solid rgba(225, 195, 122, 0.25)',
+                      transition: 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      zIndex: 0,
+                    }}
+                  />
 
-                {ALL_PLATFORMS.map((p) => {
-                  const connected = p.isConnected();
-                  const Icon = p.icon;
-                  const color = platformColors[p.id] || '#E1C37A';
+                  {ALL_PLATFORMS.map((p) => {
+                    const connected = p.isConnected();
+                    const Icon = p.icon;
+                    const color = platformColors[p.id] || '#E1C37A';
 
-                  return (
-                    <div
-                      key={p.id}
-                      onMouseEnter={handleCardMouseEnter}
-                      className="relative z-10 p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 hover:border-[#E1C37A]/20 transition-all duration-300"
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <div
-                          className="w-12 h-12 rounded-xl flex items-center justify-center"
-                          style={{ backgroundColor: `${color}20` }}
-                        >
-                          <Icon className="w-6 h-6" style={{ color }} />
-                        </div>
-                        <div className="flex gap-2">
-                          {connected && (
-                            <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
-                              <CheckCircle className="w-4 h-4 text-[#1A1A1C]" />
-                            </div>
-                          )}
-                          {connected && p.id === "bluesky" && (
-                            <button
-                              onClick={() => {
-                                setIsEditingBluesky(true);
-                                handleBlueskyConnect();
-                              }}
-                              className="w-6 h-6 rounded-full bg-[#E1C37A]/20 flex items-center justify-center hover:bg-[#E1C37A]/30 transition-colors"
-                              title="Edit credentials"
-                            >
-                              <Edit2 className="w-3 h-3 text-[#E1C37A]" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      <h3 className="text-[#D6D7D8] font-semibold text-lg mb-1">{p.name}</h3>
-                      <p className="text-[#5B5C60] text-sm mb-4">
-                        {connected
-                          ? (p.id === 'facebook' && selectedFacebookPage
-                            ? `Page: ${selectedFacebookPage.name}`
-                            : 'Connected')
-                          : 'Not connected'}
-                      </p>
-
-                      {p.connect && (
-                        <div className="space-y-2">
-                          {connected && p.id === 'facebook' ? (
-                            <>
-                              <button
-                                onClick={() => setShowFacebookPagesModal(true)}
-                                className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
-                              >
-                                <LayoutDashboard className="w-4 h-4" />
-                                {selectedFacebookPage ? "Switch Page" : "Select Page"}
-                              </button>
+                    return (
+                      <div
+                        key={p.id}
+                        onMouseEnter={handleCardMouseEnter}
+                        className="relative z-10 p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 hover:border-[#E1C37A]/20 transition-all duration-300"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div
+                            className="w-12 h-12 rounded-xl flex items-center justify-center"
+                            style={{ backgroundColor: `${color}20` }}
+                          >
+                            <Icon className="w-6 h-6" style={{ color }} />
+                          </div>
+                          <div className="flex gap-2">
+                            {connected && (
+                              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
+                                <CheckCircle className="w-4 h-4 text-[#1A1A1C]" />
+                              </div>
+                            )}
+                            {connected && p.id === "bluesky" && (
                               <button
                                 onClick={() => {
-                                  if (confirm("Disconnect Facebook?")) {
-                                    p.disconnect?.();
-                                    setSelectedFacebookPage(null);
-                                    localStorage.removeItem('facebook_selected_page');
-                                  }
+                                  setIsEditingBluesky(true);
+                                  handleBlueskyConnect();
                                 }}
-                                className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
+                                className="w-6 h-6 rounded-full bg-[#E1C37A]/20 flex items-center justify-center hover:bg-[#E1C37A]/30 transition-colors"
+                                title="Edit credentials"
                               >
-                                Disconnect
+                                <Edit2 className="w-3 h-3 text-[#E1C37A]" />
                               </button>
-                            </>
-                          ) : (
-                            <button
-                              onClick={() => {
-                                setLoadingPlatform(p.id);
-                                connected ? p.disconnect?.() : p.connect();
-                                setTimeout(() => setLoadingPlatform(null), 1200);
-                              }}
-                              className={`w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 ${connected
-                                ? 'bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10'
-                                : 'bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] hover:shadow-[0_0_20px_rgba(225,195,122,0.3)]'
-                                }`}
-                            >
-                              {loadingPlatform === p.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : connected ? (
-                                <>
-                                  <Unlink className="w-4 h-4" />
-                                  Disconnect
-                                </>
-                              ) : (
-                                <>
-                                  <LinkIcon className="w-4 h-4" />
-                                  Connect
-                                </>
-                              )}
-                            </button>
-                          )}
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+
+                        <h3 className="text-[#D6D7D8] font-semibold text-lg mb-1">{p.name}</h3>
+                        <p className="text-[#5B5C60] text-sm mb-4">
+                          {connected
+                            ? (p.id === 'facebook' && selectedFacebookPage
+                              ? `Page: ${selectedFacebookPage.name}`
+                              : 'Connected')
+                            : 'Not connected'}
+                        </p>
+
+                        {p.connect && (
+                          <div className="space-y-2">
+                            {connected && p.id === 'facebook' ? (
+                              <>
+                                <button
+                                  onClick={() => setShowFacebookPagesModal(true)}
+                                  className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
+                                >
+                                  <LayoutDashboard className="w-4 h-4" />
+                                  {selectedFacebookPage ? "Switch Page" : "Select Page"}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm("Disconnect Facebook?")) {
+                                      p.disconnect?.();
+                                      setSelectedFacebookPage(null);
+                                      localStorage.removeItem('facebook_selected_page');
+                                    }
+                                  }}
+                                  className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
+                                >
+                                  Disconnect
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setLoadingPlatform(p.id);
+                                  connected ? p.disconnect?.() : p.connect();
+                                  setTimeout(() => setLoadingPlatform(null), 1200);
+                                }}
+                                className={`w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 ${connected
+                                  ? 'bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10'
+                                  : 'bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] hover:shadow-[0_0_20px_rgba(225,195,122,0.3)]'
+                                  }`}
+                              >
+                                {loadingPlatform === p.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : connected ? (
+                                  <>
+                                    <Unlink className="w-4 h-4" />
+                                    Disconnect
+                                  </>
+                                ) : (
+                                  <>
+                                    <LinkIcon className="w-4 h-4" />
+                                    Connect
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Connected Accounts — Post Video */}
+              <div className="mt-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <LinkIcon className="w-5 h-5 text-[#E1C37A]" />
+                  <h3 className="text-lg font-semibold text-[#D6D7D8]">Connected Accounts — Post Video</h3>
+                  <span className="px-2 py-0.5 rounded-full bg-[#E1C37A]/10 text-[#E1C37A] text-sm">
+                    {connectedCount} / {ALL_PLATFORMS.length}
+                  </span>
+                </div>
+                <p className="text-sm text-[#A9AAAC] mb-6">Manage accounts for short-form video posting</p>
+
+                <div
+                  className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                >
+                  {ALL_PLATFORMS.map((p) => {
+                    const connected = p.isConnected();
+                    const Icon = p.icon;
+                    const color = platformColors[p.id] || '#E1C37A';
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="relative z-10 p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 hover:border-[#E1C37A]/20 transition-all duration-300"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div
+                            className="w-12 h-12 rounded-xl flex items-center justify-center"
+                            style={{ backgroundColor: `${color}20` }}
+                          >
+                            <Icon className="w-6 h-6" style={{ color }} />
+                          </div>
+                          <div className="flex gap-2">
+                            {connected && (
+                              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
+                                <CheckCircle className="w-4 h-4 text-[#1A1A1C]" />
+                              </div>
+                            )}
+                            {connected && p.id === "bluesky" && (
+                              <button
+                                onClick={() => {
+                                  setIsEditingBluesky(true);
+                                  handleBlueskyConnect();
+                                }}
+                                className="w-6 h-6 rounded-full bg-[#E1C37A]/20 flex items-center justify-center hover:bg-[#E1C37A]/30 transition-colors"
+                                title="Edit credentials"
+                              >
+                                <Edit2 className="w-3 h-3 text-[#E1C37A]" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <h3 className="text-[#D6D7D8] font-semibold text-lg mb-1">{p.name}</h3>
+                        <p className="text-[#5B5C60] text-sm mb-4">
+                          {connected
+                            ? (p.id === 'facebook' && selectedFacebookPage
+                              ? `Page: ${selectedFacebookPage.name}`
+                              : 'Connected')
+                            : 'Not connected'}
+                        </p>
+
+                        {p.connect && (
+                          <div className="space-y-2">
+                            {connected && p.id === 'facebook' ? (
+                              <>
+                                <button
+                                  onClick={() => setShowFacebookPagesModal(true)}
+                                  className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
+                                >
+                                  <LayoutDashboard className="w-4 h-4" />
+                                  {selectedFacebookPage ? "Switch Page" : "Select Page"}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm("Disconnect Facebook?")) {
+                                      p.disconnect?.();
+                                      setSelectedFacebookPage(null);
+                                      localStorage.removeItem('facebook_selected_page');
+                                    }
+                                  }}
+                                  className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
+                                >
+                                  Disconnect
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setLoadingPlatform(p.id);
+                                  connected ? p.disconnect?.() : p.connect();
+                                  setTimeout(() => setLoadingPlatform(null), 1200);
+                                }}
+                                className={`w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 ${connected
+                                  ? 'bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10'
+                                  : 'bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] hover:shadow-[0_0_20px_rgba(225,195,122,0.3)]'
+                                  }`}
+                              >
+                                {loadingPlatform === p.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : connected ? (
+                                  <>
+                                    <Unlink className="w-4 h-4" />
+                                    Disconnect
+                                  </>
+                                ) : (
+                                  <>
+                                    <LinkIcon className="w-4 h-4" />
+                                    Connect
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </motion.div>
           ) : activeTab === 'create' ? (
