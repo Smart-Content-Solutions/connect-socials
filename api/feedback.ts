@@ -33,8 +33,8 @@ async function readJsonBody(req: any): Promise<any> {
 }
 
 async function requireAuth(req: any) {
-  const secretKey = process.env.CLERK_SECRET_KEY;
-  if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY");
+  const secretKey = process.env.CLERK_SECRET_KEY || process.env.VITE_CLERK_SECRET_KEY;
+  if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY or VITE_CLERK_SECRET_KEY");
 
   const token = getBearerToken(req);
   if (!token) {
@@ -60,10 +60,10 @@ async function requireAuth(req: any) {
 
 function getSupabaseServiceRole() {
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Missing Supabase environment variables (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)");
+    throw new Error("Missing Supabase environment variables (URL or KEY)");
   }
 
   return createClient(supabaseUrl, serviceRoleKey, {
@@ -135,7 +135,7 @@ export default async function handler(req: any, res: any) {
         message: message.trim(),
         page_url: pageUrl ? pageUrl.trim() : null,
         user_id: userId,
-        user_email: email || null, 
+        user_email: email || null,
         user_name: name || null,
         status: "new",
       })

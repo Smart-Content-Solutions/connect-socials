@@ -33,8 +33,8 @@ async function readJsonBody(req: any): Promise<any> {
 }
 
 async function requireAdmin(req: any) {
-  const secretKey = process.env.CLERK_SECRET_KEY;
-  if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY");
+  const secretKey = process.env.CLERK_SECRET_KEY || process.env.VITE_CLERK_SECRET_KEY;
+  if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY or VITE_CLERK_SECRET_KEY");
 
   const token = getBearerToken(req);
   if (!token) {
@@ -59,10 +59,10 @@ async function requireAdmin(req: any) {
 
 function getSupabaseServiceRole() {
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("Missing Supabase environment variables (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)");
+    throw new Error("Missing Supabase environment variables (URL or KEY)");
   }
 
   return createClient(supabaseUrl, serviceRoleKey, {
@@ -100,9 +100,9 @@ export default async function handler(req: any, res: any) {
             return res.status(404).json({ error: "Feedback not found" });
           }
           console.error("Error fetching feedback:", error);
-          return res.status(500).json({ 
-            error: error.message || "Failed to fetch feedback", 
-            details: "Database error occurred" 
+          return res.status(500).json({
+            error: error.message || "Failed to fetch feedback",
+            details: "Database error occurred"
           });
         }
 
@@ -116,17 +116,17 @@ export default async function handler(req: any, res: any) {
 
       // Validate limit
       if (isNaN(limit) || limit < 1 || limit > 500) {
-        return res.status(400).json({ 
-          error: "Invalid limit", 
-          details: "Limit must be a number between 1 and 500" 
+        return res.status(400).json({
+          error: "Invalid limit",
+          details: "Limit must be a number between 1 and 500"
         });
       }
 
       // Validate status if provided
       if (status && !["new", "reviewed", "actioned"].includes(status)) {
-        return res.status(400).json({ 
-          error: "Invalid status", 
-          details: "Status must be one of: new, reviewed, actioned" 
+        return res.status(400).json({
+          error: "Invalid status",
+          details: "Status must be one of: new, reviewed, actioned"
         });
       }
 
@@ -155,9 +155,9 @@ export default async function handler(req: any, res: any) {
 
       if (error) {
         console.error("Error fetching feedback:", error);
-        return res.status(500).json({ 
-          error: error.message || "Failed to fetch feedback", 
-          details: "Database error occurred" 
+        return res.status(500).json({
+          error: error.message || "Failed to fetch feedback",
+          details: "Database error occurred"
         });
       }
 
@@ -181,9 +181,9 @@ export default async function handler(req: any, res: any) {
       // Validate and set status if provided
       if (status !== undefined) {
         if (!["new", "reviewed", "actioned"].includes(status)) {
-          return res.status(400).json({ 
-            error: "Invalid status", 
-            details: "Status must be one of: new, reviewed, actioned" 
+          return res.status(400).json({
+            error: "Invalid status",
+            details: "Status must be one of: new, reviewed, actioned"
           });
         }
         updates.status = status;
@@ -192,9 +192,9 @@ export default async function handler(req: any, res: any) {
       // Validate and set admin_notes if provided
       if (adminNotes !== undefined) {
         if (typeof adminNotes !== "string") {
-          return res.status(400).json({ 
-            error: "Invalid adminNotes", 
-            details: "adminNotes must be a string" 
+          return res.status(400).json({
+            error: "Invalid adminNotes",
+            details: "adminNotes must be a string"
           });
         }
         // Allow null/empty string to clear notes
@@ -203,9 +203,9 @@ export default async function handler(req: any, res: any) {
 
       // Check if there are any valid updates
       if (Object.keys(updates).length === 0) {
-        return res.status(400).json({ 
-          error: "No valid fields to update", 
-          details: "Must provide at least one of: status, adminNotes" 
+        return res.status(400).json({
+          error: "No valid fields to update",
+          details: "Must provide at least one of: status, adminNotes"
         });
       }
 
@@ -222,9 +222,9 @@ export default async function handler(req: any, res: any) {
         if (error.code === "PGRST116") {
           return res.status(404).json({ error: "Feedback not found" });
         }
-        return res.status(500).json({ 
-          error: error.message || "Failed to update feedback", 
-          details: "Database error occurred" 
+        return res.status(500).json({
+          error: error.message || "Failed to update feedback",
+          details: "Database error occurred"
         });
       }
 
@@ -234,9 +234,9 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: "Method not allowed" });
   } catch (err: any) {
     console.error("admin/feedback API error:", err);
-    return res.status(500).json({ 
-      error: err?.message || "Internal server error", 
-      details: "An unexpected error occurred" 
+    return res.status(500).json({
+      error: err?.message || "Internal server error",
+      details: "An unexpected error occurred"
     });
   }
 }
