@@ -198,10 +198,12 @@ export default async function handler(req: any, res: any) {
 
     console.log("[Feedback API] Feedback created successfully:", data?.id);
 
-    // Send notification (fire and forget)
-    sendFeedbackNotification(data).catch((err) => {
+    // Send notification (await to ensure execution in serverless environment)
+    try {
+      await sendFeedbackNotification(data);
+    } catch (err) {
       console.error("[Feedback] Failed to send notification:", err);
-    });
+    }
 
     return res.status(201).json({ feedback: data });
   } catch (err: any) {
