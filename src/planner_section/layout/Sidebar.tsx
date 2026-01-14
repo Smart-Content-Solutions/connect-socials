@@ -1,5 +1,5 @@
 import { LayoutDashboard, FileText, CheckSquare, Settings, CalendarCheck } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 export const navItems = [
@@ -16,14 +16,15 @@ export function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border hidden lg:flex flex-col z-50">
       {/* Logo */}
+      {/* Logo */}
       <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-        <div className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <img src="/icon.png" alt="SCS Logo" className="w-8 h-8 object-contain" />
           <span className="text-xl font-semibold tracking-tight">
             <span className="text-gold">SCS</span>
             <span className="text-silver ml-1">Workspace</span>
           </span>
-        </div>
+        </Link>
       </div>
 
       {/* Navigation */}

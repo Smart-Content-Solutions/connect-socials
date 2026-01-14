@@ -1,5 +1,5 @@
 import { Search, ChevronDown, LogOut, Menu } from "lucide-react";
-import { useLocation, NavLink } from "react-router-dom";
+import { useLocation, NavLink, Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useSearch } from "../store/DataProvider";
@@ -65,13 +65,13 @@ export function TopBar() {
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-72 bg-[hsl(240,5%,10%)] border-[hsl(240,5%,18%)] planner-theme">
             <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-              <div className="flex items-center gap-2">
+              <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
                 <img src="/icon.png" alt="SCS Logo" className="w-8 h-8 object-contain" />
                 <span className="text-xl font-semibold tracking-tight">
                   <span className="text-gold">SCS</span>
                   <span className="text-silver ml-1">Workspace</span>
                 </span>
-              </div>
+              </Link>
             </div>
             <nav className="flex-1 px-3 py-4 space-y-1">
               {navItems.map((item) => {
