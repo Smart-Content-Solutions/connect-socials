@@ -129,6 +129,8 @@ export default function CreatePostContent(): JSX.Element {
 
     if (postMode === "schedule") {
       form.append("scheduled_time", scheduledTime);
+      // Send user's browser timezone so the backend can convert to UTC correctly
+      form.append("user_timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
     }
 
     if (imageFile) {

@@ -329,6 +329,8 @@ export default function SocialMediaTool() {
 
     if (postMode === "schedule") {
       form.append("scheduled_time", scheduledTime);
+      // Send user's browser timezone so backend can convert to UTC correctly
+      form.append("user_timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
     }
 
     if (imageFile) {
