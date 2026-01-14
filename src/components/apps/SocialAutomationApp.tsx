@@ -328,10 +328,23 @@ export default function SocialMediaTool() {
     form.append("use_ai", aiEnhance ? "yes" : "no");
 
     if (postMode === "schedule") {
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      console.log("=== SCHEDULING DEBUG ===");
+      console.log("Scheduled Time (input):", scheduledTime);
+      console.log("User Timezone:", userTimezone);
+      console.log("========================");
       form.append("scheduled_time", scheduledTime);
       // Send user's browser timezone so backend can convert to UTC correctly
-      form.append("user_timezone", Intl.DateTimeFormat().resolvedOptions().timeZone);
+      form.append("user_timezone", userTimezone);
     }
+
+    // Log all form data being sent
+    console.log("=== FORM DATA BEING SENT ===");
+    for (let [key, value] of form.entries()) {
+      console.log(`${key}:`, value);
+    }
+    console.log("============================");
+
 
     if (imageFile) {
       form.append("image", imageFile);
