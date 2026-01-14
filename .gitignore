@@ -26,5 +26,4 @@ dist-ssr
 
 .env
 n8n_automations/
-wordpress-plugin/
 docs/
