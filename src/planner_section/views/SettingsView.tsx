@@ -1,5 +1,6 @@
 import { Settings, User, Bell, Shield, Palette } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AISiteIndexer } from "../components/AISiteIndexer";
 
 const settingSections = [
   { icon: User, label: "Profile", description: "Manage your account details" },
@@ -13,8 +14,10 @@ export function SettingsView() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-1">Manage your workspace preferences.</p>
+        <p className="text-muted-foreground mt-1">Manage your workspace preferences & AI Integrations.</p>
       </div>
+
+      <AISiteIndexer />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {settingSections.map((section) => (
