@@ -13,6 +13,8 @@ export function AISiteIndexer() {
     wp_url: '',
     wp_username: '',
     wp_app_password: '',
+    company_name: '',
+    cta_details: '',
     brand_voice: '',
     target_audience: '',
     preferred_style: 'Professional yet conversational'
@@ -111,9 +113,34 @@ export function AISiteIndexer() {
           </div>
         </div>
 
-        {/* AI Personality */}
+     
         <div className="space-y-5 pt-4 border-t border-white/5">
-          <h3 className="text-xs font-bold text-[#E1C37A] uppercase tracking-widest">AI Personality</h3>
+          <h3 className="text-xs font-bold text-[#E1C37A] uppercase tracking-widest">AI Personality & Identity</h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <Label htmlFor="company_name" className="text-[#D6D7D8]">Company Name</Label>
+              <Input
+                id="company_name"
+                name="company_name"
+                placeholder="e.g. Smart Content Solutions"
+                value={formData.company_name}
+                onChange={handleChange}
+                className="bg-[#1A1A1C] border-[#333] text-[#D6D7D8] placeholder:text-[#555] focus:border-[#E1C37A] focus:ring-[#E1C37A]/20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cta_details" className="text-[#D6D7D8]">Contact / Call to Action</Label>
+              <Input
+                id="cta_details"
+                name="cta_details"
+                placeholder="e.g. Call 020 1234 5678 or book a demo."
+                value={formData.cta_details}
+                onChange={handleChange}
+                className="bg-[#1A1A1C] border-[#333] text-[#D6D7D8] placeholder:text-[#555] focus:border-[#E1C37A] focus:ring-[#E1C37A]/20"
+              />
+            </div>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="brand_voice" className="text-[#D6D7D8]">Brand Voice</Label>
