@@ -55,56 +55,56 @@ export function AISiteIndexer() {
   };
 
   return (
-    <Card className="bg-card border-border border-l-4 border-l-gold shadow-lg">
+    <Card className="bg-[#3B3C3E]/20 border border-white/5 shadow-xl backdrop-blur-sm">
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Bot className="w-6 h-6 text-gold" />
-          <CardTitle className="text-xl text-foreground">AI Site Integration</CardTitle>
+          <Bot className="w-6 h-6 text-[#E1C37A]" />
+          <CardTitle className="text-xl text-[#D6D7D8]">AI Site Integration</CardTitle>
         </div>
-        <CardDescription>
+        <CardDescription className="text-[#A9AAAC]">
           Connect your WordPress site and train the AI on your brand voice. This allows the Agent to write content that sounds exactly like you.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        
+
         {/* Connection Details */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">WordPress Connection</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-5">
+          <h3 className="text-xs font-bold text-[#E1C37A] uppercase tracking-widest">WordPress Connection</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <div className="space-y-2">
-              <Label htmlFor="wp_url">WordPress URL</Label>
-              <Input 
-                id="wp_url" 
-                name="wp_url" 
-                placeholder="https://your-site.com" 
-                value={formData.wp_url} 
-                onChange={handleChange} 
-                className="bg-background border-input"
+              <Label htmlFor="wp_url" className="text-[#D6D7D8]">WordPress URL</Label>
+              <Input
+                id="wp_url"
+                name="wp_url"
+                placeholder="https://your-site.com"
+                value={formData.wp_url}
+                onChange={handleChange}
+                className="bg-[#1A1A1C] border-[#333] text-[#D6D7D8] placeholder:text-[#555] focus:border-[#E1C37A] focus:ring-[#E1C37A]/20"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="wp_username">Username</Label>
-              <Input 
-                id="wp_username" 
-                name="wp_username" 
-                placeholder="admin" 
-                value={formData.wp_username} 
+              <Label htmlFor="wp_username" className="text-[#D6D7D8]">Username</Label>
+              <Input
+                id="wp_username"
+                name="wp_username"
+                placeholder="admin"
+                value={formData.wp_username}
                 onChange={handleChange}
-                className="bg-background border-input"
+                className="bg-[#1A1A1C] border-[#333] text-[#D6D7D8] placeholder:text-[#555] focus:border-[#E1C37A] focus:ring-[#E1C37A]/20"
               />
             </div>
             <div className="col-span-1 md:col-span-2 space-y-2">
-              <Label htmlFor="wp_app_password">Application Password</Label>
-              <Input 
-                id="wp_app_password" 
-                name="wp_app_password" 
+              <Label htmlFor="wp_app_password" className="text-[#D6D7D8]">Application Password</Label>
+              <Input
+                id="wp_app_password"
+                name="wp_app_password"
                 type="password"
-                placeholder="abcd efgh ijkl mnop" 
-                value={formData.wp_app_password} 
+                placeholder="abcd efgh ijkl mnop"
+                value={formData.wp_app_password}
                 onChange={handleChange}
-                className="bg-background border-input font-mono"
+                className="bg-[#1A1A1C] border-[#333] text-[#D6D7D8] placeholder:text-[#555] font-mono focus:border-[#E1C37A] focus:ring-[#E1C37A]/20"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-[#777]">
                 Go to Users → Profile → Application Passwords in WordPress to generate this.
               </p>
             </div>
@@ -112,59 +112,59 @@ export function AISiteIndexer() {
         </div>
 
         {/* AI Personality */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">AI Personality</h3>
-          
+        <div className="space-y-5 pt-4 border-t border-white/5">
+          <h3 className="text-xs font-bold text-[#E1C37A] uppercase tracking-widest">AI Personality</h3>
+
           <div className="space-y-2">
-            <Label htmlFor="brand_voice">Brand Voice</Label>
-            <Textarea 
-              id="brand_voice" 
-              name="brand_voice" 
-              placeholder="e.g. Professional, witty, authoritative. Use British spelling." 
-              value={formData.brand_voice} 
+            <Label htmlFor="brand_voice" className="text-[#D6D7D8]">Brand Voice</Label>
+            <Textarea
+              id="brand_voice"
+              name="brand_voice"
+              placeholder="e.g. Professional, witty, authoritative. Use British spelling."
+              value={formData.brand_voice}
               onChange={handleChange}
-              className="bg-background border-input min-h-[80px]"
+              className="bg-[#1A1A1C] border-[#333] text-[#D6D7D8] placeholder:text-[#555] min-h-[80px] focus:border-[#E1C37A] focus:ring-[#E1C37A]/20"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="target_audience">Target Audience</Label>
-            <Textarea 
-              id="target_audience" 
-              name="target_audience" 
-              placeholder="e.g. Small business owners in London looking for SEO services." 
-              value={formData.target_audience} 
+            <Label htmlFor="target_audience" className="text-[#D6D7D8]">Target Audience</Label>
+            <Textarea
+              id="target_audience"
+              name="target_audience"
+              placeholder="e.g. Small business owners in London looking for SEO services."
+              value={formData.target_audience}
               onChange={handleChange}
-              className="bg-background border-input min-h-[80px]"
+              className="bg-[#1A1A1C] border-[#333] text-[#D6D7D8] placeholder:text-[#555] min-h-[80px] focus:border-[#E1C37A] focus:ring-[#E1C37A]/20"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="preferred_style">Preferred Writing Style</Label>
-            <Input 
-              id="preferred_style" 
-              name="preferred_style" 
-              placeholder="e.g. Professional yet conversational" 
-              value={formData.preferred_style} 
+            <Label htmlFor="preferred_style" className="text-[#D6D7D8]">Preferred Writing Style</Label>
+            <Input
+              id="preferred_style"
+              name="preferred_style"
+              placeholder="e.g. Professional yet conversational"
+              value={formData.preferred_style}
               onChange={handleChange}
-              className="bg-background border-input"
+              className="bg-[#1A1A1C] border-[#333] text-[#D6D7D8] placeholder:text-[#555] focus:border-[#E1C37A] focus:ring-[#E1C37A]/20"
             />
           </div>
         </div>
 
         {/* Status Messages */}
         {status === 'success' && (
-          <Alert className="bg-green-500/10 border-green-500 text-green-500">
+          <Alert className="bg-green-500/10 border-green-500/30 text-green-400">
             <CheckCircle2 className="h-4 w-4" />
             <AlertTitle>Success!</AlertTitle>
-            <AlertDescription>
+            <AlertDescription className="text-green-400/90">
               Your site is being indexed. The AI is now learning your content and brand voice.
             </AlertDescription>
           </Alert>
         )}
 
         {status === 'error' && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" className="bg-red-500/10 border-red-500/30">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{errorMessage}</AlertDescription>
@@ -172,10 +172,10 @@ export function AISiteIndexer() {
         )}
 
         {/* Action Button */}
-        <Button 
-          onClick={handleSync} 
-          disabled={isLoading} 
-          className="w-full bg-gold hover:bg-gold/90 text-black font-semibold"
+        <Button
+          onClick={handleSync}
+          disabled={isLoading}
+          className="w-full bg-[#E1C37A] hover:bg-[#B6934C] text-[#1A1A1C] font-bold h-11"
         >
           {isLoading ? (
             <>
