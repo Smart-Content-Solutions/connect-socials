@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Globe, AlertCircle, RefreshCcw, BrainCircuit } from 'lucide-react';
+import { LayoutDashboard, Globe, AlertCircle, RefreshCcw } from 'lucide-react';
+
 import WordPressSiteCard, { WordPressSite } from './WordPressSiteCard';
 import StatsOverview from './components/StatsOverview';
 import PerformanceChart from './components/PerformanceChart';
@@ -7,7 +8,7 @@ import RecentPosts from './components/RecentPosts';
 import { SiteStats, fetchSiteStats } from './utils/wpApi';
 import GoldButton from './GoldButton';
 import { toast } from "sonner";
-import { AISiteIndexer } from '../../../planner_section/components/AISiteIndexer';
+
 
 interface DashboardContentProps {
     sites: WordPressSite[];
@@ -125,19 +126,6 @@ export default function DashboardContent({ sites, onAddSite, onRemoveSite }: Das
                 )}
             </div>
 
-            {/* AI Agent Integration Segment */}
-            {sites.length > 0 && (
-                <div className="relative">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-gold/20 to-transparent blur opacity-25 rounded-2xl" />
-                    <div className="relative">
-                        <div className="flex items-center gap-3 mb-6">
-                            <BrainCircuit className="w-6 h-6 text-gold" />
-                            <h3 className="text-xl font-bold text-foreground">AI Site Intelligence</h3>
-                        </div>
-                        <AISiteIndexer />
-                    </div>
-                </div>
-            )}
 
             {/* Site Connection Section */}
             <div>

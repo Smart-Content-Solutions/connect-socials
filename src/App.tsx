@@ -426,7 +426,7 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route
+            {/* <Route
               path="/apps/ai-agent"
               element={
                 <ProtectedRoute>
@@ -437,7 +437,7 @@ const App = () => (
                   </RoleProtectedRoute>
                 </ProtectedRoute>
               }
-            />
+            /> */}
 
 
             {/* ✅ OAUTH */}
