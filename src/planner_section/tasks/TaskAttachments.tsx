@@ -28,6 +28,10 @@ const FILE_ICONS: Record<string, React.ElementType> = {
   "application/pdf": FileText,
   "application/msword": FileText,
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": FileText,
+  "application/vnd.ms-excel": FileText,
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": FileText,
+  "application/vnd.ms-powerpoint": FileText,
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": FileText,
   "image/": ImageIcon,
   "video/": Video,
   "text/": Code,
@@ -197,7 +201,7 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
             multiple
             onChange={handleFileUpload}
             className="hidden"
-            accept="video/*,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/*,.zip,.rar"
+            accept="video/*,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar"
           />
           <Button
             type="button"
@@ -234,7 +238,7 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
           multiple
           onChange={handleFileUpload}
           className="hidden"
-          accept="video/*,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/*,.zip,.rar"
+          accept="video/*,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar"
         />
         <div className="border border-dashed border-border/50 rounded-lg p-4 text-center hover:bg-surface/50 transition-colors">
           {isUploading ? (
@@ -243,7 +247,7 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
             <>
               <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">
-                Click to upload files (PDF, Word, images, videos, code, etc.)
+                Click to upload files (PDF, Word, Excel, Images, etc.)
               </p>
               <p className="text-xs text-muted-foreground mt-1">Max 200MB per file</p>
             </>
