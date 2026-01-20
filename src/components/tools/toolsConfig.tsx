@@ -1,9 +1,10 @@
-import { 
-  Share2, Globe, Mail, FileText, BarChart3, Users, 
+import {
+  Share2, Globe, Mail, FileText, BarChart3, Users,
   TrendingUp, Link2, Star, Clock, Activity, Bot,
-  Database, Sparkles, Target, Eye, Search, PenTool, 
-  Languages, Megaphone
+  Database, Sparkles, Target, Eye, Search, PenTool,
+  Languages, Megaphone, Brain
 } from "lucide-react";
+
 
 export const PLAN_HIERARCHY = {
   "Starter": 1,
@@ -111,6 +112,32 @@ export const coreTools = [
     color: "#E1C37A"
   },
   {
+    id: "ai-agent",
+    name: "AI Agent - Train & Optimize",
+    slug: "ai-agent",
+    appRoute: "/apps/ai-agent",
+    category: "Core",
+    shortDescription: "Train AI on your site and optimize posts automatically.",
+    longDescription: "Powerful AI agent that learns from your website content and brand voice, then uses that knowledge to enhance your WordPress posts with SEO optimization, image placement, and content improvements. Train once, optimize forever.",
+    mainBenefits: [
+      "Train AI on your entire website content",
+      "Automatic post enhancement with SEO optimization",
+      "Smart image placement and alt tag generation",
+      "Brand voice consistency across all content",
+      "Internal linking suggestions based on site knowledge"
+    ],
+    howItWorks: [
+      { step: "Train", desc: "Connect your site and let AI learn your content" },
+      { step: "Optimize", desc: "Select posts and upload images for enhancement" },
+      { step: "Review", desc: "Get detailed reports on improvements made" }
+    ],
+    planRequired: "Starter",
+    status: "LiveTool",
+    icon: Brain,
+    color: "#8B5CF6"
+  },
+  {
+
     id: "ads-analytics",
     name: "AI Ads Analytics Tool",
     slug: "ads-analytics",

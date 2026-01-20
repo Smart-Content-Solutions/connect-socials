@@ -57,6 +57,8 @@ import Login from "./pages/base44/Login";
 // ✅ Other
 import NotFound from "./pages/NotFound";
 import WordpressAutomationApp from "./components/apps/WordpressAutomationApp";
+import AIAgentTool from "./components/apps/ai-agent/AIAgentTool";
+
 
 // ✅ Support
 import MyTickets from "./pages/support/MyTickets";
@@ -424,6 +426,19 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/apps/ai-agent"
+              element={
+                <ProtectedRoute>
+                  <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
+                    <Layout>
+                      <AIAgentTool />
+                    </Layout>
+                  </RoleProtectedRoute>
+                </ProtectedRoute>
+              }
+            />
+
 
             {/* ✅ OAUTH */}
             <Route
