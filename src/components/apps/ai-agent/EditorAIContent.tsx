@@ -6,6 +6,7 @@ import GlassCard from './GlassCard';
 import PostSelector from './components/PostSelector';
 import ImageUploadZone from './components/ImageUploadZone';
 import ReportDisplay from './components/ReportDisplay';
+import { compressImage } from '@/lib/image-compression';
 
 interface EditorAIContentProps {
     sites: any[];
@@ -30,11 +31,17 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
 
         setIsLoading(true);
         setReport(null); // Clear previous report
-        const toastId = toast.loading("AI Agent is reading & optimizing your post...");
+        const toastId = toast.loading("Compressing images & preparing optimization...");
 
         try {
+            // 1. Compress images before upload to avoid 413 "Payload Too Large"
+            const compressedImages = await Promise.all(
+                images.map(img => compressImage(img))
+            );
+
             // Prepare FormData for binary upload
             const formData = new FormData();
+
 
             // Add JSON body
             const jsonBody = {
@@ -50,11 +57,14 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
                 formData.append(key, String(value));
             });
 
-            // Add images as binary fields image_0, image_1, etc. (Wait, n8n expects image_ keys in binary)
-            // n8n binary node expects distinct field names. My workflow looks for keys starting with 'image'
-            images.forEach((file, index) => {
+            // Add images as binary fields image_0, image_1, etc.
+            compressedImages.forEach((file, index) => {
                 formData.append(`image_${index}`, file);
             });
+
+            // Update toast
+            toast.loading("AI Agent is reading & optimizing your post...", { id: toastId });
+
 
             // Call the SCS_POST_EDITOR_AGENT webhook (Proxy via backend often needed for CORS, but user said n8n urls in frontend)
             // If CORS is an issue, we might need a proxy. Assuming standard n8n Setup.
