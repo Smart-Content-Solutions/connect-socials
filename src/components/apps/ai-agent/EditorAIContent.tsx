@@ -44,7 +44,11 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
                 wp_app_password: site.app_password,
                 user_instruction: userInstruction
             };
-            formData.append('body', JSON.stringify(jsonBody));
+            // Add fields individually so n8n can read them as standard form inputs
+            Object.entries(jsonBody).forEach(([key, value]) => {
+                // Ensure value is string
+                formData.append(key, String(value));
+            });
 
             // Add images as binary fields image_0, image_1, etc. (Wait, n8n expects image_ keys in binary)
             // n8n binary node expects distinct field names. My workflow looks for keys starting with 'image'
@@ -82,7 +86,7 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
             }
 
             if (!result) {
-                 throw new Error("AI Agent returned no data");
+                throw new Error("AI Agent returned no data");
             }
 
             setReport(result);
