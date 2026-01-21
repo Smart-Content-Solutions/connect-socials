@@ -78,7 +78,7 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
             // Let's try sending as FormData. 
             // Important: Do NOT set Content-Type header manually when sending FormData, browser does it with boundary.
 
-            const response = await fetch('https://n8n.smartcontentsolutions.co.uk/webhook-test/post-editor-agent', {
+            const response = await fetch('https://n8n.smartcontentsolutions.co.uk/webhook/post-editor-agent', {
                 method: 'POST',
                 body: formData
             });
