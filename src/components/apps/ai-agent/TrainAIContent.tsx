@@ -63,7 +63,14 @@ export default function TrainAIContent({ sites, onTrainingComplete }: TrainAICon
 
             if (!response.ok) throw new Error("Training failed");
 
-            const result = await response.json();
+            const text = await response.text();
+            let result;
+            try {
+                result = text ? JSON.parse(text) : {};
+            } catch (e) {
+                console.warn("Response was not JSON, but request succeeded:", text);
+                result = {}; // Treat as success if 200 OK but non-JSON response
+            }
 
             toast.success("AI Training Complete!", { id: toastId });
             onTrainingComplete();

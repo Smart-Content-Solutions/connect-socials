@@ -72,13 +72,24 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
             if (!response.ok) throw new Error("Optimization failed");
 
             // Handle the response
-            const result = await response.json();
+            const text = await response.text();
+            let result;
+            try {
+                result = text ? JSON.parse(text) : null;
+            } catch (e) {
+                console.error("Failed to parse JSON response:", text);
+                throw new Error("Received invalid response from AI Agent");
+            }
+
+            if (!result) {
+                 throw new Error("AI Agent returned no data");
+            }
 
             setReport(result);
             toast.success("Post Enhanced Successfully!", { id: toastId });
         } catch (error) {
             console.error(error);
-            toast.error("Agent encountered an error. Check console.", { id: toastId });
+            toast.error(error instanceof Error ? error.message : "Agent encountered an error.", { id: toastId });
         } finally {
             setIsLoading(false);
         }
