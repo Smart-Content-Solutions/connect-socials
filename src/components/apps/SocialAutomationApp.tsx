@@ -1400,39 +1400,40 @@ export default function SocialMediaTool() {
           )}
         </AnimatePresence>
       </div>
-    </div>
 
-    {/* Success Modal */ }
-  <AnimatePresence>
-    {showSuccessModal && (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="bg-[#3B3C3E] rounded-3xl p-8 max-w-md w-full border border-[#E1C37A]/30 shadow-[0_0_50px_rgba(225,195,122,0.2)] text-center relative overflow-hidden"
-        >
-          {/* Animated background glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#E1C37A]/10 rounded-full blur-[80px] -z-10" />
 
-          <div className="w-20 h-20 rounded-full bg-[#E1C37A]/20 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-10 h-10 text-[#E1C37A]" />
+      {/* Success Modal */}
+      <AnimatePresence>
+        {showSuccessModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-[#3B3C3E] rounded-3xl p-8 max-w-md w-full border border-[#E1C37A]/30 shadow-[0_0_50px_rgba(225,195,122,0.2)] text-center relative overflow-hidden"
+            >
+              {/* Animated background glow */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#E1C37A]/10 rounded-full blur-[80px] -z-10" />
+
+              <div className="w-20 h-20 rounded-full bg-[#E1C37A]/20 flex items-center justify-center mx-auto mb-6">
+                <CheckCircle className="w-10 h-10 text-[#E1C37A]" />
+              </div>
+
+              <h2 className="text-2xl font-bold text-white mb-3">Post Successful!</h2>
+              <p className="text-[#A9AAAC] mb-8 leading-relaxed">
+                Your content has been {postMode === 'publish' ? 'published' : 'scheduled'} across your selected social platforms.
+              </p>
+
+              <button
+                onClick={() => setShowSuccessModal(false)}
+                className="w-full py-4 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.4)] transition-all duration-300"
+              >
+                Great, thanks!
+              </button>
+            </motion.div>
           </div>
-
-          <h2 className="text-2xl font-bold text-white mb-3">Post Successful!</h2>
-          <p className="text-[#A9AAAC] mb-8 leading-relaxed">
-            Your content has been {postMode === 'publish' ? 'published' : 'scheduled'} across your selected social platforms.
-          </p>
-
-          <button
-            onClick={() => setShowSuccessModal(false)}
-            className="w-full py-4 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.4)] transition-all duration-300"
-          >
-            Great, thanks!
-          </button>
-        </motion.div>
-      </div>
-    )}
-  </AnimatePresence>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
