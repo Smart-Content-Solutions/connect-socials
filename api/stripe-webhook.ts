@@ -94,6 +94,7 @@ export default async function handler(req: any, res: any) {
             subscriptionId: session.subscription as string,
             planName: session.metadata?.planName || "Early Access",
             subscriptionStatus: "active",
+            hasUsedTrial: true, // Mark trial as used once they successfully subscribe
           },
         });
         console.log(`Granted early_access to ${clerkUserId}`);

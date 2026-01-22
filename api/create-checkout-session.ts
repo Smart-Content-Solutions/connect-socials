@@ -1,5 +1,5 @@
 import Stripe from "stripe";
-import { verifyToken } from "@clerk/backend";
+import { verifyToken, createClerkClient } from "@clerk/backend";
 
 function getBearerToken(req: any): string | null {
   const header = req.headers?.authorization || req.headers?.Authorization;
@@ -73,6 +73,22 @@ export default async function handler(req: any, res: any) {
       return res.status(401).json({ error: "Invalid token" });
     }
 
+    const clerkClient = createClerkClient({ secretKey: clerkSecretKey });
+
+    // Check if user has already used their trial
+    let hasUsedTrial = false;
+    try {
+      const user = await clerkClient.users.getUser(clerkUserId);
+      hasUsedTrial = (user.publicMetadata as any)?.hasUsedTrial === true;
+      console.log(`User ${clerkUserId} trial status: used=${hasUsedTrial}`);
+    } catch (err) {
+      console.error("Failed to fetch user metadata for trial check:", err);
+      // Fallback: If we can't check, we default to whatever is safer. 
+      // safer = no trial? or safer = trial? 
+      // Let's assume false to not block legitimate users if clerk fails, 
+      // but log it.
+    }
+
     console.log("Creating checkout session for Clerk user:", clerkUserId, "price:", priceId);
 
     const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
@@ -84,7 +100,8 @@ export default async function handler(req: any, res: any) {
       line_items: [{ price: priceId, quantity: 1 }],
 
       subscription_data: {
-        trial_period_days: 3,
+        // Only give trial if they haven't used it
+        trial_period_days: hasUsedTrial ? undefined : 3,
         metadata: {
           clerkUserId,
           plan: "early_access",
