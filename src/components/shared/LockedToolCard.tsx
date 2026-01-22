@@ -25,8 +25,20 @@ export default function LockedToolCard({
   onUnlockClick,
   index = 0,
 }: LockedToolCardProps): JSX.Element {
-  const { hasAccessToTool } = useSubscription();
-  const hasAccess = hasAccessToTool(planRequired);
+  const { hasAccessToTool, user } = useSubscription();
+
+  const isAdmin = user?.role === "admin";
+  const isEarlyAccess = user?.role === "early_access";
+
+  // ✅ Special case: early_access users can access Social Media, WordPress, and AI Agent tools
+  const isAllowedForEarlyAccess = [
+    "social-automation",
+    "wordpress-seo",
+    "ai-agent"
+  ].includes(slug || "") || title.toLowerCase().includes("social") || title.toLowerCase().includes("wordpress") || title.toLowerCase().includes("ai agent");
+
+  const hasEarlyAccessToThisTool = isEarlyAccess && isAllowedForEarlyAccess;
+  const hasAccess = isAdmin || hasEarlyAccessToThisTool || hasAccessToTool(planRequired);
 
   const CardWrapper: React.ElementType = slug ? Link : "div";
   const cardProps = slug ? { to: `/tool?slug=${slug}` } : {};
@@ -41,9 +53,8 @@ export default function LockedToolCard({
     >
       <CardWrapper {...cardProps} className="block">
         <div
-          className={`glass-card rounded-2xl p-6 h-full transition-all duration-500 cursor-pointer hover:border-[#E1C37A]/30 ${
-            hasAccess ? "hover:border-green-500/50" : ""
-          }`}
+          className={`glass-card rounded-2xl p-6 h-full transition-all duration-500 cursor-pointer hover:border-[#E1C37A]/30 ${hasAccess ? "hover:border-green-500/50" : ""
+            }`}
         >
           {/* Locked / Unlocked Overlay */}
           {!hasAccess ? (
@@ -70,9 +81,8 @@ export default function LockedToolCard({
           {/* Content */}
           <div className={!hasAccess ? "opacity-60" : ""}>
             <div
-              className={`w-12 h-12 rounded-xl mb-4 flex items-center justify-center ${
-                tier === "Corporate" ? "gold-gradient" : "metallic-gradient"
-              }`}
+              className={`w-12 h-12 rounded-xl mb-4 flex items-center justify-center ${tier === "Corporate" ? "gold-gradient" : "metallic-gradient"
+                }`}
             >
               <Icon className="w-6 h-6 text-[#1A1A1C]" />
             </div>
@@ -80,11 +90,10 @@ export default function LockedToolCard({
             <div className="flex items-center gap-2 mb-2">
               <h3 className="font-semibold text-white">{title}</h3>
               <span
-                className={`text-[10px] px-2 py-0.5 rounded-full ${
-                  tier === "Corporate"
+                className={`text-[10px] px-2 py-0.5 rounded-full ${tier === "Corporate"
                     ? "bg-[#E1C37A]/20 text-[#E1C37A]"
                     : "bg-[#D6D7D8]/20 text-[#D6D7D8]"
-                }`}
+                  }`}
               >
                 {tier}
               </span>

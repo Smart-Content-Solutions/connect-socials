@@ -316,7 +316,9 @@ const App = () => (
               path="/social-posts"
               element={
                 <ProtectedRoute>
-                  <SocialMediaTool />
+                  <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
+                    <SocialMediaTool />
+                  </RoleProtectedRoute>
                 </ProtectedRoute>
               }
             />
@@ -408,9 +410,11 @@ const App = () => (
               path="/apps/social-automation"
               element={
                 <ProtectedRoute>
-                  <Layout>
-                    <SocialAutomationApp />
-                  </Layout>
+                  <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
+                    <Layout>
+                      <SocialAutomationApp />
+                    </Layout>
+                  </RoleProtectedRoute>
                 </ProtectedRoute>
               }
             />

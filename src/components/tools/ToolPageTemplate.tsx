@@ -56,8 +56,24 @@ export default function ToolPageTemplate({ tool }: ToolPageTemplateProps) {
   // ✅ CLERK-SAFE ADMIN CHECK & EARLY ACCESS CHECK
   const isAdmin = user?.role === "admin";
   const isEarlyAccess = user?.role === "early_access";
-  const isWordPressTool = tool.id === "wordpress-seo" || tool.id === "wordpress-seo" || tool.name.includes("WordPress");
-  const hasEarlyAccessToThisTool = isEarlyAccess && isWordPressTool;
+
+  // ✅ Special case: early_access users can access Social Media, WordPress, and AI Agent tools
+  const isAllowedForEarlyAccess = [
+    "social-automation",
+    "wordpress-seo",
+    "ai-agent"
+  ].includes(tool.id) || [
+    "social-automation",
+    "wordpress-seo",
+    "ai-agent"
+  ].includes(tool.name.toLowerCase().includes("social") ? "social-automation" : ""); // fallback for name checks
+
+  const hasEarlyAccessToThisTool = isEarlyAccess && (
+    isAllowedForEarlyAccess ||
+    tool.name.includes("WordPress") ||
+    tool.id === "wordpress-seo" ||
+    tool.id === "ai-agent"
+  );
 
   const hasAccess = isAdmin || hasEarlyAccessToThisTool || hasAccessToTool(tool.planRequired);
 

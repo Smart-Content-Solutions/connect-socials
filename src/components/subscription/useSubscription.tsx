@@ -129,12 +129,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     },
 
     // Admin always has access to any tool
-    // Early access users ONLY have access to WordPress tool
+    // Early access users have access to Social Media, WordPress, and AI Agent tools
     hasAccessToTool: (toolPlanRequired: string) => {
       if (user?.role === "admin") return true;
       // For early_access role, we DON'T grant blanket access here
       // Access control is handled by RoleProtectedRoute on specific routes
-      // This keeps tools locked in the UI unless they have a real subscription
+      // and by custom checks in tool grid components.
+      // This keeps other tools locked in the UI unless they have a real subscription
       return baseHasAccessToTool(user, toolPlanRequired);
     },
 

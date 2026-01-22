@@ -38,9 +38,18 @@ function ToolCard({
   const isAdmin = user?.publicMetadata?.role === "admin";
   const isEarlyAccess = user?.publicMetadata?.role === "early_access";
 
-  // ✅ Special case: early_access users can ONLY access WordPress tool
-  const isWordPressTool = tool.id === "wordpress-seo" || tool.slug === "wordpress-seo";
-  const hasEarlyAccessToThisTool = isEarlyAccess && isWordPressTool;
+  // ✅ Special case: early_access users can access Social Media, WordPress, and AI Agent tools
+  const isAllowedForEarlyAccess = [
+    "social-automation",
+    "wordpress-seo",
+    "ai-agent"
+  ].includes(tool.id as string) || [
+    "social-automation",
+    "wordpress-seo",
+    "ai-agent"
+  ].includes(tool.slug as string);
+
+  const hasEarlyAccessToThisTool = isEarlyAccess && isAllowedForEarlyAccess;
 
   const hasAccess = isAdmin || hasEarlyAccessToThisTool || hasAccessToTool(tool.planRequired);
 
