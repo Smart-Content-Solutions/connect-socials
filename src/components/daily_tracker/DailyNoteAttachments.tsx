@@ -72,8 +72,11 @@ export function DailyNoteAttachments({ dailyNoteId, className }: DailyNoteAttach
     }
   }, [dailyNoteId, fetchAttachments]);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
+  const [isDragging, setIsDragging] = useState(false);
+
+  // ... (keep fetchAttachments)
+
+  const processFiles = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
@@ -117,7 +120,37 @@ export function DailyNoteAttachments({ dailyNoteId, className }: DailyNoteAttach
       toast.error("Failed to upload files");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      await processFiles(files);
       event.target.value = "";
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      await processFiles(files);
     }
   };
 
@@ -168,35 +201,53 @@ export function DailyNoteAttachments({ dailyNoteId, className }: DailyNoteAttach
   return (
     <div className={cn("space-y-3", className)}>
       {/* Upload Button */}
-      <div className="flex items-center gap-2">
-        <label className="cursor-pointer">
-          <input
-            type="file"
-            multiple
-            className="hidden"
-            onChange={handleFileUpload}
-            disabled={isUploading}
-            accept="*/*"
-          />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="bg-surface border-border/50"
-            disabled={isUploading}
-            asChild
-          >
-            <span>
-              {isUploading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Upload className="h-4 w-4 mr-2" />
-              )}
-              Upload Files
-            </span>
-          </Button>
-        </label>
-      </div>
+      {/* Upload Drop Zone */}
+      <label
+        className="cursor-pointer block relative"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        <input
+          type="file"
+          multiple
+          className="hidden"
+          onChange={handleFileUpload}
+          disabled={isUploading}
+          accept="*/*"
+        />
+        <div className={cn(
+          "border-2 border-dashed rounded-lg p-6 text-center transition-all duration-200 flex flex-col items-center justify-center gap-2",
+          isDragging
+            ? "border-[#E1C37A] bg-[#E1C37A]/5 scale-[1.02]"
+            : "border-border/50 hover:bg-surface/50 hover:border-[#E1C37A]/30 bg-surface/30"
+        )}>
+          {isUploading ? (
+            <Loader2 className="h-6 w-6 animate-spin text-[#E1C37A]" />
+          ) : (
+            <>
+              <div className={cn(
+                "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                isDragging ? "bg-[#E1C37A]/20" : "bg-surface-hover"
+              )}>
+                <Upload className={cn(
+                  "h-5 w-5 transition-colors",
+                  isDragging ? "text-[#E1C37A]" : "text-muted-foreground"
+                )} />
+              </div>
+              <p className={cn(
+                "text-sm font-medium transition-colors",
+                isDragging ? "text-[#E1C37A]" : "text-foreground"
+              )}>
+                {isDragging ? "Drop files here" : "Upload Files"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Drag & drop or click to browse
+              </p>
+            </>
+          )}
+        </div>
+      </label>
 
       {/* Attachments List */}
       {attachments.length > 0 && (

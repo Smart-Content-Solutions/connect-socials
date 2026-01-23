@@ -76,8 +76,11 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
     fetchAttachments();
   }, [fetchAttachments]);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
+  const [isDragging, setIsDragging] = useState(false);
+
+  // ... (keep fetchAttachments)
+
+  const processFiles = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
 
     setIsUploading(true);
@@ -135,8 +138,38 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
       toast.error(error.message || "Failed to upload file");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      await processFiles(files);
       // Reset input
       event.target.value = "";
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      await processFiles(files);
     }
   };
 
@@ -232,7 +265,12 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
   return (
     <div className={cn("space-y-3", className)}>
       {/* Upload button */}
-      <label className="cursor-pointer">
+      <label
+        className="cursor-pointer block relative"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
         <input
           type="file"
           multiple
@@ -240,16 +278,34 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
           className="hidden"
           accept="video/*,image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar"
         />
-        <div className="border border-dashed border-border/50 rounded-lg p-4 text-center hover:bg-surface/50 transition-colors">
+        <div className={cn(
+          "border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200",
+          isDragging
+            ? "border-[#E1C37A] bg-[#E1C37A]/5 scale-[1.02]"
+            : "border-border/50 hover:bg-surface/50 hover:border-[#E1C37A]/30"
+        )}>
           {isUploading ? (
-            <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-[#E1C37A]" />
           ) : (
             <>
-              <Upload className="h-6 w-6 mx-auto text-muted-foreground mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Click to upload files (PDF, Word, Excel, Images, etc.)
+              <div className={cn(
+                "w-12 h-12 rounded-xl bg-surface flex items-center justify-center mx-auto mb-3 transition-colors",
+                isDragging ? "bg-[#E1C37A]/20" : "bg-surface-hover"
+              )}>
+                <Upload className={cn(
+                  "h-6 w-6 transition-colors",
+                  isDragging ? "text-[#E1C37A]" : "text-muted-foreground"
+                )} />
+              </div>
+              <p className={cn(
+                "text-sm font-medium transition-colors",
+                isDragging ? "text-[#E1C37A]" : "text-foreground"
+              )}>
+                {isDragging ? "Drop files here" : "Click to upload or drag and drop"}
               </p>
-              <p className="text-xs text-muted-foreground mt-1">Max 200MB per file</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                PDF, Word, Excel, Images, etc. (Max 200MB)
+              </p>
             </>
           )}
         </div>

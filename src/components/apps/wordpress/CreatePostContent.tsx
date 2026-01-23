@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Loader2, Send, AlertCircle, CheckCircle, Globe, Info, Mic, MicOff } from 'lucide-react';
+import { FileText, Loader2, Send, AlertCircle, CheckCircle, Globe, Info, Mic, MicOff, X, Image as ImageIcon } from 'lucide-react';
 import GlassCard from './GlassCard';
 import GoldButton from './GoldButton';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,8 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
     const [showSuccess, setShowSuccess] = useState(false);
     const [isTopicFocused, setIsTopicFocused] = useState(false);
     const [progress, setProgress] = useState(0);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
 
     // Voice Input State
     const [isListening, setIsListening] = useState(false);
@@ -143,6 +145,26 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
         setSelectedSiteIds(prev =>
             prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
         );
+    };
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const f = e.target.files?.[0];
+        if (!f) return;
+        setImage(f);
+        const reader = new FileReader();
+        reader.onloadend = () => setImagePreview(String(reader.result));
+        reader.readAsDataURL(f);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const f = e.dataTransfer.files[0];
+        if (!f) return;
+        setImage(f);
+        const reader = new FileReader();
+        reader.onloadend = () => setImagePreview(String(reader.result));
+        reader.readAsDataURL(f);
     };
 
     const handleSubmit = async () => {
@@ -278,6 +300,7 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
                 // Optional: clear form
                 setTopic("");
                 setImage(null);
+                setImagePreview(null);
             } else {
                 toast.error("Failed to trigger automation. Please check site credentials.");
                 setProgress(0);
@@ -529,21 +552,46 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
                         <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
                             Attach Image
                         </h3>
-                        <div className="relative border border-dashed border-[#444] rounded-lg p-4 text-center hover:border-[#E1C37A]/50 transition-colors">
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => setImage(e.target.files?.[0] || null)}
-                                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            />
-                            <div className="text-sm text-[#A9AAAC]">
-                                {image ? (
-                                    <span className="text-[#E1C37A] font-medium">{image.name}</span>
-                                ) : (
-                                    <span>Click to upload image</span>
-                                )}
+                        {imagePreview ? (
+                            <div className="relative">
+                                <img src={imagePreview} className="w-full rounded-lg max-h-64 object-contain bg-black/20" alt="Preview" />
+                                <button
+                                    onClick={() => {
+                                        setImage(null);
+                                        setImagePreview(null);
+                                    }}
+                                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500 transition-colors"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
                             </div>
-                        </div>
+                        ) : (
+                            <div
+                                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                                onDragLeave={() => setIsDragging(false)}
+                                onDrop={handleDrop}
+                                onClick={() => document.getElementById('file-upload-wp')?.click()}
+                                className={`cursor-pointer rounded-xl border-2 border-dashed p-8 text-center transition-all duration-300 ${isDragging
+                                    ? 'border-[#E1C37A] bg-[#E1C37A]/5'
+                                    : 'border-[#5B5C60]/50 hover:border-[#E1C37A]/50 hover:bg-[#3B3C3E]/20'
+                                    }`}
+                            >
+                                <div className="flex justify-center gap-4 mb-4">
+                                    <div className="w-12 h-12 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
+                                        <ImageIcon className="w-6 h-6 text-[#E1C37A]" />
+                                    </div>
+                                </div>
+                                <p className="text-[#D6D7D8] font-medium mb-1">Drop your image here</p>
+                                <p className="text-[#5B5C60] text-xs">or click to browse</p>
+                            </div>
+                        )}
+                        <input
+                            id="file-upload-wp"
+                            type="file"
+                            hidden
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                        />
                     </GlassCard>
 
                     <GoldButton
