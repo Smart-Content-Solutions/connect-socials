@@ -26,7 +26,7 @@ export default function InstagramCallback() {
         setStatus("Instagram connected! Redirecting...");
         toast.success("Instagram connected");
 
-        setTimeout(() => navigate("/dashboard"), 700);
+        setTimeout(() => navigate("/apps/social-automation"), 700);
       } catch (err: any) {
         console.error("Instagram callback error:", err);
         setStatus("Authentication failed. Please try again.");
