@@ -1,11 +1,16 @@
 // src/utils/instagramOAuth.ts
 export interface InstagramAuthData {
   access_token: string;
-  expires_in: number;
+  expires_in?: number;
   instagram_user_id?: string; // numeric IG business id
   name?: string;
   username?: string | null;
   picture?: string | null;
+  profilePicture?: string | null; // from n8n backend
+  pageName?: string | null;
+  pageId?: string | null;
+  followers?: number;
+  mediaCount?: number;
   pages?: Array<{ id: string; name: string; access_token?: string }>;
 }
 
@@ -65,7 +70,7 @@ export async function initiateInstagramAuth(): Promise<void> {
     "https://www.facebook.com/v19.0/dialog/oauth" +
     `?client_id=${encodeURIComponent(FACEBOOK_CLIENT_ID)}` +
     `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-    `&response_type=code` + 
+    `&response_type=code` +
     `&state=${encodeURIComponent(state)}` +
     `&scope=${encodeURIComponent(scope)}`;
 

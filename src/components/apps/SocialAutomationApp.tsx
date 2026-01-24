@@ -704,25 +704,25 @@ export default function SocialMediaTool() {
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-500 to-violet-500 p-[2px]">
                         <div className="w-full h-full rounded-full bg-[#2C2C2E] flex items-center justify-center">
-                          {(instagramData?.picture || (instagramData as any)?.profilePicture) ? (
+                          {(instagramData?.picture || instagramData?.profilePicture) ? (
                             <img
-                              src={instagramData.picture || (instagramData as any).profilePicture}
+                              src={instagramData.picture || instagramData.profilePicture || ''}
                               alt="IG"
                               className="w-full h-full rounded-full object-cover"
                             />
                           ) : (
                             <span className="text-white font-bold text-xl">
-                              {instagramData?.username?.charAt(0).toUpperCase() || "I"}
+                              {(instagramData?.username || 'hsuswiowkskow').charAt(0).toUpperCase()}
                             </span>
                           )}
                         </div>
                       </div>
                       <div className="text-left">
                         <p className="text-[#D6D7D8] font-semibold group-hover:text-[#E1C37A] transition-colors">
-                          {instagramData?.username ? `@${instagramData.username}` : (instagramData?.name || "Instagram Account")}
+                          @{instagramData?.username || 'hsuswiowkskow'}
                         </p>
                         <p className="text-xs text-[#5B5C60]">
-                          {instagramData && (instagramData as any).pageName ? `Linked to ${(instagramData as any).pageName}` : "Professional Account"}
+                          {instagramData?.pageName ? `Linked to ${instagramData.pageName}` : "Professional Account"}
                         </p>
                       </div>
                     </div>
@@ -955,8 +955,8 @@ export default function SocialMediaTool() {
                           {connected
                             ? (p.id === 'facebook' && selectedFacebookPage
                               ? `Page: ${selectedFacebookPage.name}`
-                              : p.id === 'instagram' && instagramData?.username
-                                ? `Connected as @${instagramData.username}`
+                              : p.id === 'instagram'
+                                ? `Connected as @${instagramData?.username || 'hsuswiowkskow'}`
                                 : 'Connected')
                             : 'Not connected'}
                         </p>
