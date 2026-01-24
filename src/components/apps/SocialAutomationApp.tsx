@@ -48,7 +48,9 @@ import {
 import {
   initiateInstagramAuth,
   clearInstagramAuthData,
-  isInstagramConnected
+  isInstagramConnected,
+  getInstagramAuthData,
+  type InstagramAuthData
 } from "@/utils/instagramOAuth";
 
 import {
@@ -98,7 +100,7 @@ export default function SocialMediaTool() {
   const [caption, setCaption] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [aiEnhance, setAiEnhance] = useState(true);
-  
+
   // Animation refs
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const isInitialMount = useRef(true);
@@ -160,10 +162,13 @@ export default function SocialMediaTool() {
   const [showBlueskyInfo, setShowBlueskyInfo] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-
+  // Instagram State
+  const [instagramData, setInstagramData] = useState<InstagramAuthData | null>(null);
+  const [showInstagramPagesModal, setShowInstagramPagesModal] = useState(false);
+  const [selectedInstagramPage, setSelectedInstagramPage] = useState<any>(null);
 
   // Load Facebook Pages on mount if connected
-  React.useEffect(() => {
+  useEffect(() => {
     if (isFacebookConnected()) {
       const data = getFacebookAuthData();
       if (data?.pages) {
@@ -178,6 +183,16 @@ export default function SocialMediaTool() {
         } catch (e) {
           console.error("Failed to parse saved facebook page", e);
         }
+      }
+    }
+
+    if (isInstagramConnected()) {
+      const data = getInstagramAuthData();
+      setInstagramData(data);
+      // Determine selected IG page (if any)
+      if (data?.pages && data.pages.length > 0) {
+        // Default to first if not set
+        setSelectedInstagramPage(data.pages[0]);
       }
     }
   }, []);
@@ -618,11 +633,6 @@ export default function SocialMediaTool() {
                       setSelectedFacebookPage(page);
                       localStorage.setItem('facebook_selected_page', JSON.stringify(page));
                       setShowFacebookPagesModal(false);
-                      // Satisfy Meta Requirement: Immediate redirect to Page Dashboard (for Analytics)
-                      // Instead of 'create' post, we stay on dashboard but now it shows analytics
-                      // Force a re-render or toast if needed, but since we update state, the dashboard will update automatically.
-                      // Ideally we might want to switch TO dashboard if we were elsewhere, but usually we select from dashboard.
-                      // If we are on 'create', better switch back to 'dashboard' to show the stats.
                       setActiveTab('dashboard');
                     }}
                     className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
@@ -652,6 +662,77 @@ export default function SocialMediaTool() {
             <div className="mt-6 pt-4 border-t border-white/5 text-center">
               <p className="text-xs text-[#5B5C60]">
                 This list is retrieved using the <code>pages_show_list</code> permission.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Instagram Pages Selection Modal */}
+      {showInstagramPagesModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#3B3C3E] rounded-2xl p-8 max-w-lg w-full border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-pink-600/20 flex items-center justify-center">
+                  <Instagram className="w-6 h-6 text-pink-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-[#D6D7D8]">Select Instagram Account</h2>
+                  <p className="text-xs text-[#A9AAAC]">Linked to Facebook Pages</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowInstagramPagesModal(false)}
+                className="w-8 h-8 rounded-lg bg-[#3B3C3E] hover:bg-[#4B4C4E] flex items-center justify-center transition-colors"
+              >
+                <X className="w-5 h-5 text-[#A9AAAC]" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              {!instagramData?.pages || instagramData.pages.length === 0 ? (
+                <div className="text-center py-8 text-[#5B5C60]">
+                  <p>No linked pages found.</p>
+                </div>
+              ) : (
+                instagramData.pages.map((page: any) => (
+                  <button
+                    key={page.id}
+                    onClick={() => {
+                      setSelectedInstagramPage(page);
+                      setShowInstagramPagesModal(false);
+                    }}
+                    className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
+                  >
+                    <div className="flex items-center gap-4">
+                      {instagramData.picture ? (
+                        <img src={instagramData.picture} alt="Profile" className="w-10 h-10 rounded-full" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-pink-600/10 flex items-center justify-center text-pink-600 font-bold text-lg">
+                          {instagramData.username?.charAt(0) || "I"}
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-[#D6D7D8] font-semibold group-hover:text-[#E1C37A] transition-colors">
+                          {instagramData.username || page.name}
+                        </p>
+                        <p className="text-xs text-[#5B5C60] font-mono">Page: {page.name}</p>
+                      </div>
+                    </div>
+
+                    {selectedInstagramPage?.id === page.id && (
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
+                        <CheckCircle className="w-3 h-3 text-[#1A1A1C]" />
+                      </div>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+            <div className="mt-6 pt-4 border-t border-white/5 text-center">
+              <p className="text-xs text-[#5B5C60]">
+                Using <code>instagram_business_basic</code> via linked Page.
               </p>
             </div>
           </div>
@@ -734,14 +815,14 @@ export default function SocialMediaTool() {
           <div
             ref={scrollContainerRef}
             className="flex overflow-x-hidden scroll-smooth"
-            style={{ 
+            style={{
               scrollSnapType: 'x mandatory',
               scrollbarWidth: 'none',   /* Firefox */
               msOverflowStyle: 'none'   /* IE/Edge */
             }}
           >
             {/* Dashboard Slide */}
-            <div 
+            <div
               className="space-y-8 min-w-full flex-shrink-0 px-1"
               style={{ scrollSnapAlign: 'start' }}
             >
@@ -822,7 +903,9 @@ export default function SocialMediaTool() {
                           {connected
                             ? (p.id === 'facebook' && selectedFacebookPage
                               ? `Page: ${selectedFacebookPage.name}`
-                              : 'Connected')
+                              : p.id === 'instagram' && instagramData?.username
+                                ? `Connected as @${instagramData.username}`
+                                : 'Connected')
                             : 'Not connected'}
                         </p>
 
@@ -843,6 +926,41 @@ export default function SocialMediaTool() {
                                       p.disconnect?.();
                                       setSelectedFacebookPage(null);
                                       localStorage.removeItem('facebook_selected_page');
+                                    }
+                                  }}
+                                  className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
+                                >
+                                  Disconnect
+                                </button>
+                              </>
+                            ) : connected && p.id === 'instagram' ? (
+                              <>
+                                {instagramData && (
+                                  <div className="mb-3 p-2 rounded bg-black/20 flex items-center gap-2">
+                                    {instagramData.picture ? (
+                                      <img src={instagramData.picture} className="w-8 h-8 rounded-full" />
+                                    ) : (
+                                      <div className="w-8 h-8 rounded-full bg-pink-600 flex items-center justify-center text-white text-xs">
+                                        {instagramData.username ? instagramData.username.charAt(0).toUpperCase() : "I"}
+                                      </div>
+                                    )}
+                                    <div className="overflow-hidden">
+                                      <p className="text-xs text-[#D6D7D8] font-bold truncate">@{instagramData.username}</p>
+                                    </div>
+                                  </div>
+                                )}
+                                <button
+                                  onClick={() => setShowInstagramPagesModal(true)}
+                                  className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
+                                >
+                                  <LayoutDashboard className="w-4 h-4" />
+                                  Select Page
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm("Disconnect Instagram?")) {
+                                      p.disconnect?.();
+                                      setInstagramData(null);
                                     }
                                   }}
                                   className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
@@ -1006,7 +1124,7 @@ export default function SocialMediaTool() {
               </div>
             </div>
             {/* Create Slide */}
-            <div 
+            <div
               className="space-y-6 min-w-full flex-shrink-0 px-1"
               style={{ scrollSnapAlign: 'start' }}
             >
@@ -1222,7 +1340,7 @@ export default function SocialMediaTool() {
               </div>
             </div>
             {/* Video Slide */}
-            <div 
+            <div
               className="space-y-6 min-w-full flex-shrink-0 px-1"
               style={{ scrollSnapAlign: 'start' }}
             >
