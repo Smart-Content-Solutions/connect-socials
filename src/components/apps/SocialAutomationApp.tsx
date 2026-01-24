@@ -724,7 +724,6 @@ export default function SocialMediaTool() {
                         <p className="text-xs text-[#5B5C60]">Linked to {(instagramData as any)?.pageName || "Professional Page"}</p>
                       </div>
                     </div>
-                    <div className="text-xs py-1 px-2 rounded bg-white/10 text-white/60">Default</div>
                   </button>
                   <p className="text-[10px] text-center text-[#5B5C60] pt-2 italic">
                     Professional Instagram accounts linked to Facebook Pages appear here.
