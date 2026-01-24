@@ -706,11 +706,27 @@ export default function SocialMediaTool() {
                     className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
                   >
                     <div className="flex items-center gap-4">
-                      {instagramData.picture ? (
-                        <img src={instagramData.picture} alt="Profile" className="w-10 h-10 rounded-full" />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-pink-600/10 flex items-center justify-center text-pink-600 font-bold text-lg">
-                          {instagramData.username?.charAt(0) || "I"}
+                      {instagramData && (
+                        <div className="flex items-center gap-3 p-3 rounded-lg bg-black/20 mb-4">
+                          {(instagramData.picture || (instagramData as any).profilePicture) ? (
+                            <img
+                              src={instagramData.picture || (instagramData as any).profilePicture}
+                              alt={instagramData.username || "IG"}
+                              className="w-10 h-10 rounded-full border border-white/10"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-pink-500/80 flex items-center justify-center text-white font-bold text-lg">
+                              {instagramData.username?.charAt(0).toUpperCase() || "I"}
+                            </div>
+                          )}
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-white/90">
+                              {instagramData.username ? `@${instagramData.username}` : "Connected"}
+                            </span>
+                            <span className="text-[10px] text-zinc-400">
+                              {(instagramData as any).pageName || "Professional Account"}
+                            </span>
+                          </div>
                         </div>
                       )}
                       <div>
