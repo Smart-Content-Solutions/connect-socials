@@ -16,7 +16,7 @@ const OAUTH_INITIATOR_USER_KEY = "instagram_oauth_user_id";
 const N8N_URL = import.meta.env.VITE_N8N_WEBHOOK_URL ?? "";
 const FACEBOOK_CLIENT_ID = import.meta.env.VITE_FACEBOOK_CLIENT_ID ?? "";
 
-// Frontend redirect for completing flow - ensure this exact URL is registered in FB App redirect URIs
+
 export const REDIRECT_URI = "https://www.smartcontentsolutions.co.uk/instagram/callback";
 
 function generateState(length = 32) {
@@ -43,7 +43,6 @@ export function isInstagramConnected(): boolean {
   return !!localStorage.getItem(INSTAGRAM_AUTH_STORAGE_KEY);
 }
 
-// Initiate OAuth: Facebook OAuth dialog with Instagram-related scopes (Graph API publishing)
 export async function initiateInstagramAuth(): Promise<void> {
   const clerkUserId = (window as any).Clerk?.user?.id ?? null;
   if (!clerkUserId) throw new Error("User must be logged in before starting Instagram OAuth.");
@@ -52,8 +51,6 @@ export async function initiateInstagramAuth(): Promise<void> {
   localStorage.setItem(OAUTH_STATE_KEY, state);
   localStorage.setItem(OAUTH_INITIATOR_USER_KEY, clerkUserId);
 
-  // For Instagram Graph we need Facebook login with these permissions:
-  // pages_show_list, pages_read_engagement, pages_manage_posts, instagram_basic, instagram_content_publish, public_profile, email
   const scope = [
     "pages_show_list",
     "pages_read_engagement",
@@ -68,7 +65,7 @@ export async function initiateInstagramAuth(): Promise<void> {
     "https://www.facebook.com/v19.0/dialog/oauth" +
     `?client_id=${encodeURIComponent(FACEBOOK_CLIENT_ID)}` +
     `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-    `&response_type=code` + // ✅ REQUIRED
+    `&response_type=code` + 
     `&state=${encodeURIComponent(state)}` +
     `&scope=${encodeURIComponent(scope)}`;
 
