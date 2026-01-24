@@ -719,9 +719,11 @@ export default function SocialMediaTool() {
                       </div>
                       <div className="text-left">
                         <p className="text-[#D6D7D8] font-semibold group-hover:text-[#E1C37A] transition-colors">
-                          {instagramData?.username ? `@${instagramData.username}` : "@instagram_account"}
+                          {instagramData?.username ? `@${instagramData.username}` : (instagramData?.name || "Instagram Account")}
                         </p>
-                        <p className="text-xs text-[#5B5C60]">Linked to {(instagramData as any)?.pageName || "Professional Page"}</p>
+                        <p className="text-xs text-[#5B5C60]">
+                          {instagramData && (instagramData as any).pageName ? `Linked to ${(instagramData as any).pageName}` : "Professional Account"}
+                        </p>
                       </div>
                     </div>
                   </button>
