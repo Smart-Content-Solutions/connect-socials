@@ -421,7 +421,7 @@ export default function SocialMediaTool() {
       }
     }
 
-    const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook/social-media", {
+    const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook-test/social-media", {
       method: "POST",
       body: form
     });
