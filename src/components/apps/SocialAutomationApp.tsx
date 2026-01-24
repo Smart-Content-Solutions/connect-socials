@@ -986,22 +986,6 @@ export default function SocialMediaTool() {
                               </>
                             ) : connected && p.id === 'instagram' ? (
                               <>
-                                {instagramData && (
-                                  <div className="mb-3 p-2 rounded bg-black/20 flex items-center gap-2">
-                                    {(instagramData.picture || (instagramData as any).profilePicture) ? (
-                                      <img src={instagramData.picture || (instagramData as any).profilePicture} className="w-8 h-8 rounded-full" />
-                                    ) : (
-                                      <div className="w-8 h-8 rounded-full bg-pink-600 flex items-center justify-center text-white text-xs">
-                                        {instagramData.username ? instagramData.username.charAt(0).toUpperCase() : "I"}
-                                      </div>
-                                    )}
-                                    <div className="overflow-hidden">
-                                      <p className="text-xs text-[#D6D7D8] font-bold truncate">
-                                        {instagramData.username ? `@${instagramData.username}` : "Connected"}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )}
                                 <button
                                   onClick={() => setShowInstagramPagesModal(true)}
                                   className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
