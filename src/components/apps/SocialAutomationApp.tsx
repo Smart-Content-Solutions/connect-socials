@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 
 import { useUser } from "@clerk/clerk-react";
