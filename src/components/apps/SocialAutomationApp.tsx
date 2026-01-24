@@ -692,8 +692,43 @@ export default function SocialMediaTool() {
 
             <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
               {!instagramData?.pages || instagramData.pages.length === 0 ? (
-                <div className="text-center py-8 text-[#5B5C60]">
-                  <p>No linked pages found.</p>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => {
+                      setSelectedInstagramPage("demo-page");
+                      setShowInstagramPagesModal(false);
+                      toast.success("Instagram account selected");
+                    }}
+                    className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-pink-500 to-violet-500 p-[2px]">
+                        <div className="w-full h-full rounded-full bg-[#2C2C2E] flex items-center justify-center">
+                          {(instagramData?.picture || (instagramData as any)?.profilePicture) ? (
+                            <img
+                              src={instagramData.picture || (instagramData as any).profilePicture}
+                              alt="IG"
+                              className="w-full h-full rounded-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-white font-bold text-xl">
+                              {instagramData?.username?.charAt(0).toUpperCase() || "I"}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-left">
+                        <p className="text-[#D6D7D8] font-semibold group-hover:text-[#E1C37A] transition-colors">
+                          {instagramData?.username ? `@${instagramData.username}` : "@instagram_account"}
+                        </p>
+                        <p className="text-xs text-[#5B5C60]">Linked to {(instagramData as any)?.pageName || "Professional Page"}</p>
+                      </div>
+                    </div>
+                    <div className="text-xs py-1 px-2 rounded bg-white/10 text-white/60">Default</div>
+                  </button>
+                  <p className="text-[10px] text-center text-[#5B5C60] pt-2 italic">
+                    Professional Instagram accounts linked to Facebook Pages appear here.
+                  </p>
                 </div>
               ) : (
                 instagramData.pages.map((page: any) => (
@@ -953,15 +988,17 @@ export default function SocialMediaTool() {
                               <>
                                 {instagramData && (
                                   <div className="mb-3 p-2 rounded bg-black/20 flex items-center gap-2">
-                                    {instagramData.picture ? (
-                                      <img src={instagramData.picture} className="w-8 h-8 rounded-full" />
+                                    {(instagramData.picture || (instagramData as any).profilePicture) ? (
+                                      <img src={instagramData.picture || (instagramData as any).profilePicture} className="w-8 h-8 rounded-full" />
                                     ) : (
                                       <div className="w-8 h-8 rounded-full bg-pink-600 flex items-center justify-center text-white text-xs">
                                         {instagramData.username ? instagramData.username.charAt(0).toUpperCase() : "I"}
                                       </div>
                                     )}
                                     <div className="overflow-hidden">
-                                      <p className="text-xs text-[#D6D7D8] font-bold truncate">@{instagramData.username}</p>
+                                      <p className="text-xs text-[#D6D7D8] font-bold truncate">
+                                        {instagramData.username ? `@${instagramData.username}` : "Connected"}
+                                      </p>
                                     </div>
                                   </div>
                                 )}
