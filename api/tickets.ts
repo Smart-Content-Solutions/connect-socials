@@ -135,8 +135,8 @@ export default async function handler(req: any, res: any) {
         return res.status(500).json({ error: error.message || "Failed to create ticket" });
       }
 
-      // Send email notification (fire and forget - don't block response)
-      sendTicketEmailEvent("ticket_created", data).catch((err) => {
+      // Send email notification (Wait for n8n in serverless environment)
+      await sendTicketEmailEvent("ticket_created", data).catch((err) => {
         console.error("[Tickets] Failed to send ticket_created email:", err);
       });
 

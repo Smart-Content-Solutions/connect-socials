@@ -170,9 +170,9 @@ export default async function handler(req: any, res: any) {
         }
       }
 
-      // Send email notification (fire and forget - don't block response)
+      // Send email notification (Wait for n8n in serverless environment)
       if (currentTicket) {
-        sendTicketEmailEvent("user_replied", currentTicket, comment).catch((err) => {
+        await sendTicketEmailEvent("user_replied", currentTicket, comment).catch((err) => {
           console.error("[Tickets/Comments] Failed to send user_replied email:", err);
         });
       }

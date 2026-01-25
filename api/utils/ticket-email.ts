@@ -49,7 +49,7 @@ interface TicketEmailPayload {
 }
 
 const BASE_URL = "https://www.smartcontentsolutions.co.uk";
-const N8N_TIMEOUT_MS = 5000;
+const N8N_TIMEOUT_MS = 15000;
 
 export async function sendTicketEmailEvent(
   event: TicketEmailEvent,

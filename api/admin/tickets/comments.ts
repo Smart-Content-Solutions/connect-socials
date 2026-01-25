@@ -144,10 +144,10 @@ export default async function handler(req: any, res: any) {
         .select()
         .single();
 
-      // Send email notification (fire and forget - don't block response)
+      // Send email notification (Wait for n8n in serverless environment)
       // Use updated ticket if available, otherwise use original ticket
       const ticketForEmail = updatedTicket || ticket;
-      sendTicketEmailEvent("admin_replied", ticketForEmail, comment).catch((err) => {
+      await sendTicketEmailEvent("admin_replied", ticketForEmail, comment).catch((err) => {
         console.error("[Admin/Tickets/Comments] Failed to send admin_replied email:", err);
       });
 
