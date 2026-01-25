@@ -9,8 +9,8 @@ function getBearerToken(req: any): string | null {
 }
 
 async function requireAdmin(req: any) {
-  const secretKey = process.env.CLERK_SECRET_KEY;
-  if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY");
+  const secretKey = process.env.CLERK_SECRET_KEY || process.env.VITE_CLERK_SECRET_KEY;
+  if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY or VITE_CLERK_SECRET_KEY");
 
   const token = getBearerToken(req);
   if (!token) {
@@ -46,14 +46,19 @@ export default async function handler(req: any, res: any) {
       return res.status(auth.status).json({ error: auth.error });
     }
 
-    // Fetch all users from Clerk
-    const users = await clerkClient.users.getUserList({ limit: 100 });
+    // Fetch all users from Clerk (limit to 100 for now)
+    const usersResponse = await clerkClient.users.getUserList({ limit: 100 });
+
+    // Clerk SDK can return either an array or a paginated object { data: [], totalCount: n }
+    const users = Array.isArray(usersResponse) ? usersResponse : (usersResponse as any).data || [];
+
+    console.log(`[Admin Staff] Fetched ${users.length} users from Clerk to find staff members`);
 
     // Filter users with role 'admin' or 'staff'
-    const staff = users.data
+    const staff = users
       .map((u: any) => {
         const role = (u.publicMetadata as any)?.role || "user";
-        
+
         // Only include admin or staff roles
         if (role !== "admin" && role !== "staff") {
           return null;
@@ -76,9 +81,11 @@ export default async function handler(req: any, res: any) {
       })
       .filter(Boolean);
 
+    console.log(`[Admin Staff] Found ${staff.length} staff members (admin/staff)`);
+
     return res.status(200).json({ staff });
   } catch (err: any) {
-    console.error("admin/staff error:", err);
+    console.error("admin/staff API error:", err);
     return res.status(500).json({ error: err?.message || "Internal server error" });
   }
 }
