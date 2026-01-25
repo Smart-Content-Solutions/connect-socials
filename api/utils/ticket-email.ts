@@ -30,6 +30,13 @@ interface TicketEmailPayload {
   // Pre-formatted messages to make n8n setup easier
   email_body_html: string;
   email_subject: string;
+  
+  // Specific messages for user vs admin (for when both need to be notified)
+  email_body_html_user?: string;
+  email_body_html_admin?: string;
+  email_subject_user?: string;
+  email_subject_admin?: string;
+
   recipients: {
     userEmail: string | null;
     supportEmail: string;
@@ -64,6 +71,11 @@ export async function sendTicketEmailEvent(
     // Generate context-aware email content
     let emailSubject = `Update on Ticket: ${ticket.subject}`;
     let emailBodyHtml = `<p>There is an update on your ticket.</p>`;
+    
+    let emailSubjectUser = emailSubject;
+    let emailSubjectAdmin = emailSubject;
+    let emailBodyUser = emailBodyHtml;
+    let emailBodyAdmin = emailBodyHtml;
 
     if (event === "ticket_created") {
       emailSubject = `Ticket Received: ${ticket.subject}`;
@@ -76,6 +88,22 @@ export async function sendTicketEmailEvent(
         <p><strong>Description:</strong></p>
         <p>${ticket.description}</p>
       `;
+      
+      emailSubjectUser = emailSubject;
+      emailBodyUser = emailBodyHtml;
+      
+      emailSubjectAdmin = `New Ticket: ${ticket.subject}`;
+      emailBodyAdmin = `
+        <p><strong>New Ticket Created</strong></p>
+        <p><strong>User:</strong> ${ticket.created_by_name || 'Unknown'} (${ticket.created_by_email || 'No email'})</p>
+        <p><strong>Subject:</strong> ${ticket.subject}</p>
+        <p><strong>Type:</strong> ${ticket.type} | <strong>Priority:</strong> ${ticket.priority}</p>
+        <hr />
+        <p><strong>Description:</strong></p>
+        <p>${ticket.description}</p>
+        <p><a href="${adminTicketUrl}">View in Admin Dashboard</a></p>
+      `;
+      
     } else if (event === "ticket_status_updated") {
       emailSubject = `Ticket Status Updated: ${ticket.subject}`;
       emailBodyHtml = `
@@ -83,20 +111,66 @@ export async function sendTicketEmailEvent(
         <p>The status of your ticket <strong>"${ticket.subject}"</strong> has been updated to <strong>${ticket.status.toUpperCase().replace(/_/g, " ")}</strong>.</p>
         <p><a href="${userTicketUrl}">View Ticket</a></p>
       `;
+      
+      emailSubjectUser = emailSubject;
+      emailBodyUser = emailBodyHtml;
+      
+      emailSubjectAdmin = `Ticket Status Updated: ${ticket.subject}`;
+      emailBodyAdmin = `
+        <p>Ticket <strong>"${ticket.subject}"</strong> status changed to <strong>${ticket.status}</strong>.</p>
+        <p><a href="${adminTicketUrl}">View in Admin Dashboard</a></p>
+      `;
+
     } else if (event === "admin_replied") {
-      emailSubject = `New Reply: ${ticket.subject}`;
+      // Logic for when ADMIN replies
+      emailSubject = `New Reply: ${ticket.subject}`; // Default for user
       emailBodyHtml = `
         <p>Hi ${ticket.created_by_name || 'there'},</p>
         <p>Support has replied to your ticket:</p>
         <blockquote>${comment?.body || 'New comment'}</blockquote>
         <p><a href="${userTicketUrl}">Click here to reply</a></p>
       `;
+      
+      emailSubjectUser = emailSubject;
+      emailBodyUser = emailBodyHtml;
+      
+      // Admin notification (Confirmation)
+      emailSubjectAdmin = `Reply Sent: ${ticket.subject}`;
+      emailBodyAdmin = `
+        <p>A reply was sent to <strong>${ticket.created_by_name}</strong> regarding ticket <strong>"${ticket.subject}"</strong>.</p>
+        <blockquote>${comment?.body || 'New comment'}</blockquote>
+        <p><a href="${adminTicketUrl}">View in Admin Dashboard</a></p>
+      `;
+
     } else if (event === "user_replied") {
-      emailSubject = `User Replied: ${ticket.subject}`;
-      emailBodyHtml = `
+      // Logic for when USER replies
+      emailSubject = `User Replied: ${ticket.subject}`; // Default for admin (legacy)
+      // Wait, legacy behavior put Admin content in 'emailBodyHtml' for 'user_replied'
+      // To preserve 'emailBodyHtml' logic for existing flows if they blindly use it:
+      // But we are updating n8n. Let's make 'emailBodyHtml' the USER version usually, or just keep legacy behavior for the main field?
+      // Actually, if n8n is not updated yet, and we change emailBodyHtml to User version, we break Admin alerts.
+      // So: Keep emailBodyHtml as "Primary Recipient Content".
+      // For 'user_replied', primary is Admin.
+      
+      const adminBody = `
         <p>User <strong>${ticket.created_by_name}</strong> replied:</p>
         <blockquote>${comment?.body || 'New comment'}</blockquote>
         <p><a href="${adminTicketUrl}">View in Admin Dashboard</a></p>
+      `;
+      
+      emailBodyHtml = adminBody; // Legacy support: Admin alert used this
+      
+      emailSubjectAdmin = `User Replied: ${ticket.subject}`;
+      emailBodyAdmin = adminBody;
+      
+      // User notification (Confirmation)
+      emailSubjectUser = `We received your reply: ${ticket.subject}`;
+      emailBodyUser = `
+        <p>Hi ${ticket.created_by_name || 'there'},</p>
+        <p>We received your reply to ticket <strong>"${ticket.subject}"</strong>.</p>
+        <blockquote>${comment?.body || 'New comment'}</blockquote>
+        <p>Our team will get back to you shortly.</p>
+        <p><a href="${userTicketUrl}">View Ticket</a></p>
       `;
     }
 
@@ -120,6 +194,12 @@ export async function sendTicketEmailEvent(
       },
       email_body_html: emailBodyHtml,
       email_subject: emailSubject,
+      // New fields
+      email_body_html_user: emailBodyUser,
+      email_body_html_admin: emailBodyAdmin,
+      email_subject_user: emailSubjectUser,
+      email_subject_admin: emailSubjectAdmin,
+      
       recipients: {
         userEmail: ticket.created_by_email || null,
         supportEmail,
