@@ -30,7 +30,7 @@ interface TicketEmailPayload {
   // Pre-formatted messages to make n8n setup easier
   email_body_html: string;
   email_subject: string;
-  
+
   // Specific messages for user vs admin (for when both need to be notified)
   email_body_html_user?: string;
   email_body_html_admin?: string;
@@ -65,13 +65,16 @@ export async function sendTicketEmailEvent(
   }
 
   try {
+    console.log(`[Ticket Email] Preparing to send '${event}' event for ticket ${ticket.id}`);
+    console.log(`[Ticket Email] Target Webhook URL: ${webhookUrl}`);
+
     const userTicketUrl = `${BASE_URL}/support/${ticket.id}`;
     const adminTicketUrl = `${BASE_URL}/admin/tickets/${ticket.id}`;
 
     // Generate context-aware email content
     let emailSubject = `Update on Ticket: ${ticket.subject}`;
     let emailBodyHtml = `<p>There is an update on your ticket.</p>`;
-    
+
     let emailSubjectUser = emailSubject;
     let emailSubjectAdmin = emailSubject;
     let emailBodyUser = emailBodyHtml;
@@ -88,10 +91,10 @@ export async function sendTicketEmailEvent(
         <p><strong>Description:</strong></p>
         <p>${ticket.description}</p>
       `;
-      
+
       emailSubjectUser = emailSubject;
       emailBodyUser = emailBodyHtml;
-      
+
       emailSubjectAdmin = `New Ticket: ${ticket.subject}`;
       emailBodyAdmin = `
         <p><strong>New Ticket Created</strong></p>
@@ -103,7 +106,7 @@ export async function sendTicketEmailEvent(
         <p>${ticket.description}</p>
         <p><a href="${adminTicketUrl}">View in Admin Dashboard</a></p>
       `;
-      
+
     } else if (event === "ticket_status_updated") {
       emailSubject = `Ticket Status Updated: ${ticket.subject}`;
       emailBodyHtml = `
@@ -111,10 +114,10 @@ export async function sendTicketEmailEvent(
         <p>The status of your ticket <strong>"${ticket.subject}"</strong> has been updated to <strong>${ticket.status.toUpperCase().replace(/_/g, " ")}</strong>.</p>
         <p><a href="${userTicketUrl}">View Ticket</a></p>
       `;
-      
+
       emailSubjectUser = emailSubject;
       emailBodyUser = emailBodyHtml;
-      
+
       emailSubjectAdmin = `Ticket Status Updated: ${ticket.subject}`;
       emailBodyAdmin = `
         <p>Ticket <strong>"${ticket.subject}"</strong> status changed to <strong>${ticket.status}</strong>.</p>
@@ -130,10 +133,10 @@ export async function sendTicketEmailEvent(
         <blockquote>${comment?.body || 'New comment'}</blockquote>
         <p><a href="${userTicketUrl}">Click here to reply</a></p>
       `;
-      
+
       emailSubjectUser = emailSubject;
       emailBodyUser = emailBodyHtml;
-      
+
       // Admin notification (Confirmation)
       emailSubjectAdmin = `Reply Sent: ${ticket.subject}`;
       emailBodyAdmin = `
@@ -145,24 +148,18 @@ export async function sendTicketEmailEvent(
     } else if (event === "user_replied") {
       // Logic for when USER replies
       emailSubject = `User Replied: ${ticket.subject}`; // Default for admin (legacy)
-      // Wait, legacy behavior put Admin content in 'emailBodyHtml' for 'user_replied'
-      // To preserve 'emailBodyHtml' logic for existing flows if they blindly use it:
-      // But we are updating n8n. Let's make 'emailBodyHtml' the USER version usually, or just keep legacy behavior for the main field?
-      // Actually, if n8n is not updated yet, and we change emailBodyHtml to User version, we break Admin alerts.
-      // So: Keep emailBodyHtml as "Primary Recipient Content".
-      // For 'user_replied', primary is Admin.
-      
+
       const adminBody = `
         <p>User <strong>${ticket.created_by_name}</strong> replied:</p>
         <blockquote>${comment?.body || 'New comment'}</blockquote>
         <p><a href="${adminTicketUrl}">View in Admin Dashboard</a></p>
       `;
-      
+
       emailBodyHtml = adminBody; // Legacy support: Admin alert used this
-      
+
       emailSubjectAdmin = `User Replied: ${ticket.subject}`;
       emailBodyAdmin = adminBody;
-      
+
       // User notification (Confirmation)
       emailSubjectUser = `We received your reply: ${ticket.subject}`;
       emailBodyUser = `
@@ -199,7 +196,7 @@ export async function sendTicketEmailEvent(
       email_body_html_admin: emailBodyAdmin,
       email_subject_user: emailSubjectUser,
       email_subject_admin: emailSubjectAdmin,
-      
+
       recipients: {
         userEmail: ticket.created_by_email || null,
         supportEmail,
@@ -225,6 +222,7 @@ export async function sendTicketEmailEvent(
     const timeoutId = setTimeout(() => controller.abort(), N8N_TIMEOUT_MS);
 
     try {
+      console.log(`[Ticket Email] Sending payload to n8n...`);
       const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
@@ -240,20 +238,19 @@ export async function sendTicketEmailEvent(
         const responseText = await response.text();
         console.error(`[Ticket Email] n8n webhook returned ${response.status}: ${responseText}`);
       } else {
-        console.log(`[Ticket Email] Successfully sent ${event} event for ticket ${ticket.id}`);
+        console.log(`[Ticket Email] Successfully sent ${event} event. Status: ${response.status}`);
       }
     } catch (fetchError: any) {
       clearTimeout(timeoutId);
 
       if (fetchError.name === "AbortError") {
-        // Timeout is OK - n8n received the request and is processing
         console.log(`[Ticket Email] n8n webhook request timed out (expected - processing in background) for ${event}`);
       } else {
+        console.error(`[Ticket Email] Fetch error:`, fetchError);
         throw fetchError;
       }
     }
   } catch (error: any) {
-    // Log error but don't throw - email failures should not break ticket operations
     console.error(`[Ticket Email] Failed to send ${event} event for ticket ${ticket.id}:`, error.message || error);
   }
 }
