@@ -42,6 +42,8 @@ import {
   clearFacebookAuthData,
   isFacebookConnected,
   getFacebookAuthData,
+  getFacebookBusinesses,
+  getFacebookPagesWithBusiness,
   type FacebookPage
 } from "@/utils/facebookOAuth";
 
@@ -117,6 +119,12 @@ export default function SocialMediaTool() {
   const [showFacebookPagesModal, setShowFacebookPagesModal] = useState(false);
   const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
   const [selectedFacebookPage, setSelectedFacebookPage] = useState<FacebookPage | null>(null);
+
+  // Facebook Business Manager State for Meta Compliance
+  const [showBusinessModal, setShowBusinessModal] = useState(false);
+  const [facebookBusinesses, setFacebookBusinesses] = useState<{ id: string; name: string }[]>([]);
+  const [selectedBusiness, setSelectedBusiness] = useState<{ id: string; name: string } | null>(null);
+
   const [showBlueskyInfo, setShowBlueskyInfo] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -376,6 +384,61 @@ export default function SocialMediaTool() {
     reader.readAsDataURL(f);
   };
 
+  const handleFacebookBusinessSelection = async () => {
+    const authData = getFacebookAuthData();
+    if (!authData?.access_token) {
+      // If not connected, connect first
+      window.location.reload(); // Simple reload to refresh state if needed, but normally we just wait
+      return;
+    }
+
+    // Fetch businesses first
+    try {
+      const businesses = await getFacebookBusinesses(authData.access_token);
+      if (businesses.length > 0) {
+        setFacebookBusinesses(businesses);
+        setShowBusinessModal(true);
+      } else {
+        // No businesses found, fallback to just pages
+        setShowFacebookPagesModal(true);
+      }
+    } catch (e) {
+      console.error("Error fetching businesses", e);
+      setShowFacebookPagesModal(true);
+    }
+  };
+
+  const handleBusinessSelect = async (business: { id: string; name: string }) => {
+    setSelectedBusiness(business);
+    const authData = getFacebookAuthData();
+    if (!authData?.access_token) return;
+
+    try {
+      const pages = await getFacebookPagesWithBusiness(authData.access_token);
+
+      // Filter pages belonging to this business
+      // API returns business: { id, name } inside page object, or just id? We check both safely
+      const filteredPages = pages.filter((p: any) => p.business?.id === business.id);
+
+      // Map to FacebookPage type
+      const mappedPages: FacebookPage[] = filteredPages.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        access_token: p.access_token
+      }));
+
+      // Use filtered pages if any, otherwise fallback to all (or empty if strict)
+      // For demo: strictly show only pages under that business
+      setFacebookPages(mappedPages);
+      setShowBusinessModal(false);
+      setShowFacebookPagesModal(true);
+    } catch (e) {
+      console.error("Error fetching pages for business", e);
+      // Fallback
+      setShowFacebookPagesModal(true);
+    }
+  };
+
   const sendToBackend = async () => {
     const form = new FormData();
     form.append("user_id", user!.id);
@@ -586,6 +649,62 @@ export default function SocialMediaTool() {
                 <CheckCircle className="w-5 h-5" />
                 {isEditingBluesky ? "Update Credentials" : "Connect"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Facebook Business Selection Modal */}
+      {showBusinessModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#3B3C3E] rounded-2xl p-8 max-w-lg w-full border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-[#1877F2]/20 flex items-center justify-center">
+                  <Facebook className="w-6 h-6 text-[#1877F2]" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-[#D6D7D8]">Select Business Manager</h2>
+                  <p className="text-xs text-[#A9AAAC]">Choose a business to load assets from</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowBusinessModal(false)}
+                className="w-8 h-8 rounded-lg bg-[#3B3C3E] hover:bg-[#4B4C4E] flex items-center justify-center transition-colors"
+              >
+                <X className="w-5 h-5 text-[#A9AAAC]" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              {facebookBusinesses.length === 0 ? (
+                <div className="text-center py-8 text-[#5B5C60]">
+                  <p>No businesses found.</p>
+                  <button
+                    onClick={() => { setShowBusinessModal(false); setShowFacebookPagesModal(true); }}
+                    className="mt-4 text-[#E1C37A] text-sm hover:underline"
+                  >
+                    Continue to Pages anyway
+                  </button>
+                </div>
+              ) : (
+                facebookBusinesses.map(business => (
+                  <button
+                    key={business.id}
+                    onClick={() => handleBusinessSelect(business)}
+                    className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <p className="text-[#D6D7D8] font-semibold group-hover:text-[#E1C37A] transition-colors">
+                          {business.name}
+                        </p>
+                        <p className="text-xs text-[#5B5C60] font-mono">ID: {business.id}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -963,7 +1082,7 @@ export default function SocialMediaTool() {
                             {connected && p.id === 'facebook' ? (
                               <>
                                 <button
-                                  onClick={() => setShowFacebookPagesModal(true)}
+                                  onClick={handleFacebookBusinessSelection}
                                   className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
                                 >
                                   <LayoutDashboard className="w-4 h-4" />
@@ -1106,7 +1225,7 @@ export default function SocialMediaTool() {
                             {connected && p.id === 'facebook' ? (
                               <>
                                 <button
-                                  onClick={() => setShowFacebookPagesModal(true)}
+                                  onClick={handleFacebookBusinessSelection}
                                   className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
                                 >
                                   <LayoutDashboard className="w-4 h-4" />

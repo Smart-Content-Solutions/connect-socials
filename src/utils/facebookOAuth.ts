@@ -160,3 +160,23 @@ export async function completeFacebookAuth(): Promise<FacebookAuthData> {
 export function isFacebookConnected(): boolean {
   return !!localStorage.getItem(FACEBOOK_AUTH_STORAGE_KEY);
 }
+
+export async function getFacebookBusinesses(accessToken: string): Promise<{ id: string; name: string }[]> {
+  const res = await fetch(`https://graph.facebook.com/v19.0/me/businesses?access_token=${accessToken}`);
+  if (!res.ok) {
+    console.error("Failed to fetch businesses", await res.text());
+    return [];
+  }
+  const data = await res.json();
+  return data.data || [];
+}
+
+export async function getFacebookPagesWithBusiness(accessToken: string): Promise<any[]> {
+  const res = await fetch(`https://graph.facebook.com/v19.0/me/accounts?fields=name,id,access_token,business&access_token=${accessToken}`);
+  if (!res.ok) {
+    console.error("Failed to fetch pages", await res.text());
+    return [];
+  }
+  const data = await res.json();
+  return data.data || [];
+}
