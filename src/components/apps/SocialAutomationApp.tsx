@@ -69,6 +69,7 @@ import {
 } from "@/utils/blueskyOAuth";
 
 import DashboardContent from "../social/DashboardContent";
+import InstagramDashboardContent from "../social/InstagramDashboardContent";
 
 type Platform = {
   id: string;
@@ -995,6 +996,8 @@ export default function SocialMediaTool() {
               style={{ scrollSnapAlign: 'start' }}
             >
               <DashboardContent selectedPage={selectedFacebookPage} />
+
+              {instagramData && <InstagramDashboardContent instagramData={instagramData} />}
 
               {/* Connected Accounts — Post Image */}
               <div>
