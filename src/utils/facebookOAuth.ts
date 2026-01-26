@@ -71,7 +71,7 @@ export async function initiateFacebookAuth(): Promise<void> {
   localStorage.setItem(OAUTH_STATE_KEY, state);
   localStorage.setItem(OAUTH_INITIATOR_USER_KEY, clerkUserId);
 
-  const scope = "email,public_profile,pages_show_list,pages_read_engagement,pages_manage_posts,pages_read_user_content";
+  const scope = "business_management,email,public_profile,pages_show_list,pages_read_engagement,pages_manage_posts,pages_read_user_content,instagram_basic,instagram_content_publish";
 
   const authUrl =
     "https://www.facebook.com/v19.0/dialog/oauth" +

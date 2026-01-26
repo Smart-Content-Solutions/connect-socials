@@ -5,13 +5,26 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import CreatePostContent from "@/components/social/CreatePostContent";
 import DashboardContent from "@/components/social/DashboardContent";
+import InstagramDashboardContent from "@/components/social/InstagramDashboardContent";
+import { type FacebookPage } from "@/utils/facebookOAuth";
 
 export default function SocialMediaTool(): JSX.Element {
   const navigate = useNavigate();
   const { user, isSignedIn, isLoaded } = useUser();
 
   const [activeTab, setActiveTab] = useState('create');
+  const [selectedFbPage, setSelectedFbPage] = useState<FacebookPage | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Load selected FB page for Dashboard
+    const stored = localStorage.getItem("facebook_selected_page");
+    if (stored) {
+      try {
+        setSelectedFbPage(JSON.parse(stored));
+      } catch (e) { console.error(e); }
+    }
+  }, []);
 
   useEffect(() => {
     if (scrollContainerRef.current) {
@@ -58,8 +71,8 @@ export default function SocialMediaTool(): JSX.Element {
             <button
               onClick={() => setActiveTab('create')}
               className={`px-6 py-3 rounded-lg font-semibold transition-all ${activeTab === 'create'
-                  ? 'bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg'
-                  : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg'
+                : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               Create Post
@@ -67,8 +80,8 @@ export default function SocialMediaTool(): JSX.Element {
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`px-6 py-3 rounded-lg font-semibold transition-all ${activeTab === 'dashboard'
-                  ? 'bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg'
-                  : 'text-gray-600 hover:bg-gray-100'
+                ? 'bg-gradient-to-r from-blue-500 to-green-500 text-white shadow-lg'
+                : 'text-gray-600 hover:bg-gray-100'
                 }`}
             >
               Dashboard
@@ -105,7 +118,9 @@ export default function SocialMediaTool(): JSX.Element {
                 className="w-full flex-shrink-0 p-6 md:p-8"
                 style={{ scrollSnapAlign: 'start' }}
               >
-                <DashboardContent />
+                <DashboardContent selectedPage={selectedFbPage} />
+                <div className="my-12 border-t border-gray-200/20"></div>
+                <InstagramDashboardContent />
               </div>
             </div>
           </motion.div>

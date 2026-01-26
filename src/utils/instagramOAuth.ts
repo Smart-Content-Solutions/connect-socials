@@ -57,6 +57,7 @@ export async function initiateInstagramAuth(): Promise<void> {
   localStorage.setItem(OAUTH_INITIATOR_USER_KEY, clerkUserId);
 
   const scope = [
+    "business_management",
     "pages_show_list",
     "pages_read_engagement",
     "pages_manage_posts",
