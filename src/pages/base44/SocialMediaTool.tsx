@@ -7,6 +7,7 @@ import CreatePostContent from "@/components/social/CreatePostContent";
 import DashboardContent from "@/components/social/DashboardContent";
 import InstagramDashboardContent from "@/components/social/InstagramDashboardContent";
 import { type FacebookPage } from "@/utils/facebookOAuth";
+import { getInstagramAuthData, isInstagramConnected, type InstagramAuthData } from "@/utils/instagramOAuth";
 
 export default function SocialMediaTool(): JSX.Element {
   const navigate = useNavigate();
@@ -14,6 +15,7 @@ export default function SocialMediaTool(): JSX.Element {
 
   const [activeTab, setActiveTab] = useState('create');
   const [selectedFbPage, setSelectedFbPage] = useState<FacebookPage | null>(null);
+  const [instagramData, setInstagramData] = useState<InstagramAuthData | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,6 +25,12 @@ export default function SocialMediaTool(): JSX.Element {
       try {
         setSelectedFbPage(JSON.parse(stored));
       } catch (e) { console.error(e); }
+    }
+
+    // Load Instagram data from localStorage
+    if (isInstagramConnected()) {
+      const igData = getInstagramAuthData();
+      setInstagramData(igData);
     }
   }, []);
 
@@ -105,7 +113,7 @@ export default function SocialMediaTool(): JSX.Element {
               ) : (
                 <div className="space-y-12">
                   <DashboardContent selectedPage={selectedFbPage} />
-                  <InstagramDashboardContent />
+                  {instagramData && <InstagramDashboardContent instagramData={instagramData} />}
                 </div>
               )}
             </div>
