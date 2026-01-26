@@ -1395,239 +1395,234 @@ export default function SocialMediaTool() {
                 </button>
               </div>
             </div>
-          </div>
 
-          {/* Video Post Panel */}
-          <div
-            className="w-full flex-shrink-0 p-6 md:p-8 space-y-6"
-            style={{ scrollSnapAlign: 'start' }}
-          >
-            <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-              <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
-                Select Platforms
-                <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.length} selected)</span>
-              </h3>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                {ALL_PLATFORMS.filter(p => p.isConnected()).map((p) => {
-                  const selected = isSelected(p.id);
-                  const Icon = p.icon;
-                  const color = platformColors[p.id];
+            {/* Video Post Panel */}
+            <div
+              className="w-full flex-shrink-0 p-6 md:p-8 space-y-6"
+              style={{ scrollSnapAlign: 'start' }}
+            >
+              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+                <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
+                  Select Platforms
+                  <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.length} selected)</span>
+                </h3>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                  {ALL_PLATFORMS.filter(p => p.isConnected()).map((p) => {
+                    const selected = isSelected(p.id);
+                    const Icon = p.icon;
+                    const color = platformColors[p.id];
 
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => togglePlatform(p.id, true)}
-                      className={`relative p-4 rounded-xl border transition-all duration-300 ${selected
-                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
-                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                        }`}
-                    >
-                      {selected && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
-                          <CheckCircle className="w-3 h-3 text-[#1A1A1C]" />
-                        </div>
-                      )}
-                      <div
-                        className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center"
-                        style={{ backgroundColor: `${color}20` }}
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => togglePlatform(p.id, true)}
+                        className={`relative p-4 rounded-xl border transition-all duration-300 ${selected
+                          ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                          : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                          }`}
                       >
-                        <Icon className="w-5 h-5" style={{ color }} />
-                      </div>
-                      <p className={`text-xs font-medium ${selected ? 'text-[#E1C37A]' : 'text-[#A9AAAC]'}`}>
-                        {p.id === 'facebook' && selectedFacebookPage ? selectedFacebookPage.name : p.name}
-                      </p>
-                    </button>
-                  );
-                })}
+                        {selected && (
+                          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
+                            <CheckCircle className="w-3 h-3 text-[#1A1A1C]" />
+                          </div>
+                        )}
+                        <div
+                          className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center"
+                          style={{ backgroundColor: `${color}20` }}
+                        >
+                          <Icon className="w-5 h-5" style={{ color }} />
+                        </div>
+                        <p className={`text-xs font-medium ${selected ? 'text-[#E1C37A]' : 'text-[#A9AAAC]'}`}>
+                          {p.id === 'facebook' && selectedFacebookPage ? selectedFacebookPage.name : p.name}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
 
-            <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-              <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
-                Media <span className="text-[#5B5C60] font-normal">(optional)</span>
-              </h3>
-              {imagePreview ? (
-                <div className="relative">
-                  <img src={imagePreview} className="w-full rounded-lg max-h-64 object-contain bg-black/20" alt="Preview" />
-                  <button
-                    onClick={() => {
-                      setImageFile(null);
-                      setImagePreview(null);
-                    }}
-                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500"
+              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+                <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
+                  Media <span className="text-[#5B5C60] font-normal">(optional)</span>
+                </h3>
+                {imagePreview ? (
+                  <div className="relative">
+                    <img src={imagePreview} className="w-full rounded-lg max-h-64 object-contain bg-black/20" alt="Preview" />
+                    <button
+                      onClick={() => {
+                        setImageFile(null);
+                        setImagePreview(null);
+                      }}
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    onClick={() => document.getElementById('file-upload-video')?.click()}
+                    className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all duration-300 ${isDragging
+                      ? 'border-[#E1C37A] bg-[#E1C37A]/5'
+                      : 'border-[#5B5C60]/50 hover:border-[#E1C37A]/50 hover:bg-[#3B3C3E]/20'
+                      }`}
                   >
-                    <X className="w-4 h-4" />
+                    <div className="flex justify-center gap-4 mb-4">
+                      <div className="w-14 h-14 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
+                        <ImageIcon className="w-7 h-7 text-[#E1C37A]" />
+                      </div>
+                    </div>
+                    <p className="text-[#D6D7D8] font-medium mb-2">Drop your video here</p>
+                    <p className="text-[#5B5C60] text-sm">or click to browse</p>
+                  </div>
+                )}
+                <input
+                  id="file-upload-video"
+                  type="file"
+                  hidden
+                  accept="image/*,video/*"
+                  onChange={handleImageUpload}
+                />
+              </div>
+
+              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+                <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Caption</h3>
+                <div className="relative">
+                  <textarea
+                    value={caption}
+                    onChange={(e) => setCaption(e.target.value)}
+                    rows={6}
+                    placeholder="Write your caption here..."
+                    className="w-full rounded-xl bg-[#3B3C3E]/30 border border-white/10 p-4 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none"
+                  />
+                  <div className="absolute bottom-3 right-3 text-xs text-[#5B5C60]">
+                    {caption.length} characters
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+                <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">When to Post</h3>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <button
+                    onClick={() => setPostMode('publish')}
+                    className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
+                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                      }`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'publish' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
+                      }`}>
+                      <Send className={`w-5 h-5 ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+                    </div>
+                    <div className="text-left">
+                      <p className={`font-medium ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
+                        Post Now
+                      </p>
+                      <p className="text-xs text-[#5B5C60]">Publish immediately</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setPostMode('schedule')}
+                    className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
+                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                      }`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'schedule' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
+                      }`}>
+                      <Clock className={`w-5 h-5 ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+                    </div>
+                    <div className="text-left">
+                      <p className={`font-medium ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
+                        Schedule
+                      </p>
+                      <p className="text-xs text-[#5B5C60]">Choose date & time</p>
+                    </div>
                   </button>
                 </div>
-              ) : (
-                <div
-                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                  onDragLeave={() => setIsDragging(false)}
-                  onDrop={handleDrop}
-                  onClick={() => document.getElementById('file-upload-video')?.click()}
-                  className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all duration-300 ${isDragging
-                    ? 'border-[#E1C37A] bg-[#E1C37A]/5'
-                    : 'border-[#5B5C60]/50 hover:border-[#E1C37A]/50 hover:bg-[#3B3C3E]/20'
-                    }`}
-                >
-                  <div className="flex justify-center gap-4 mb-4">
-                    <div className="w-14 h-14 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
-                      <ImageIcon className="w-7 h-7 text-[#E1C37A]" />
-                    </div>
-                  </div>
-                  <p className="text-[#D6D7D8] font-medium mb-2">Drop your video here</p>
-                  <p className="text-[#5B5C60] text-sm">or click to browse</p>
-                </div>
-              )}
-              <input
-                id="file-upload-video"
-                type="file"
-                hidden
-                accept="image/*,video/*"
-                onChange={handleImageUpload}
-              />
-            </div>
 
-            <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-              <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Caption</h3>
-              <div className="relative">
-                <textarea
-                  value={caption}
-                  onChange={(e) => setCaption(e.target.value)}
-                  rows={6}
-                  placeholder="Write your caption here..."
-                  className="w-full rounded-xl bg-[#3B3C3E]/30 border border-white/10 p-4 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none"
-                />
-                <div className="absolute bottom-3 right-3 text-xs text-[#5B5C60]">
-                  {caption.length} characters
-                </div>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-              <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">When to Post</h3>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <button
-                  onClick={() => setPostMode('publish')}
-                  className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
-                    ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
-                    : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                    }`}
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'publish' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
-                    }`}>
-                    <Send className={`w-5 h-5 ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
-                  </div>
-                  <div className="text-left">
-                    <p className={`font-medium ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
-                      Post Now
-                    </p>
-                    <p className="text-xs text-[#5B5C60]">Publish immediately</p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setPostMode('schedule')}
-                  className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
-                    ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
-                    : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                    }`}
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'schedule' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
-                    }`}>
-                    <Clock className={`w-5 h-5 ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
-                  </div>
-                  <div className="text-left">
-                    <p className={`font-medium ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
-                      Schedule
-                    </p>
-                    <p className="text-xs text-[#5B5C60]">Choose date & time</p>
-                  </div>
-                </button>
-              </div>
-
-              {postMode === 'schedule' && (
-                <input
-                  type="datetime-local"
-                  className="w-full bg-[#3B3C3E]/50 border border-white/10 p-3 rounded-xl text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20"
-                  value={scheduledTime}
-                  onChange={(e) => setScheduledTime(e.target.value)}
-                  style={{ colorScheme: 'dark' }}
-                />
-              )}
-            </div>
-
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={() => {
-                  setCaption("");
-                  setImageFile(null);
-                  setImagePreview(null);
-                  setSelectedPlatforms([]);
-                }}
-                className="px-6 py-3 rounded-full bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-all duration-300"
-              >
-                Clear
-              </button>
-
-              <button
-                onClick={handlePublish}
-                disabled={loading}
-                className="px-8 py-3 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-medium hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center gap-2 disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    Publishing…
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-5 h-5" />
-                    {postMode === 'publish' ? 'Publish Now' : 'Schedule Post'}
-                  </>
+                {postMode === 'schedule' && (
+                  <input
+                    type="datetime-local"
+                    className="w-full bg-[#3B3C3E]/50 border border-white/10 p-3 rounded-xl text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20"
+                    value={scheduledTime}
+                    onChange={(e) => setScheduledTime(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                  />
                 )}
-              </button>
+              </div>
+
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => {
+                    setCaption("");
+                    setImageFile(null);
+                    setImagePreview(null);
+                    setSelectedPlatforms([]);
+                  }}
+                  className="px-6 py-3 rounded-full bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-all duration-300"
+                >
+                  Clear
+                </button>
+
+                <button
+                  onClick={handlePublish}
+                  disabled={loading}
+                  className="px-8 py-3 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-medium hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center gap-2 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Publishing…
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      {postMode === 'publish' ? 'Publish Now' : 'Schedule Post'}
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-      </div>
-    </div>
-        </motion.div >
-
-
-
-    {/* Success Modal */ }
-    <AnimatePresence>
-  {
-    showSuccessModal && (
-      <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="bg-[#3B3C3E] rounded-3xl p-8 max-w-md w-full border border-[#E1C37A]/30 shadow-[0_0_50px_rgba(225,195,122,0.2)] text-center relative overflow-hidden"
-        >
-          {/* Animated background glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#E1C37A]/10 rounded-full blur-[80px] -z-10" />
-
-          <div className="w-20 h-20 rounded-full bg-[#E1C37A]/20 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-10 h-10 text-[#E1C37A]" />
-          </div>
-
-          <h2 className="text-2xl font-bold text-white mb-3">Post Successful!</h2>
-          <p className="text-[#A9AAAC] mb-8 leading-relaxed">
-            Your content has been {postMode === 'publish' ? 'published' : 'scheduled'} across your selected social platforms.
-          </p>
-
-          <button
-            onClick={() => setShowSuccessModal(false)}
-            className="w-full py-4 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.4)] transition-all duration-300"
-          >
-            Great, thanks!
-          </button>
         </motion.div>
-      </div>
-    )
-  }
+
+        {/* Success Modal */}
+        <AnimatePresence>
+          {showSuccessModal && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="bg-[#3B3C3E] rounded-3xl p-8 max-w-md w-full border border-[#E1C37A]/30 shadow-[0_0_50px_rgba(225,195,122,0.2)] text-center relative overflow-hidden"
+              >
+                {/* Animated background glow */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#E1C37A]/10 rounded-full blur-[80px] -z-10" />
+
+                <div className="w-20 h-20 rounded-full bg-[#E1C37A]/20 flex items-center justify-center mx-auto mb-6">
+                  <CheckCircle className="w-10 h-10 text-[#E1C37A]" />
+                </div>
+
+                <h2 className="text-2xl font-bold text-white mb-3">Post Successful!</h2>
+                <p className="text-[#A9AAAC] mb-8 leading-relaxed">
+                  Your content has been {postMode === 'publish' ? 'published' : 'scheduled'} across your selected social platforms.
+                </p>
+
+                <button
+                  onClick={() => setShowSuccessModal(false)}
+                  className="w-full py-4 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.4)] transition-all duration-300"
+                >
+                  Great, thanks!
+                </button>
+              </motion.div>
+            </div>
+          )
+          }
         </AnimatePresence >
       </div >
     </div >
