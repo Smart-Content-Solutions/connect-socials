@@ -64,7 +64,7 @@ export function FacebookConnectButton() {
       // META REQUIREMENT: Show list of Businesses user manages
       // GET /me/businesses
       const res = await fetch(
-        `https://graph.facebook.com/v19.0/me/businesses?access_token=${token}`
+        `https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token&access_token=${token}`
       );
       const data = await res.json();
 
@@ -122,14 +122,14 @@ export function FacebookConnectButton() {
       // Note: owned_pages vs client_pages depends on permission. 
       // client_pages usually covers pages granted to the business.
       const res = await fetch(
-        `https://graph.facebook.com/v19.0/${biz.id}/client_pages?access_token=${authData.access_token}`
+        `https://graph.facebook.com/v19.0/${biz.id}/client_pages?fields=name,access_token&access_token=${authData.access_token}`
       );
       const data = await res.json();
 
       if (data.error) {
         // Try owned_pages as fallback
         const res2 = await fetch(
-          `https://graph.facebook.com/v19.0/${biz.id}/owned_pages?access_token=${authData.access_token}`
+          `https://graph.facebook.com/v19.0/${biz.id}/owned_pages?fields=name,access_token&access_token=${authData.access_token}`
         );
         const data2 = await res2.json();
         if (data2.error) throw new Error(data.error.message);

@@ -97,31 +97,17 @@ export default function SocialMediaTool(): JSX.Element {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="relative rounded-2xl bg-white/60 backdrop-blur-sm border border-gray-200 overflow-hidden shadow-xl"
+            className="relative rounded-2xl bg-white/60 backdrop-blur-sm border border-gray-200 shadow-xl min-h-[600px]"
           >
-            {/* Scrollable Container */}
-            <div
-              ref={scrollContainerRef}
-              className="flex overflow-x-hidden scroll-smooth"
-              style={{ scrollSnapType: 'x mandatory' }}
-            >
-              {/* Create Post Panel */}
-              <div
-                className="w-full flex-shrink-0 p-6 md:p-8"
-                style={{ scrollSnapAlign: 'start' }}
-              >
+            <div className="p-6 md:p-8">
+              {activeTab === 'create' ? (
                 <CreatePostContent />
-              </div>
-
-              {/* Dashboard Panel */}
-              <div
-                className="w-full flex-shrink-0 p-6 md:p-8"
-                style={{ scrollSnapAlign: 'start' }}
-              >
-                <DashboardContent selectedPage={selectedFbPage} />
-                <div className="my-12 border-t border-gray-200/20"></div>
-                <InstagramDashboardContent />
-              </div>
+              ) : (
+                <div className="space-y-12">
+                  <DashboardContent selectedPage={selectedFbPage} />
+                  <InstagramDashboardContent />
+                </div>
+              )}
             </div>
           </motion.div>
         </div>
