@@ -66,6 +66,30 @@ export default function InstagramDashboardContent({ instagramData }: InstagramDa
 
     if (!instagramData) return null;
 
+    if (error) {
+        return (
+            <div className="text-[#D6D7D8] mt-12 pt-8 border-t border-white/5">
+                <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20">
+                    <h3 className="text-red-400 font-bold mb-2">Instagram Data Load Error</h3>
+                    <p className="text-red-300 text-sm mb-4">{error}</p>
+                    <details className="text-xs text-red-300/50">
+                        <summary>Debug Info</summary>
+                        <pre className="mt-2 whitespace-pre-wrap">{JSON.stringify({
+                            id: instagramData.instagram_user_id,
+                            hasToken: !!instagramData.access_token
+                        }, null, 2)}</pre>
+                    </details>
+                    <button
+                        onClick={fetchInstagramData}
+                        className="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-lg text-xs transition-colors"
+                    >
+                        Retry Fetch
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="text-[#D6D7D8] mt-12 pt-8 border-t border-white/5">
             <div className="flex items-center gap-4 mb-8">
@@ -109,7 +133,7 @@ export default function InstagramDashboardContent({ instagramData }: InstagramDa
                         <Users className="w-8 h-8 text-pink-500" />
                         <div>
                             <div className="text-2xl font-bold text-[#D6D7D8]">
-                                {profileStats?.followers_count?.toLocaleString() || "-"}
+                                {profileStats?.followers_count?.toLocaleString() || instagramData.followers?.toLocaleString() || "-"}
                             </div>
                             <div className="text-sm text-[#A9AAAC]">Followers</div>
                         </div>
@@ -120,7 +144,7 @@ export default function InstagramDashboardContent({ instagramData }: InstagramDa
                         <ImageIcon className="w-8 h-8 text-purple-500" />
                         <div>
                             <div className="text-2xl font-bold text-[#D6D7D8]">
-                                {profileStats?.media_count?.toLocaleString() || "-"}
+                                {profileStats?.media_count?.toLocaleString() || instagramData.mediaCount?.toLocaleString() || "-"}
                             </div>
                             <div className="text-sm text-[#A9AAAC]">Total Posts</div>
                         </div>
