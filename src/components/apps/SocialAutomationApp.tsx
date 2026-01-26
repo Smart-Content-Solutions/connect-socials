@@ -155,6 +155,41 @@ export default function SocialMediaTool() {
     }
   }, []);
 
+  /* Scroll Animation Logic */
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const tabOrder = ['dashboard', 'create', 'video'];
+      const index = tabOrder.indexOf(activeTab);
+      // We assume each slide is 100% width
+      const scrollTo = index * scrollContainerRef.current.clientWidth;
+
+      const start = scrollContainerRef.current.scrollLeft;
+      const end = scrollTo;
+      const duration = 600;
+      const startTime = performance.now();
+
+      const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      const animateScroll = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeInOutCubic(progress);
+
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollLeft = start + (end - start) * easedProgress;
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        }
+      };
+
+      requestAnimationFrame(animateScroll);
+    }
+  }, [activeTab]);
+
   const gridRef = useRef<HTMLDivElement>(null);
   const [highlightStyle, setHighlightStyle] = useState({
     opacity: 0,
@@ -822,16 +857,17 @@ export default function SocialMediaTool() {
         )}
 
         <div className="relative mt-4 min-h-[600px]">
-          <AnimatePresence mode="wait">
-            {activeTab === 'dashboard' && (
-              <motion.div
-                key="dashboard"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-8"
-              >
+          <div
+            ref={scrollContainerRef}
+            className="flex overflow-x-hidden scroll-smooth"
+            style={{
+              scrollSnapType: 'x mandatory',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
+          >
+            <div className="min-w-full flex-shrink-0 p-1" style={{ scrollSnapAlign: 'start' }}>
+              <div className="space-y-8">
                 <DashboardContent selectedPage={selectedFacebookPage} />
 
                 {/* Connected Accounts — Post Image */}
@@ -1137,18 +1173,11 @@ export default function SocialMediaTool() {
                     })}
                   </div>
                 </div>
-              </motion.div>
-            )}
+              </div>
+            </div>
 
-            {activeTab === 'create' && (
-              <motion.div
-                key="create"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
+            <div className="min-w-full flex-shrink-0 p-1" style={{ scrollSnapAlign: 'start' }}>
+              <div className="space-y-6">
                 <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
                   <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
                     Select Platforms
@@ -1356,18 +1385,11 @@ export default function SocialMediaTool() {
                     )}
                   </button>
                 </div>
-              </motion.div>
-            )}
+              </div>
+            </div>
 
-            {activeTab === 'video' && (
-              <motion.div
-                key="video"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
+            <div className="min-w-full flex-shrink-0 p-1" style={{ scrollSnapAlign: 'start' }}>
+              <div className="space-y-6">
                 <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
                   <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
                     Select Platforms
@@ -1554,9 +1576,9 @@ export default function SocialMediaTool() {
                     )}
                   </button>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Success Modal */}
