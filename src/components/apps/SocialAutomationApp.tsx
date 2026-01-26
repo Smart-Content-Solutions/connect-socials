@@ -158,12 +158,46 @@ export default function SocialMediaTool() {
 
 
   const gridRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [highlightStyle, setHighlightStyle] = useState({
     opacity: 0,
     transform: 'translate(0px, 0px)',
     width: 0,
     height: 0,
   });
+
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      const tabIndex = activeTab === 'dashboard' ? 0 : activeTab === 'create' ? 1 : 2;
+      const scrollTo = tabIndex * scrollContainerRef.current.offsetWidth;
+      const start = scrollContainerRef.current.scrollLeft;
+      const end = scrollTo;
+      const duration = 800;
+      const startTime = performance.now();
+
+      const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      const animateScroll = (currentTime: number) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeInOutCubic(progress);
+
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollLeft = start + (end - start) * easedProgress;
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        }
+      };
+
+      requestAnimationFrame(animateScroll);
+
+      // Scroll page to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [activeTab]);
+
 
   const handleBlueskyConnect = () => {
     const credentials = getBlueskyCredentials();
@@ -823,779 +857,779 @@ export default function SocialMediaTool() {
           </div>
         )}
 
-        <div className="relative mt-4 min-h-[600px]">
-          <AnimatePresence mode="wait">
-            {activeTab === 'dashboard' && (
-              <motion.div
-                key="dashboard"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-8"
-              >
-                <DashboardContent selectedPage={selectedFacebookPage} />
+        {/* Content Area with Slide Animation */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="relative mt-4 rounded-2xl bg-[#3B3C3E]/20 backdrop-blur-[10px] border border-white/5 overflow-hidden"
+        >
+          {/* Scrollable Container */}
+          <div
+            ref={scrollContainerRef}
+            className="flex overflow-x-hidden scroll-smooth"
+            style={{ scrollSnapType: 'x mandatory' }}
+          >
+            {/* Dashboard Panel */}
+            <div
+              className="w-full flex-shrink-0 p-6 md:p-8 space-y-8"
+              style={{ scrollSnapAlign: 'start' }}
+            >
+              <DashboardContent selectedPage={selectedFacebookPage} />
 
-                {/* Connected Accounts — Post Image */}
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <LinkIcon className="w-5 h-5 text-[#E1C37A]" />
-                    <h3 className="text-lg font-semibold text-[#D6D7D8]">Connected Accounts — Post Image</h3>
-                    <span className="px-2 py-0.5 rounded-full bg-[#E1C37A]/10 text-[#E1C37A] text-sm">
-                      {connectedCount} / {ALL_PLATFORMS.length}
-                    </span>
-                  </div>
-                  <p className="text-sm text-[#A9AAAC] mb-6">Manage accounts for image posts</p>
-
-                  <div
-                    ref={gridRef}
-                    className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-                    onMouseLeave={handleGridMouseLeave}
-                  >
-                    <div
-                      className="absolute pointer-events-none rounded-2xl hidden md:block"
-                      style={{
-                        opacity: highlightStyle.opacity,
-                        transform: highlightStyle.transform,
-                        width: highlightStyle.width,
-                        height: highlightStyle.height,
-                        background: 'linear-gradient(135deg, rgba(225, 195, 122, 0.15) 0%, rgba(182, 148, 76, 0.1) 100%)',
-                        boxShadow: '0 0 40px rgba(225, 195, 122, 0.35), 0 0 80px rgba(212, 175, 55, 0.2)',
-                        border: '1px solid rgba(225, 195, 122, 0.25)',
-                        transition: 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                        zIndex: 0,
-                      }}
-                    />
-
-                    {ALL_PLATFORMS.map((p) => {
-                      const connected = p.isConnected();
-                      const Icon = p.icon;
-                      const color = platformColors[p.id] || '#E1C37A';
-
-                      return (
-                        <div
-                          key={p.id}
-                          onMouseEnter={handleCardMouseEnter}
-                          className="relative z-10 p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 hover:border-[#E1C37A]/20 transition-all duration-300"
-                        >
-                          <div className="flex items-start justify-between mb-4">
-                            <div
-                              className="w-12 h-12 rounded-xl flex items-center justify-center"
-                              style={{ backgroundColor: `${color}20` }}
-                            >
-                              <Icon className="w-6 h-6" style={{ color }} />
-                            </div>
-                            <div className="flex gap-2">
-                              {connected && (
-                                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
-                                  <CheckCircle className="w-4 h-4 text-[#1A1A1C]" />
-                                </div>
-                              )}
-                              {connected && p.id === "bluesky" && (
-                                <button
-                                  onClick={() => {
-                                    setIsEditingBluesky(true);
-                                    handleBlueskyConnect();
-                                  }}
-                                  className="w-6 h-6 rounded-full bg-[#E1C37A]/20 flex items-center justify-center hover:bg-[#E1C37A]/30 transition-colors"
-                                  title="Edit credentials"
-                                >
-                                  <Edit2 className="w-3 h-3 text-[#E1C37A]" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-
-                          <h3 className="text-[#D6D7D8] font-semibold text-lg mb-1">{p.name}</h3>
-                          <p className="text-[#5B5C60] text-sm mb-4">
-                            {connected
-                              ? (p.id === 'facebook' && selectedFacebookPage
-                                ? `Page: ${selectedFacebookPage.name}`
-                                : p.id === 'instagram'
-                                  ? `Connected as @${instagramData?.username || 'hsuswiowkskow'}`
-                                  : 'Connected')
-                              : 'Not connected'}
-                          </p>
-
-                          {p.connect && (
-                            <div className="space-y-2">
-                              {connected && p.id === 'facebook' ? (
-                                <>
-                                  <button
-                                    onClick={() => setShowFacebookPagesModal(true)}
-                                    className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
-                                  >
-                                    <LayoutDashboard className="w-4 h-4" />
-                                    {selectedFacebookPage ? "Switch Page" : "Select Page"}
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      if (confirm("Disconnect Facebook?")) {
-                                        p.disconnect?.();
-                                        setSelectedFacebookPage(null);
-                                        localStorage.removeItem('facebook_selected_page');
-                                      }
-                                    }}
-                                    className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
-                                  >
-                                    Disconnect
-                                  </button>
-                                </>
-                              ) : connected && p.id === 'instagram' ? (
-                                <>
-                                  <button
-                                    onClick={() => setShowInstagramPagesModal(true)}
-                                    className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
-                                  >
-                                    <LayoutDashboard className="w-4 h-4" />
-                                    Select Page
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      if (confirm("Disconnect Instagram?")) {
-                                        p.disconnect?.();
-                                        setInstagramData(null);
-                                      }
-                                    }}
-                                    className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
-                                  >
-                                    Disconnect
-                                  </button>
-                                </>
-                              ) : (
-                                <button
-                                  onClick={() => {
-                                    setLoadingPlatform(p.id);
-                                    connected ? p.disconnect?.() : p.connect();
-                                    setTimeout(() => setLoadingPlatform(null), 1200);
-                                  }}
-                                  className={`w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 ${connected
-                                    ? 'bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10'
-                                    : 'bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] hover:shadow-[0_0_20px_rgba(225,195,122,0.3)]'
-                                    }`}
-                                >
-                                  {loadingPlatform === p.id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : connected ? (
-                                    <>
-                                      <Unlink className="w-4 h-4" />
-                                      Disconnect
-                                    </>
-                                  ) : (
-                                    <>
-                                      <LinkIcon className="w-4 h-4" />
-                                      Connect
-                                    </>
-                                  )}
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+              {/* Connected Accounts — Post Image */}
+              <div>
+                <div className="flex items-center gap-3 mb-4">
+                  <LinkIcon className="w-5 h-5 text-[#E1C37A]" />
+                  <h3 className="text-lg font-semibold text-[#D6D7D8]">Connected Accounts — Post Image</h3>
+                  <span className="px-2 py-0.5 rounded-full bg-[#E1C37A]/10 text-[#E1C37A] text-sm">
+                    {connectedCount} / {ALL_PLATFORMS.length}
+                  </span>
                 </div>
+                <p className="text-sm text-[#A9AAAC] mb-6">Manage accounts for image posts</p>
 
-                {/* Connected Accounts — Post Video */}
-                <div className="mt-8">
-                  <div className="flex items-center gap-3 mb-4">
-                    <LinkIcon className="w-5 h-5 text-[#E1C37A]" />
-                    <h3 className="text-lg font-semibold text-[#D6D7D8]">Connected Accounts — Post Video</h3>
-                    <span className="px-2 py-0.5 rounded-full bg-[#E1C37A]/10 text-[#E1C37A] text-sm">
-                      {connectedCount} / {ALL_PLATFORMS.length}
-                    </span>
-                  </div>
-                  <p className="text-sm text-[#A9AAAC] mb-6">Manage accounts for short-form video posting</p>
-
-                  <div
-                    className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
-                  >
-                    {ALL_PLATFORMS.map((p) => {
-                      const connected = p.isConnected();
-                      const Icon = p.icon;
-                      const color = platformColors[p.id] || '#E1C37A';
-
-                      return (
-                        <div
-                          key={p.id}
-                          className="relative z-10 p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 hover:border-[#E1C37A]/20 transition-all duration-300"
-                        >
-                          <div className="flex items-start justify-between mb-4">
-                            <div
-                              className="w-12 h-12 rounded-xl flex items-center justify-center"
-                              style={{ backgroundColor: `${color}20` }}
-                            >
-                              <Icon className="w-6 h-6" style={{ color }} />
-                            </div>
-                            <div className="flex gap-2">
-                              {connected && (
-                                <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
-                                  <CheckCircle className="w-4 h-4 text-[#1A1A1C]" />
-                                </div>
-                              )}
-                              {connected && p.id === "bluesky" && (
-                                <button
-                                  onClick={() => {
-                                    setIsEditingBluesky(true);
-                                    handleBlueskyConnect();
-                                  }}
-                                  className="w-6 h-6 rounded-full bg-[#E1C37A]/20 flex items-center justify-center hover:bg-[#E1C37A]/30 transition-colors"
-                                  title="Edit credentials"
-                                >
-                                  <Edit2 className="w-3 h-3 text-[#E1C37A]" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-
-                          <h3 className="text-[#D6D7D8] font-semibold text-lg mb-1">{p.name}</h3>
-                          <p className="text-[#5B5C60] text-sm mb-4">
-                            {connected
-                              ? (p.id === 'facebook' && selectedFacebookPage
-                                ? `Page: ${selectedFacebookPage.name}`
-                                : p.id === 'instagram'
-                                  ? `Connected as @${instagramData?.username || 'hsuswiowkskow'}`
-                                  : 'Connected')
-                              : 'Not connected'}
-                          </p>
-
-                          {p.connect && (
-                            <div className="space-y-2">
-                              {connected && p.id === 'facebook' ? (
-                                <>
-                                  <button
-                                    onClick={() => setShowFacebookPagesModal(true)}
-                                    className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
-                                  >
-                                    <LayoutDashboard className="w-4 h-4" />
-                                    {selectedFacebookPage ? "Switch Page" : "Select Page"}
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      if (confirm("Disconnect Facebook?")) {
-                                        p.disconnect?.();
-                                        setSelectedFacebookPage(null);
-                                        localStorage.removeItem('facebook_selected_page');
-                                      }
-                                    }}
-                                    className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
-                                  >
-                                    Disconnect
-                                  </button>
-                                </>
-                              ) : connected && p.id === 'instagram' ? (
-                                <>
-                                  <button
-                                    onClick={() => setShowInstagramPagesModal(true)}
-                                    className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
-                                  >
-                                    <LayoutDashboard className="w-4 h-4" />
-                                    Select Page
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      if (confirm("Disconnect Instagram?")) {
-                                        p.disconnect?.();
-                                        setInstagramData(null);
-                                      }
-                                    }}
-                                    className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
-                                  >
-                                    Disconnect
-                                  </button>
-                                </>
-                              ) : (
-                                <button
-                                  onClick={() => {
-                                    setLoadingPlatform(p.id);
-                                    connected ? p.disconnect?.() : p.connect();
-                                    setTimeout(() => setLoadingPlatform(null), 1200);
-                                  }}
-                                  className={`w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 ${connected
-                                    ? 'bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10'
-                                    : 'bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] hover:shadow-[0_0_20px_rgba(225,195,122,0.3)]'
-                                    }`}
-                                >
-                                  {loadingPlatform === p.id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : connected ? (
-                                    <>
-                                      <Unlink className="w-4 h-4" />
-                                      Disconnect
-                                    </>
-                                  ) : (
-                                    <>
-                                      <LinkIcon className="w-4 h-4" />
-                                      Connect
-                                    </>
-                                  )}
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {activeTab === 'create' && (
-              <motion.div
-                key="create"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-                  <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
-                    Select Platforms
-                    <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.length} selected)</span>
-                  </h3>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                    {ALL_PLATFORMS.filter(p => p.isConnected()).map((p) => {
-                      const selected = isSelected(p.id);
-                      const Icon = p.icon;
-                      const color = platformColors[p.id];
-
-                      return (
-                        <button
-                          key={p.id}
-                          onClick={() => togglePlatform(p.id, true)}
-                          className={`relative p-4 rounded-xl border transition-all duration-300 ${selected
-                            ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
-                            : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                            }`}
-                        >
-                          {selected && (
-                            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
-                              <CheckCircle className="w-3 h-3 text-[#1A1A1C]" />
-                            </div>
-                          )}
-                          <div
-                            className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center"
-                            style={{ backgroundColor: `${color}20` }}
-                          >
-                            <Icon className="w-5 h-5" style={{ color }} />
-                          </div>
-                          <p className={`text-xs font-medium ${selected ? 'text-[#E1C37A]' : 'text-[#A9AAAC]'}`}>
-                            {p.id === 'facebook' && selectedFacebookPage ? selectedFacebookPage.name : p.name}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-                  <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
-                    Media <span className="text-[#5B5C60] font-normal">(optional)</span>
-                  </h3>
-                  {imagePreview ? (
-                    <div className="relative">
-                      <img src={imagePreview} className="w-full rounded-lg max-h-64 object-contain bg-black/20" alt="Preview" />
-                      <button
-                        onClick={() => {
-                          setImageFile(null);
-                          setImagePreview(null);
-                        }}
-                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div
-                      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                      onDragLeave={() => setIsDragging(false)}
-                      onDrop={handleDrop}
-                      onClick={() => document.getElementById('file-upload')?.click()}
-                      className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all duration-300 ${isDragging
-                        ? 'border-[#E1C37A] bg-[#E1C37A]/5'
-                        : 'border-[#5B5C60]/50 hover:border-[#E1C37A]/50 hover:bg-[#3B3C3E]/20'
-                        }`}
-                    >
-                      <div className="flex justify-center gap-4 mb-4">
-                        <div className="w-14 h-14 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
-                          <ImageIcon className="w-7 h-7 text-[#E1C37A]" />
-                        </div>
-                      </div>
-                      <p className="text-[#D6D7D8] font-medium mb-2">Drop your image here</p>
-                      <p className="text-[#5B5C60] text-sm">or click to browse</p>
-                    </div>
-                  )}
-                  <input
-                    id="file-upload"
-                    type="file"
-                    hidden
-                    accept="image/*,video/*"
-                    onChange={handleImageUpload}
-                  />
-                </div>
-
-                <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-                  <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Caption</h3>
-                  <div className="relative">
-                    <textarea
-                      value={caption}
-                      onChange={(e) => setCaption(e.target.value)}
-                      rows={6}
-                      placeholder="Write your caption here..."
-                      className="w-full rounded-xl bg-[#3B3C3E]/30 border border-white/10 p-4 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none"
-                    />
-                    <div className="absolute bottom-3 right-3 text-xs text-[#5B5C60]">
-                      {caption.length} characters
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between p-4 mt-4 rounded-xl bg-[#3B3C3E]/30 border border-white/5">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E1C37A]/20 to-[#B6934C]/20 flex items-center justify-center">
-                        <Sparkles className="w-5 h-5 text-[#E1C37A]" />
-                      </div>
-                      <div>
-                        <p className="text-[#D6D7D8] font-medium text-sm">AI Enhancement</p>
-                        <p className="text-[#5B5C60] text-xs">Improve your caption with AI</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setAiEnhance(!aiEnhance)}
-                      className={`relative w-14 h-7 rounded-full transition ${aiEnhance ? 'bg-[#E1C37A]' : 'bg-[#3B3C3E]'
-                        }`}
-                    >
-                      <span
-                        className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-black transition ${aiEnhance ? 'translate-x-7' : 'translate-x-0'
-                          }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-                  <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">When to Post</h3>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <button
-                      onClick={() => setPostMode('publish')}
-                      className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
-                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
-                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                        }`}
-                    >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'publish' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
-                        }`}>
-                        <Send className={`w-5 h-5 ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
-                      </div>
-                      <div className="text-left">
-                        <p className={`font-medium ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
-                          Post Now
-                        </p>
-                        <p className="text-xs text-[#5B5C60]">Publish immediately</p>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => setPostMode('schedule')}
-                      className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
-                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
-                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                        }`}
-                    >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'schedule' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
-                        }`}>
-                        <Clock className={`w-5 h-5 ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
-                      </div>
-                      <div className="text-left">
-                        <p className={`font-medium ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
-                          Schedule
-                        </p>
-                        <p className="text-xs text-[#5B5C60]">Choose date & time</p>
-                      </div>
-                    </button>
-                  </div>
-
-                  {postMode === 'schedule' && (
-                    <input
-                      type="datetime-local"
-                      className="w-full bg-[#3B3C3E]/50 border border-white/10 p-3 rounded-xl text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20"
-                      value={scheduledTime}
-                      onChange={(e) => setScheduledTime(e.target.value)}
-                      style={{ colorScheme: 'dark' }}
-                    />
-                  )}
-                </div>
-
-                <div className="flex justify-end gap-4">
-                  <button
-                    onClick={() => {
-                      setCaption("");
-                      setImageFile(null);
-                      setImagePreview(null);
-                      setSelectedPlatforms([]);
-                    }}
-                    className="px-6 py-3 rounded-full bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-all duration-300"
-                  >
-                    Clear
-                  </button>
-
-                  <button
-                    onClick={handlePublish}
-                    disabled={loading}
-                    className="px-8 py-3 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-medium hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center gap-2 disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Publishing…
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-5 h-5" />
-                        {postMode === 'publish' ? 'Publish Now' : 'Schedule Post'}
-                      </>
-                    )}
-                  </button>
-                </div>
-              </motion.div>
-            )}
-
-            {activeTab === 'video' && (
-              <motion.div
-                key="video"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-                  <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
-                    Select Platforms
-                    <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.length} selected)</span>
-                  </h3>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                    {ALL_PLATFORMS.filter(p => p.isConnected()).map((p) => {
-                      const selected = isSelected(p.id);
-                      const Icon = p.icon;
-                      const color = platformColors[p.id];
-
-                      return (
-                        <button
-                          key={p.id}
-                          onClick={() => togglePlatform(p.id, true)}
-                          className={`relative p-4 rounded-xl border transition-all duration-300 ${selected
-                            ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
-                            : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                            }`}
-                        >
-                          {selected && (
-                            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
-                              <CheckCircle className="w-3 h-3 text-[#1A1A1C]" />
-                            </div>
-                          )}
-                          <div
-                            className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center"
-                            style={{ backgroundColor: `${color}20` }}
-                          >
-                            <Icon className="w-5 h-5" style={{ color }} />
-                          </div>
-                          <p className={`text-xs font-medium ${selected ? 'text-[#E1C37A]' : 'text-[#A9AAAC]'}`}>
-                            {p.id === 'facebook' && selectedFacebookPage ? selectedFacebookPage.name : p.name}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-                  <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
-                    Media <span className="text-[#5B5C60] font-normal">(optional)</span>
-                  </h3>
-                  {imagePreview ? (
-                    <div className="relative">
-                      <img src={imagePreview} className="w-full rounded-lg max-h-64 object-contain bg-black/20" alt="Preview" />
-                      <button
-                        onClick={() => {
-                          setImageFile(null);
-                          setImagePreview(null);
-                        }}
-                        className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <div
-                      onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                      onDragLeave={() => setIsDragging(false)}
-                      onDrop={handleDrop}
-                      onClick={() => document.getElementById('file-upload-video')?.click()}
-                      className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all duration-300 ${isDragging
-                        ? 'border-[#E1C37A] bg-[#E1C37A]/5'
-                        : 'border-[#5B5C60]/50 hover:border-[#E1C37A]/50 hover:bg-[#3B3C3E]/20'
-                        }`}
-                    >
-                      <div className="flex justify-center gap-4 mb-4">
-                        <div className="w-14 h-14 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
-                          <ImageIcon className="w-7 h-7 text-[#E1C37A]" />
-                        </div>
-                      </div>
-                      <p className="text-[#D6D7D8] font-medium mb-2">Drop your video here</p>
-                      <p className="text-[#5B5C60] text-sm">or click to browse</p>
-                    </div>
-                  )}
-                  <input
-                    id="file-upload-video"
-                    type="file"
-                    hidden
-                    accept="image/*,video/*"
-                    onChange={handleImageUpload}
-                  />
-                </div>
-
-                <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-                  <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Caption</h3>
-                  <div className="relative">
-                    <textarea
-                      value={caption}
-                      onChange={(e) => setCaption(e.target.value)}
-                      rows={6}
-                      placeholder="Write your caption here..."
-                      className="w-full rounded-xl bg-[#3B3C3E]/30 border border-white/10 p-4 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none"
-                    />
-                    <div className="absolute bottom-3 right-3 text-xs text-[#5B5C60]">
-                      {caption.length} characters
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-                  <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">When to Post</h3>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <button
-                      onClick={() => setPostMode('publish')}
-                      className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
-                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
-                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                        }`}
-                    >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'publish' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
-                        }`}>
-                        <Send className={`w-5 h-5 ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
-                      </div>
-                      <div className="text-left">
-                        <p className={`font-medium ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
-                          Post Now
-                        </p>
-                        <p className="text-xs text-[#5B5C60]">Publish immediately</p>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => setPostMode('schedule')}
-                      className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
-                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
-                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                        }`}
-                    >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'schedule' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
-                        }`}>
-                        <Clock className={`w-5 h-5 ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
-                      </div>
-                      <div className="text-left">
-                        <p className={`font-medium ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
-                          Schedule
-                        </p>
-                        <p className="text-xs text-[#5B5C60]">Choose date & time</p>
-                      </div>
-                    </button>
-                  </div>
-
-                  {postMode === 'schedule' && (
-                    <input
-                      type="datetime-local"
-                      className="w-full bg-[#3B3C3E]/50 border border-white/10 p-3 rounded-xl text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20"
-                      value={scheduledTime}
-                      onChange={(e) => setScheduledTime(e.target.value)}
-                      style={{ colorScheme: 'dark' }}
-                    />
-                  )}
-                </div>
-
-                <div className="flex justify-end gap-4">
-                  <button
-                    onClick={() => {
-                      setCaption("");
-                      setImageFile(null);
-                      setImagePreview(null);
-                      setSelectedPlatforms([]);
-                    }}
-                    className="px-6 py-3 rounded-full bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-all duration-300"
-                  >
-                    Clear
-                  </button>
-
-                  <button
-                    onClick={handlePublish}
-                    disabled={loading}
-                    className="px-8 py-3 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-medium hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center gap-2 disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Publishing…
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-5 h-5" />
-                        {postMode === 'publish' ? 'Publish Now' : 'Schedule Post'}
-                      </>
-                    )}
-                  </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-
-
-          {/* Success Modal */}
-          <AnimatePresence>
-            {showSuccessModal && (
-              <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                  className="bg-[#3B3C3E] rounded-3xl p-8 max-w-md w-full border border-[#E1C37A]/30 shadow-[0_0_50px_rgba(225,195,122,0.2)] text-center relative overflow-hidden"
+                <div
+                  ref={gridRef}
+                  className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                  onMouseLeave={handleGridMouseLeave}
                 >
-                  {/* Animated background glow */}
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#E1C37A]/10 rounded-full blur-[80px] -z-10" />
+                  <div
+                    className="absolute pointer-events-none rounded-2xl hidden md:block"
+                    style={{
+                      opacity: highlightStyle.opacity,
+                      transform: highlightStyle.transform,
+                      width: highlightStyle.width,
+                      height: highlightStyle.height,
+                      background: 'linear-gradient(135deg, rgba(225, 195, 122, 0.15) 0%, rgba(182, 148, 76, 0.1) 100%)',
+                      boxShadow: '0 0 40px rgba(225, 195, 122, 0.35), 0 0 80px rgba(212, 175, 55, 0.2)',
+                      border: '1px solid rgba(225, 195, 122, 0.25)',
+                      transition: 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      zIndex: 0,
+                    }}
+                  />
 
-                  <div className="w-20 h-20 rounded-full bg-[#E1C37A]/20 flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle className="w-10 h-10 text-[#E1C37A]" />
+                  {ALL_PLATFORMS.map((p) => {
+                    const connected = p.isConnected();
+                    const Icon = p.icon;
+                    const color = platformColors[p.id] || '#E1C37A';
+
+                    return (
+                      <div
+                        key={p.id}
+                        onMouseEnter={handleCardMouseEnter}
+                        className="relative z-10 p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 hover:border-[#E1C37A]/20 transition-all duration-300"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div
+                            className="w-12 h-12 rounded-xl flex items-center justify-center"
+                            style={{ backgroundColor: `${color}20` }}
+                          >
+                            <Icon className="w-6 h-6" style={{ color }} />
+                          </div>
+                          <div className="flex gap-2">
+                            {connected && (
+                              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
+                                <CheckCircle className="w-4 h-4 text-[#1A1A1C]" />
+                              </div>
+                            )}
+                            {connected && p.id === "bluesky" && (
+                              <button
+                                onClick={() => {
+                                  setIsEditingBluesky(true);
+                                  handleBlueskyConnect();
+                                }}
+                                className="w-6 h-6 rounded-full bg-[#E1C37A]/20 flex items-center justify-center hover:bg-[#E1C37A]/30 transition-colors"
+                                title="Edit credentials"
+                              >
+                                <Edit2 className="w-3 h-3 text-[#E1C37A]" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <h3 className="text-[#D6D7D8] font-semibold text-lg mb-1">{p.name}</h3>
+                        <p className="text-[#5B5C60] text-sm mb-4">
+                          {connected
+                            ? (p.id === 'facebook' && selectedFacebookPage
+                              ? `Page: ${selectedFacebookPage.name}`
+                              : p.id === 'instagram'
+                                ? `Connected as @${instagramData?.username || 'hsuswiowkskow'}`
+                                : 'Connected')
+                            : 'Not connected'}
+                        </p>
+
+                        {p.connect && (
+                          <div className="space-y-2">
+                            {connected && p.id === 'facebook' ? (
+                              <>
+                                <button
+                                  onClick={() => setShowFacebookPagesModal(true)}
+                                  className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
+                                >
+                                  <LayoutDashboard className="w-4 h-4" />
+                                  {selectedFacebookPage ? "Switch Page" : "Select Page"}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm("Disconnect Facebook?")) {
+                                      p.disconnect?.();
+                                      setSelectedFacebookPage(null);
+                                      localStorage.removeItem('facebook_selected_page');
+                                    }
+                                  }}
+                                  className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
+                                >
+                                  Disconnect
+                                </button>
+                              </>
+                            ) : connected && p.id === 'instagram' ? (
+                              <>
+                                <button
+                                  onClick={() => setShowInstagramPagesModal(true)}
+                                  className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
+                                >
+                                  <LayoutDashboard className="w-4 h-4" />
+                                  Select Page
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm("Disconnect Instagram?")) {
+                                      p.disconnect?.();
+                                      setInstagramData(null);
+                                    }
+                                  }}
+                                  className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
+                                >
+                                  Disconnect
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setLoadingPlatform(p.id);
+                                  connected ? p.disconnect?.() : p.connect();
+                                  setTimeout(() => setLoadingPlatform(null), 1200);
+                                }}
+                                className={`w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 ${connected
+                                  ? 'bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10'
+                                  : 'bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] hover:shadow-[0_0_20px_rgba(225,195,122,0.3)]'
+                                  }`}
+                              >
+                                {loadingPlatform === p.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : connected ? (
+                                  <>
+                                    <Unlink className="w-4 h-4" />
+                                    Disconnect
+                                  </>
+                                ) : (
+                                  <>
+                                    <LinkIcon className="w-4 h-4" />
+                                    Connect
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Connected Accounts — Post Video */}
+              <div className="mt-8">
+                <div className="flex items-center gap-3 mb-4">
+                  <LinkIcon className="w-5 h-5 text-[#E1C37A]" />
+                  <h3 className="text-lg font-semibold text-[#D6D7D8]">Connected Accounts — Post Video</h3>
+                  <span className="px-2 py-0.5 rounded-full bg-[#E1C37A]/10 text-[#E1C37A] text-sm">
+                    {connectedCount} / {ALL_PLATFORMS.length}
+                  </span>
+                </div>
+                <p className="text-sm text-[#A9AAAC] mb-6">Manage accounts for short-form video posting</p>
+
+                <div
+                  className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                >
+                  {ALL_PLATFORMS.map((p) => {
+                    const connected = p.isConnected();
+                    const Icon = p.icon;
+                    const color = platformColors[p.id] || '#E1C37A';
+
+                    return (
+                      <div
+                        key={p.id}
+                        className="relative z-10 p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 hover:border-[#E1C37A]/20 transition-all duration-300"
+                      >
+                        <div className="flex items-start justify-between mb-4">
+                          <div
+                            className="w-12 h-12 rounded-xl flex items-center justify-center"
+                            style={{ backgroundColor: `${color}20` }}
+                          >
+                            <Icon className="w-6 h-6" style={{ color }} />
+                          </div>
+                          <div className="flex gap-2">
+                            {connected && (
+                              <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
+                                <CheckCircle className="w-4 h-4 text-[#1A1A1C]" />
+                              </div>
+                            )}
+                            {connected && p.id === "bluesky" && (
+                              <button
+                                onClick={() => {
+                                  setIsEditingBluesky(true);
+                                  handleBlueskyConnect();
+                                }}
+                                className="w-6 h-6 rounded-full bg-[#E1C37A]/20 flex items-center justify-center hover:bg-[#E1C37A]/30 transition-colors"
+                                title="Edit credentials"
+                              >
+                                <Edit2 className="w-3 h-3 text-[#E1C37A]" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        <h3 className="text-[#D6D7D8] font-semibold text-lg mb-1">{p.name}</h3>
+                        <p className="text-[#5B5C60] text-sm mb-4">
+                          {connected
+                            ? (p.id === 'facebook' && selectedFacebookPage
+                              ? `Page: ${selectedFacebookPage.name}`
+                              : p.id === 'instagram'
+                                ? `Connected as @${instagramData?.username || 'hsuswiowkskow'}`
+                                : 'Connected')
+                            : 'Not connected'}
+                        </p>
+
+                        {p.connect && (
+                          <div className="space-y-2">
+                            {connected && p.id === 'facebook' ? (
+                              <>
+                                <button
+                                  onClick={() => setShowFacebookPagesModal(true)}
+                                  className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
+                                >
+                                  <LayoutDashboard className="w-4 h-4" />
+                                  {selectedFacebookPage ? "Switch Page" : "Select Page"}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm("Disconnect Facebook?")) {
+                                      p.disconnect?.();
+                                      setSelectedFacebookPage(null);
+                                      localStorage.removeItem('facebook_selected_page');
+                                    }
+                                  }}
+                                  className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
+                                >
+                                  Disconnect
+                                </button>
+                              </>
+                            ) : connected && p.id === 'instagram' ? (
+                              <>
+                                <button
+                                  onClick={() => setShowInstagramPagesModal(true)}
+                                  className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
+                                >
+                                  <LayoutDashboard className="w-4 h-4" />
+                                  Select Page
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm("Disconnect Instagram?")) {
+                                      p.disconnect?.();
+                                      setInstagramData(null);
+                                    }
+                                  }}
+                                  className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
+                                >
+                                  Disconnect
+                                </button>
+                              </>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setLoadingPlatform(p.id);
+                                  connected ? p.disconnect?.() : p.connect();
+                                  setTimeout(() => setLoadingPlatform(null), 1200);
+                                }}
+                                className={`w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 ${connected
+                                  ? 'bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10'
+                                  : 'bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] hover:shadow-[0_0_20px_rgba(225,195,122,0.3)]'
+                                  }`}
+                              >
+                                {loadingPlatform === p.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : connected ? (
+                                  <>
+                                    <Unlink className="w-4 h-4" />
+                                    Disconnect
+                                  </>
+                                ) : (
+                                  <>
+                                    <LinkIcon className="w-4 h-4" />
+                                    Connect
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Create Post Panel */}
+            <div
+              className="w-full flex-shrink-0 p-6 md:p-8 space-y-6"
+              style={{ scrollSnapAlign: 'start' }}
+            >
+              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+                <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
+                  Select Platforms
+                  <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.length} selected)</span>
+                </h3>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                  {ALL_PLATFORMS.filter(p => p.isConnected()).map((p) => {
+                    const selected = isSelected(p.id);
+                    const Icon = p.icon;
+                    const color = platformColors[p.id];
+
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => togglePlatform(p.id, true)}
+                        className={`relative p-4 rounded-xl border transition-all duration-300 ${selected
+                          ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                          : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                          }`}
+                      >
+                        {selected && (
+                          <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
+                            <CheckCircle className="w-3 h-3 text-[#1A1A1C]" />
+                          </div>
+                        )}
+                        <div
+                          className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center"
+                          style={{ backgroundColor: `${color}20` }}
+                        >
+                          <Icon className="w-5 h-5" style={{ color }} />
+                        </div>
+                        <p className={`text-xs font-medium ${selected ? 'text-[#E1C37A]' : 'text-[#A9AAAC]'}`}>
+                          {p.id === 'facebook' && selectedFacebookPage ? selectedFacebookPage.name : p.name}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+                <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
+                  Media <span className="text-[#5B5C60] font-normal">(optional)</span>
+                </h3>
+                {imagePreview ? (
+                  <div className="relative">
+                    <img src={imagePreview} className="w-full rounded-lg max-h-64 object-contain bg-black/20" alt="Preview" />
+                    <button
+                      onClick={() => {
+                        setImageFile(null);
+                        setImagePreview(null);
+                      }}
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
+                ) : (
+                  <div
+                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                    onDragLeave={() => setIsDragging(false)}
+                    onDrop={handleDrop}
+                    onClick={() => document.getElementById('file-upload')?.click()}
+                    className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all duration-300 ${isDragging
+                      ? 'border-[#E1C37A] bg-[#E1C37A]/5'
+                      : 'border-[#5B5C60]/50 hover:border-[#E1C37A]/50 hover:bg-[#3B3C3E]/20'
+                      }`}
+                  >
+                    <div className="flex justify-center gap-4 mb-4">
+                      <div className="w-14 h-14 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
+                        <ImageIcon className="w-7 h-7 text-[#E1C37A]" />
+                      </div>
+                    </div>
+                    <p className="text-[#D6D7D8] font-medium mb-2">Drop your image here</p>
+                    <p className="text-[#5B5C60] text-sm">or click to browse</p>
+                  </div>
+                )}
+                <input
+                  id="file-upload"
+                  type="file"
+                  hidden
+                  accept="image/*,video/*"
+                  onChange={handleImageUpload}
+                />
+              </div>
 
-                  <h2 className="text-2xl font-bold text-white mb-3">Post Successful!</h2>
-                  <p className="text-[#A9AAAC] mb-8 leading-relaxed">
-                    Your content has been {postMode === 'publish' ? 'published' : 'scheduled'} across your selected social platforms.
-                  </p>
+              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+                <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Caption</h3>
+                <div className="relative">
+                  <textarea
+                    value={caption}
+                    onChange={(e) => setCaption(e.target.value)}
+                    rows={6}
+                    placeholder="Write your caption here..."
+                    className="w-full rounded-xl bg-[#3B3C3E]/30 border border-white/10 p-4 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none"
+                  />
+                  <div className="absolute bottom-3 right-3 text-xs text-[#5B5C60]">
+                    {caption.length} characters
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-4 mt-4 rounded-xl bg-[#3B3C3E]/30 border border-white/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E1C37A]/20 to-[#B6934C]/20 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-[#E1C37A]" />
+                    </div>
+                    <div>
+                      <p className="text-[#D6D7D8] font-medium text-sm">AI Enhancement</p>
+                      <p className="text-[#5B5C60] text-xs">Improve your caption with AI</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setAiEnhance(!aiEnhance)}
+                    className={`relative w-14 h-7 rounded-full transition ${aiEnhance ? 'bg-[#E1C37A]' : 'bg-[#3B3C3E]'
+                      }`}
+                  >
+                    <span
+                      className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-black transition ${aiEnhance ? 'translate-x-7' : 'translate-x-0'
+                        }`}
+                    />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+                <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">When to Post</h3>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <button
+                    onClick={() => setPostMode('publish')}
+                    className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
+                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                      }`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'publish' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
+                      }`}>
+                      <Send className={`w-5 h-5 ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+                    </div>
+                    <div className="text-left">
+                      <p className={`font-medium ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
+                        Post Now
+                      </p>
+                      <p className="text-xs text-[#5B5C60]">Publish immediately</p>
+                    </div>
+                  </button>
 
                   <button
-                    onClick={() => setShowSuccessModal(false)}
-                    className="w-full py-4 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.4)] transition-all duration-300"
+                    onClick={() => setPostMode('schedule')}
+                    className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
+                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                      }`}
                   >
-                    Great, thanks!
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'schedule' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
+                      }`}>
+                      <Clock className={`w-5 h-5 ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+                    </div>
+                    <div className="text-left">
+                      <p className={`font-medium ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
+                        Schedule
+                      </p>
+                      <p className="text-xs text-[#5B5C60]">Choose date & time</p>
+                    </div>
                   </button>
-                </motion.div>
+                </div>
+
+                {postMode === 'schedule' && (
+                  <input
+                    type="datetime-local"
+                    className="w-full bg-[#3B3C3E]/50 border border-white/10 p-3 rounded-xl text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20"
+                    value={scheduledTime}
+                    onChange={(e) => setScheduledTime(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                  />
+                )}
               </div>
-            )}
-          </AnimatePresence>
-        </div>
+
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => {
+                    setCaption("");
+                    setImageFile(null);
+                    setImagePreview(null);
+                    setSelectedPlatforms([]);
+                  }}
+                  className="px-6 py-3 rounded-full bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-all duration-300"
+                >
+                  Clear
+                </button>
+
+                <button
+                  onClick={handlePublish}
+                  disabled={loading}
+                  className="px-8 py-3 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-medium hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center gap-2 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Publishing…
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      {postMode === 'publish' ? 'Publish Now' : 'Schedule Post'}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Video Post Panel */}
+          <div
+            className="w-full flex-shrink-0 p-6 md:p-8 space-y-6"
+            style={{ scrollSnapAlign: 'start' }}
+          >
+            <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+              <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
+                Select Platforms
+                <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.length} selected)</span>
+              </h3>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                {ALL_PLATFORMS.filter(p => p.isConnected()).map((p) => {
+                  const selected = isSelected(p.id);
+                  const Icon = p.icon;
+                  const color = platformColors[p.id];
+
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => togglePlatform(p.id, true)}
+                      className={`relative p-4 rounded-xl border transition-all duration-300 ${selected
+                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                        }`}
+                    >
+                      {selected && (
+                        <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
+                          <CheckCircle className="w-3 h-3 text-[#1A1A1C]" />
+                        </div>
+                      )}
+                      <div
+                        className="w-10 h-10 rounded-lg mx-auto mb-2 flex items-center justify-center"
+                        style={{ backgroundColor: `${color}20` }}
+                      >
+                        <Icon className="w-5 h-5" style={{ color }} />
+                      </div>
+                      <p className={`text-xs font-medium ${selected ? 'text-[#E1C37A]' : 'text-[#A9AAAC]'}`}>
+                        {p.id === 'facebook' && selectedFacebookPage ? selectedFacebookPage.name : p.name}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+              <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
+                Media <span className="text-[#5B5C60] font-normal">(optional)</span>
+              </h3>
+              {imagePreview ? (
+                <div className="relative">
+                  <img src={imagePreview} className="w-full rounded-lg max-h-64 object-contain bg-black/20" alt="Preview" />
+                  <button
+                    onClick={() => {
+                      setImageFile(null);
+                      setImagePreview(null);
+                    }}
+                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                  onClick={() => document.getElementById('file-upload-video')?.click()}
+                  className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all duration-300 ${isDragging
+                    ? 'border-[#E1C37A] bg-[#E1C37A]/5'
+                    : 'border-[#5B5C60]/50 hover:border-[#E1C37A]/50 hover:bg-[#3B3C3E]/20'
+                    }`}
+                >
+                  <div className="flex justify-center gap-4 mb-4">
+                    <div className="w-14 h-14 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
+                      <ImageIcon className="w-7 h-7 text-[#E1C37A]" />
+                    </div>
+                  </div>
+                  <p className="text-[#D6D7D8] font-medium mb-2">Drop your video here</p>
+                  <p className="text-[#5B5C60] text-sm">or click to browse</p>
+                </div>
+              )}
+              <input
+                id="file-upload-video"
+                type="file"
+                hidden
+                accept="image/*,video/*"
+                onChange={handleImageUpload}
+              />
+            </div>
+
+            <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+              <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Caption</h3>
+              <div className="relative">
+                <textarea
+                  value={caption}
+                  onChange={(e) => setCaption(e.target.value)}
+                  rows={6}
+                  placeholder="Write your caption here..."
+                  className="w-full rounded-xl bg-[#3B3C3E]/30 border border-white/10 p-4 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none"
+                />
+                <div className="absolute bottom-3 right-3 text-xs text-[#5B5C60]">
+                  {caption.length} characters
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+              <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">When to Post</h3>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <button
+                  onClick={() => setPostMode('publish')}
+                  className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
+                    ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                    : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                    }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'publish' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
+                    }`}>
+                    <Send className={`w-5 h-5 ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+                  </div>
+                  <div className="text-left">
+                    <p className={`font-medium ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
+                      Post Now
+                    </p>
+                    <p className="text-xs text-[#5B5C60]">Publish immediately</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setPostMode('schedule')}
+                  className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
+                    ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                    : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                    }`}
+                >
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'schedule' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
+                    }`}>
+                    <Clock className={`w-5 h-5 ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+                  </div>
+                  <div className="text-left">
+                    <p className={`font-medium ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
+                      Schedule
+                    </p>
+                    <p className="text-xs text-[#5B5C60]">Choose date & time</p>
+                  </div>
+                </button>
+              </div>
+
+              {postMode === 'schedule' && (
+                <input
+                  type="datetime-local"
+                  className="w-full bg-[#3B3C3E]/50 border border-white/10 p-3 rounded-xl text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20"
+                  value={scheduledTime}
+                  onChange={(e) => setScheduledTime(e.target.value)}
+                  style={{ colorScheme: 'dark' }}
+                />
+              )}
+            </div>
+
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => {
+                  setCaption("");
+                  setImageFile(null);
+                  setImagePreview(null);
+                  setSelectedPlatforms([]);
+                }}
+                className="px-6 py-3 rounded-full bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-all duration-300"
+              >
+                Clear
+              </button>
+
+              <button
+                onClick={handlePublish}
+                disabled={loading}
+                className="px-8 py-3 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-medium hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center gap-2 disabled:opacity-50"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Publishing…
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-5 h-5" />
+                    {postMode === 'publish' ? 'Publish Now' : 'Schedule Post'}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
       </div>
     </div>
+        </motion.div >
+
+
+
+    {/* Success Modal */ }
+    <AnimatePresence>
+  {
+    showSuccessModal && (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          className="bg-[#3B3C3E] rounded-3xl p-8 max-w-md w-full border border-[#E1C37A]/30 shadow-[0_0_50px_rgba(225,195,122,0.2)] text-center relative overflow-hidden"
+        >
+          {/* Animated background glow */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#E1C37A]/10 rounded-full blur-[80px] -z-10" />
+
+          <div className="w-20 h-20 rounded-full bg-[#E1C37A]/20 flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-10 h-10 text-[#E1C37A]" />
+          </div>
+
+          <h2 className="text-2xl font-bold text-white mb-3">Post Successful!</h2>
+          <p className="text-[#A9AAAC] mb-8 leading-relaxed">
+            Your content has been {postMode === 'publish' ? 'published' : 'scheduled'} across your selected social platforms.
+          </p>
+
+          <button
+            onClick={() => setShowSuccessModal(false)}
+            className="w-full py-4 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.4)] transition-all duration-300"
+          >
+            Great, thanks!
+          </button>
+        </motion.div>
+      </div>
+    )
+  }
+        </AnimatePresence >
+      </div >
+    </div >
   );
 }
