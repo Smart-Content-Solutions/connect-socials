@@ -385,6 +385,9 @@ export default function SocialMediaTool() {
     reader.readAsDataURL(f);
   };
 
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+
   const handleFacebookBusinessSelection = async () => {
     const authData = getFacebookAuthData();
     if (!authData?.access_token) {
@@ -440,6 +443,22 @@ export default function SocialMediaTool() {
     }
   };
 
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+
+    // Validate file type
+    if (!f.type.startsWith('video/')) {
+      toast.error('Please upload a valid video file');
+      return;
+    }
+
+    setVideoFile(f);
+    const reader = new FileReader();
+    reader.onloadend = () => setVideoPreview(String(reader.result));
+    reader.readAsDataURL(f);
+  };
+
   const sendToBackend = async () => {
     const form = new FormData();
     form.append("user_id", user!.id);
@@ -447,6 +466,8 @@ export default function SocialMediaTool() {
     selectedPlatforms.forEach((p) => form.append("platforms[]", p));
     form.append("post_mode", postMode);
     form.append("use_ai", aiEnhance ? "yes" : "no");
+    // Explicitly for image flow
+    form.append("type", "image");
 
     if (postMode === "schedule") {
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -487,6 +508,45 @@ export default function SocialMediaTool() {
     if (!res.ok) throw new Error(await res.text());
   };
 
+  const sendVideoToBackend = async () => {
+    const form = new FormData();
+    form.append("user_id", user!.id);
+    form.append("caption", caption);
+    selectedPlatforms.forEach((p) => form.append("platforms[]", p));
+    form.append("post_mode", postMode);
+    // AI enhance might not be implemented for video yet, but we'll send the flag just in case the workflow supports it later
+    form.append("use_ai", aiEnhance ? "yes" : "no");
+    form.append("type", "video");
+
+    if (postMode === "schedule") {
+      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      form.append("scheduled_time", scheduledTime);
+      form.append("user_timezone", userTimezone);
+    }
+
+    if (videoFile) {
+      form.append("video", videoFile);
+    } else {
+      throw new Error("Video file is required for video posts");
+    }
+
+    if (selectedPlatforms.includes("bluesky")) {
+      const blueskyCredentials = getBlueskyCredentials();
+      if (blueskyCredentials) {
+        form.append("bluesky_username", blueskyCredentials.username);
+        form.append("bluesky_password", blueskyCredentials.password);
+      }
+    }
+
+    // NEW ENDPOINT for video
+    const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video", {
+      method: "POST",
+      body: form
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+  };
+
   const handlePublish = async () => {
     setErrorMsg(null);
 
@@ -499,14 +559,24 @@ export default function SocialMediaTool() {
     setLoading(true);
 
     try {
-      await sendToBackend();
+      if (activeTab === 'video') {
+        await sendVideoToBackend();
+      } else {
+        await sendToBackend();
+      }
+
       setIsSuccess(true);
       setShowSuccessModal(true);
       toast.success(postMode === "publish" ? "Post successfully published!" : "Post successfully scheduled!");
+
+      // Clear all state
       setCaption("");
       setImageFile(null);
       setImagePreview(null);
+      setVideoFile(null);
+      setVideoPreview(null);
       setSelectedPlatforms([]);
+
       setTimeout(() => setIsSuccess(false), 5000);
     } catch (err: any) {
 
@@ -1567,15 +1637,15 @@ export default function SocialMediaTool() {
                 <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
                   Media <span className="text-[#5B5C60] font-normal">(optional)</span>
                 </h3>
-                {imagePreview ? (
+                {videoPreview ? (
                   <div className="relative">
-                    <img src={imagePreview} className="w-full rounded-lg max-h-64 object-contain bg-black/20" alt="Preview" />
+                    <video src={videoPreview} controls className="w-full rounded-lg max-h-64 bg-black/20" />
                     <button
                       onClick={() => {
-                        setImageFile(null);
-                        setImagePreview(null);
+                        setVideoFile(null);
+                        setVideoPreview(null);
                       }}
-                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500"
+                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500 z-10"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -1584,7 +1654,21 @@ export default function SocialMediaTool() {
                   <div
                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                     onDragLeave={() => setIsDragging(false)}
-                    onDrop={handleDrop}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragging(false);
+                      const f = e.dataTransfer.files[0];
+                      if (!f) return;
+                      // Validate
+                      if (!f.type.startsWith('video/')) {
+                        toast.error('Please upload a valid video file');
+                        return;
+                      }
+                      setVideoFile(f);
+                      const reader = new FileReader();
+                      reader.onloadend = () => setVideoPreview(String(reader.result));
+                      reader.readAsDataURL(f);
+                    }}
                     onClick={() => document.getElementById('file-upload-video')?.click()}
                     className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all duration-300 ${isDragging
                       ? 'border-[#E1C37A] bg-[#E1C37A]/5'
@@ -1593,7 +1677,7 @@ export default function SocialMediaTool() {
                   >
                     <div className="flex justify-center gap-4 mb-4">
                       <div className="w-14 h-14 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
-                        <ImageIcon className="w-7 h-7 text-[#E1C37A]" />
+                        <Video className="w-7 h-7 text-[#E1C37A]" />
                       </div>
                     </div>
                     <p className="text-[#D6D7D8] font-medium mb-2">Drop your video here</p>
@@ -1604,8 +1688,8 @@ export default function SocialMediaTool() {
                   id="file-upload-video"
                   type="file"
                   hidden
-                  accept="image/*,video/*"
-                  onChange={handleImageUpload}
+                  accept="video/*"
+                  onChange={handleVideoUpload}
                 />
               </div>
 
@@ -1682,8 +1766,8 @@ export default function SocialMediaTool() {
                 <button
                   onClick={() => {
                     setCaption("");
-                    setImageFile(null);
-                    setImagePreview(null);
+                    setVideoFile(null);
+                    setVideoPreview(null);
                     setSelectedPlatforms([]);
                   }}
                   className="px-6 py-3 rounded-full bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-all duration-300"
