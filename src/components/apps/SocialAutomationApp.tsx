@@ -563,19 +563,30 @@ export default function SocialMediaTool() {
     }
 
     // NEW ENDPOINT for video
+    console.log("SENDING VIDEO TO:", "https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video");
+
     try {
       const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video", {
         method: "POST",
         body: form
       });
 
+      console.log("WEBHOOK RESPONSE STATUS:", res.status);
+
       if (!res.ok) {
+        const errorText = await res.text();
+        console.error("WEBHOOK ERROR BODY:", errorText);
+
         if (res.status === 413) {
           throw new Error("Video file is too large for the server. Please compress it to under 50MB.");
         }
-        throw new Error(await res.text() || `Server error: ${res.status}`);
+        if (res.status === 404) {
+          throw new Error("Server endpoint not found (404). Please ensure the 'Complete Social Media Video Automation' workflow is Active in n8n.");
+        }
+        throw new Error(errorText || `Server error: ${res.status}`);
       }
     } catch (error: any) {
+      console.error("FETCH ERROR DETAILS:", error);
       // Handle network errors (including CORS failures from 413)
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
         throw new Error("Video upload failed. The file may be too large (max 50MB) or there's a network issue. Please try a smaller video.");
