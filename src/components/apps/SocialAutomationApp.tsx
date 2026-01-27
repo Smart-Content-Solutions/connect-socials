@@ -68,6 +68,9 @@ import {
   isBlueskyConnected
 } from "@/utils/blueskyOAuth";
 
+import { needsCompression } from "@/utils/videoCompressor";
+import VideoCompressionModal from "../modals/VideoCompressionModal";
+
 import DashboardContent from "../social/DashboardContent";
 import InstagramDashboardContent from "../social/InstagramDashboardContent";
 
@@ -387,6 +390,8 @@ export default function SocialMediaTool() {
 
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [showCompressionModal, setShowCompressionModal] = useState(false);
+  const [pendingVideoFile, setPendingVideoFile] = useState<File | null>(null);
 
   const handleFacebookBusinessSelection = async () => {
     const authData = getFacebookAuthData();
@@ -443,6 +448,9 @@ export default function SocialMediaTool() {
     }
   };
 
+  // Maximum video file size: 50MB (server limit)
+  const MAX_VIDEO_SIZE_MB = 50;
+
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
@@ -453,10 +461,26 @@ export default function SocialMediaTool() {
       return;
     }
 
+    // Check if compression is needed
+    if (needsCompression(f, MAX_VIDEO_SIZE_MB)) {
+      const sizeMB = (f.size / (1024 * 1024)).toFixed(1);
+      toast.info(`Video is ${sizeMB}MB - starting smart compression...`);
+      setPendingVideoFile(f);
+      setShowCompressionModal(true);
+      return;
+    }
+
+    // File is small enough, use directly
     setVideoFile(f);
-    const reader = new FileReader();
-    reader.onloadend = () => setVideoPreview(String(reader.result));
-    reader.readAsDataURL(f);
+    setVideoPreview(URL.createObjectURL(f));
+  };
+
+  // Handle compressed video from modal
+  const handleCompressionComplete = (compressedFile: File) => {
+    setVideoFile(compressedFile);
+    setVideoPreview(URL.createObjectURL(compressedFile));
+    setPendingVideoFile(null);
+    toast.success('Video compressed successfully!');
   };
 
   const sendToBackend = async () => {
@@ -539,12 +563,25 @@ export default function SocialMediaTool() {
     }
 
     // NEW ENDPOINT for video
-    const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video", {
-      method: "POST",
-      body: form
-    });
+    try {
+      const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video", {
+        method: "POST",
+        body: form
+      });
 
-    if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        if (res.status === 413) {
+          throw new Error("Video file is too large for the server. Please compress it to under 50MB.");
+        }
+        throw new Error(await res.text() || `Server error: ${res.status}`);
+      }
+    } catch (error: any) {
+      // Handle network errors (including CORS failures from 413)
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error("Video upload failed. The file may be too large (max 50MB) or there's a network issue. Please try a smaller video.");
+      }
+      throw error;
+    }
   };
 
   const handlePublish = async () => {
@@ -1830,6 +1867,20 @@ export default function SocialMediaTool() {
           )
           }
         </AnimatePresence >
+
+        {/* Video Compression Modal */}
+        {pendingVideoFile && (
+          <VideoCompressionModal
+            isOpen={showCompressionModal}
+            onClose={() => {
+              setShowCompressionModal(false);
+              setPendingVideoFile(null);
+            }}
+            file={pendingVideoFile}
+            onCompressionComplete={handleCompressionComplete}
+            maxSizeMB={MAX_VIDEO_SIZE_MB}
+          />
+        )}
       </div >
     </div >
   );
