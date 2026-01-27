@@ -14,15 +14,12 @@ export default function InstagramDashboardContent({ instagramData }: InstagramDa
     const [isLoading, setIsLoading] = useState(false);
     const [apiError, setApiError] = useState<string | null>(null);
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
-
-    // Attempt to fetch fresh data from API (optional - stored data is primary)
     const fetchInstagramData = async () => {
         if (!instagramData?.instagram_user_id || !instagramData.access_token) return;
         setIsLoading(true);
         setApiError(null);
 
         try {
-            // 1. Fetch Profile Info (explicitly using instagram_basic fields)
             const profileRes = await fetch(
                 `https://graph.facebook.com/v19.0/${instagramData.instagram_user_id}?fields=username,biography,followers_count,media_count,profile_picture_url&access_token=${instagramData.access_token}`
             );
