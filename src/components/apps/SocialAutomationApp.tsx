@@ -234,7 +234,7 @@ export default function SocialMediaTool() {
     setIsEditingBluesky(false);
   };
 
-  const handleBlueskySubmit = () => {
+  const handleBlueskySubmit = async () => {
     setBlueskyError("");
 
     if (!blueskyUsername.trim()) {
@@ -247,11 +247,21 @@ export default function SocialMediaTool() {
       return;
     }
 
-    saveBlueskyCredentials(blueskyUsername.trim(), blueskyPassword.trim());
-    setShowBlueskyModal(false);
-    setBlueskyUsername("");
-    setBlueskyPassword("");
-    setIsEditingBluesky(false);
+    try {
+      setLoadingPlatform("bluesky");
+      if (!user) throw new Error("User not authenticated");
+
+      await initiateBlueskyAuth(blueskyUsername.trim(), blueskyPassword.trim(), user.id);
+
+      setShowBlueskyModal(false);
+      setBlueskyUsername("");
+      setBlueskyPassword("");
+      setIsEditingBluesky(false);
+    } catch (err: any) {
+      setBlueskyError(err.message || "Failed to connect Bluesky. Check backend.");
+    } finally {
+      setLoadingPlatform(null);
+    }
   };
 
   const ALL_PLATFORMS: Platform[] = [
