@@ -17,8 +17,8 @@ export const saveBlueskyCredentials = (username: string, password: string): void
 };
 
 export const initiateBlueskyAuth = async (username: string, password: string, userId: string): Promise<void> => {
-  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL + "oauth-callback";
-  
+  const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL + "connect-bluesky";
+
   const response = await fetch(webhookUrl, {
     method: 'POST',
     headers: {
