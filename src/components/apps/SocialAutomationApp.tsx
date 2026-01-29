@@ -189,8 +189,13 @@ export default function SocialMediaTool() {
       // n8n often returns an array, so we handle both cases
       const data = Array.isArray(rawData) ? rawData[0] : rawData;
 
+      // Check for formatted response (from Set node) or raw workflow response
       if (data.status === "success" && data.enhanced_caption) {
         setPreviewText(data.enhanced_caption);
+        setShowPreviewModal(true);
+      } else if (data.is_preview === "true" && data.caption) {
+        // Fallback: n8n is returning raw workflow data instead of Set node output
+        setPreviewText(data.caption);
         setShowPreviewModal(true);
       } else {
         throw new Error(data.message || "Could not generate enhanced text");
