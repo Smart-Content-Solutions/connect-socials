@@ -183,7 +183,12 @@ export default function SocialMediaTool() {
 
       if (!res.ok) throw new Error("AI enhancement request failed");
 
-      const data = await res.json();
+      const rawData = await res.json();
+      console.log("AI Preview Raw Response:", rawData);
+
+      // n8n often returns an array, so we handle both cases
+      const data = Array.isArray(rawData) ? rawData[0] : rawData;
+
       if (data.status === "success" && data.enhanced_caption) {
         setPreviewText(data.enhanced_caption);
         setShowPreviewModal(true);
@@ -192,7 +197,7 @@ export default function SocialMediaTool() {
       }
     } catch (err: any) {
       console.error("AI Preview Error:", err);
-      toast.error(err.message || "AI Preview failed. Please try again.");
+      toast.error(err.message || "Could not generate enhanced text");
     } finally {
       setIsGeneratingPreview(false);
     }
