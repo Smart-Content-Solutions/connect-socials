@@ -28,7 +28,8 @@ import {
   Video,
   Clock,
   LayoutDashboard,
-  Edit2
+  Edit2,
+  Eye
 } from "lucide-react";
 
 import {
@@ -137,6 +138,72 @@ export default function SocialMediaTool() {
   const [instagramData, setInstagramData] = useState<InstagramAuthData | null>(null);
   const [showInstagramPagesModal, setShowInstagramPagesModal] = useState(false);
   const [selectedInstagramPage, setSelectedInstagramPage] = useState<any>(null);
+
+  // AI & Preview State
+  const [tone, setTone] = useState("Professional");
+  const [previewText, setPreviewText] = useState("");
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  const TONE_OPTIONS = [
+    "Professional",
+    "Friendly",
+    "Bold",
+    "Informative",
+    "Humorous",
+    "Custom"
+  ];
+
+  const handlePreview = async () => {
+    if (!caption.trim()) {
+      toast.error("Please enter a caption first");
+      return;
+    }
+
+    setIsGeneratingPreview(true);
+
+    try {
+      const form = new FormData();
+      form.append("user_id", user?.id || "");
+      form.append("caption", caption);
+      form.append("tone", tone);
+      form.append("preview", "true");
+      form.append("use_ai", "yes");
+
+      // Use correct webhook based on active tool (Image or Video)
+      const isVideo = activeTab === 'video';
+      const webhookUrl = isVideo
+        ? "https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video"
+        : "https://n8n.smartcontentsolutions.co.uk/webhook/social-media";
+
+      const res = await fetch(webhookUrl, {
+        method: "POST",
+        body: form
+      });
+
+      if (!res.ok) throw new Error("AI enhancement request failed");
+
+      const data = await res.json();
+      if (data.status === "success" && data.enhanced_caption) {
+        setPreviewText(data.enhanced_caption);
+        setShowPreviewModal(true);
+      } else {
+        throw new Error(data.message || "Could not generate enhanced text");
+      }
+    } catch (err: any) {
+      console.error("AI Preview Error:", err);
+      toast.error(err.message || "AI Preview failed. Please try again.");
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  };
+
+  const handleUseEnhancedText = () => {
+    setCaption(previewText);
+    setShowPreviewModal(false);
+    setAiEnhance(false); // Disable auto-enhance since we already used it
+    toast.success("Design updated with enhanced text!");
+  };
 
   // Load Facebook Pages on mount if connected
   useEffect(() => {
@@ -501,6 +568,9 @@ export default function SocialMediaTool() {
     selectedPlatforms.forEach((p) => form.append("platforms[]", p));
     form.append("post_mode", postMode);
     form.append("use_ai", aiEnhance ? "yes" : "no");
+    if (aiEnhance) {
+      form.append("tone", tone);
+    }
     // Explicitly for image flow
     form.append("type", "image");
 
@@ -551,6 +621,9 @@ export default function SocialMediaTool() {
     form.append("post_mode", postMode);
     // AI enhance might not be implemented for video yet, but we'll send the flag just in case the workflow supports it later
     form.append("use_ai", aiEnhance ? "yes" : "no");
+    if (aiEnhance) {
+      form.append("tone", tone);
+    }
     form.append("type", "video");
 
     if (postMode === "schedule") {
@@ -1524,8 +1597,9 @@ export default function SocialMediaTool() {
                 />
               </div>
 
-              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-                <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Caption</h3>
+              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 space-y-4">
+                <h3 className="text-sm font-semibold text-[#D6D7D8]">Caption & AI Settings</h3>
+
                 <div className="relative">
                   <textarea
                     value={caption}
@@ -1538,26 +1612,52 @@ export default function SocialMediaTool() {
                     {caption.length} characters
                   </div>
                 </div>
-                <div className="flex items-center justify-between p-4 mt-4 rounded-xl bg-[#3B3C3E]/30 border border-white/5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#E1C37A]/20 to-[#B6934C]/20 flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 text-[#E1C37A]" />
-                    </div>
-                    <div>
-                      <p className="text-[#D6D7D8] font-medium text-sm">AI Enhancement</p>
-                      <p className="text-[#5B5C60] text-xs">Improve your caption with AI</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs text-[#A9AAAC] font-medium ml-1">Content Tone</label>
+                    <select
+                      value={tone}
+                      onChange={(e) => setTone(e.target.value)}
+                      className="w-full bg-[#2C2C2E] border border-white/10 rounded-xl px-4 py-3 text-[#D6D7D8] focus:outline-none focus:border-[#E1C37A]/50 appearance-none cursor-pointer"
+                    >
+                      {TONE_OPTIONS.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs text-[#A9AAAC] font-medium ml-1">AI Options</label>
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#2C2C2E] border border-white/10 h-[50px]">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className={`w-4 h-4 ${aiEnhance ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+                        <span className="text-sm text-[#D6D7D8]">Enhancement</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {aiEnhance && (
+                          <button
+                            onClick={handlePreview}
+                            disabled={isGeneratingPreview || !caption.trim()}
+                            className="text-xs bg-[#E1C37A]/10 text-[#E1C37A] border border-[#E1C37A]/30 px-3 py-1 rounded-lg hover:bg-[#E1C37A]/20 transition-colors flex items-center gap-1.5"
+                          >
+                            {isGeneratingPreview ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Eye className="w-3 h-3" />
+                            )}
+                            Preview
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setAiEnhance(!aiEnhance)}
+                          className={`relative w-10 h-6 rounded-full transition-colors duration-300 ${aiEnhance ? 'bg-[#E1C37A]' : 'bg-[#4B4C4E]'}`}
+                        >
+                          <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-black transition-transform duration-300 ${aiEnhance ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setAiEnhance(!aiEnhance)}
-                    className={`relative w-14 h-7 rounded-full transition ${aiEnhance ? 'bg-[#E1C37A]' : 'bg-[#3B3C3E]'
-                      }`}
-                  >
-                    <span
-                      className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-black transition ${aiEnhance ? 'translate-x-7' : 'translate-x-0'
-                        }`}
-                    />
-                  </button>
                 </div>
               </div>
 
@@ -1752,8 +1852,8 @@ export default function SocialMediaTool() {
                 />
               </div>
 
-              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-                <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Caption</h3>
+              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 space-y-4">
+                <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Caption & AI Settings</h3>
                 <div className="relative">
                   <textarea
                     value={caption}
@@ -1764,6 +1864,53 @@ export default function SocialMediaTool() {
                   />
                   <div className="absolute bottom-3 right-3 text-xs text-[#5B5C60]">
                     {caption.length} characters
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs text-[#A9AAAC] font-medium ml-1">Content Tone</label>
+                    <select
+                      value={tone}
+                      onChange={(e) => setTone(e.target.value)}
+                      className="w-full bg-[#2C2C2E] border border-white/10 rounded-xl px-4 py-3 text-[#D6D7D8] focus:outline-none focus:border-[#E1C37A]/50 appearance-none cursor-pointer"
+                    >
+                      {TONE_OPTIONS.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs text-[#A9AAAC] font-medium ml-1">AI Options</label>
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#2C2C2E] border border-white/10 h-[50px]">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className={`w-4 h-4 ${aiEnhance ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+                        <span className="text-sm text-[#D6D7D8]">Enhancement</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {aiEnhance && (
+                          <button
+                            onClick={handlePreview}
+                            disabled={isGeneratingPreview || !caption.trim()}
+                            className="text-xs bg-[#E1C37A]/10 text-[#E1C37A] border border-[#E1C37A]/30 px-3 py-1 rounded-lg hover:bg-[#E1C37A]/20 transition-colors flex items-center gap-1.5"
+                          >
+                            {isGeneratingPreview ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Eye className="w-3 h-3" />
+                            )}
+                            Preview
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setAiEnhance(!aiEnhance)}
+                          className={`relative w-10 h-6 rounded-full transition-colors duration-300 ${aiEnhance ? 'bg-[#E1C37A]' : 'bg-[#4B4C4E]'}`}
+                        >
+                          <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-black transition-transform duration-300 ${aiEnhance ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1903,6 +2050,70 @@ export default function SocialMediaTool() {
             maxSizeMB={MAX_VIDEO_SIZE_MB}
           />
         )}
+        {/* AI Preview Modal */}
+        <AnimatePresence>
+          {showPreviewModal && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="bg-[#3B3C3E] rounded-2xl w-full max-w-2xl border border-[#E1C37A]/30 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#2C2C2E]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#E1C37A]/10 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-[#E1C37A]" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-[#D6D7D8]">AI Preview</h3>
+                      <p className="text-xs text-[#A9AAAC]">Tone: <span className="text-[#E1C37A]">{tone}</span></p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowPreviewModal(false)}
+                    className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
+                  >
+                    <X className="w-5 h-5 text-[#A9AAAC]" />
+                  </button>
+                </div>
+
+                {/* Content */}
+                <div className="p-6 overflow-y-auto custom-scrollbar">
+                  <label className="text-sm text-[#A9AAAC] mb-2 block">Enhanced Caption:</label>
+                  <textarea
+                    value={previewText}
+                    onChange={(e) => setPreviewText(e.target.value)}
+                    rows={10}
+                    className="w-full bg-[#1A1A1C] border border-white/10 rounded-xl p-4 text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-1 focus:ring-[#E1C37A]/30 leading-relaxed custom-scrollbar"
+                  />
+                  <p className="text-xs text-[#5B5C60] mt-2">
+                    Feel free to edit this text. When you apply it, this will become your final caption.
+                  </p>
+                </div>
+
+                {/* Footer */}
+                <div className="p-6 border-t border-white/10 bg-[#2C2C2E] flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowPreviewModal(false)}
+                    className="px-5 py-2.5 rounded-xl border border-white/10 text-[#D6D7D8] hover:bg-white/5 transition-colors text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUseEnhancedText}
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold shadow-lg hover:shadow-[0_0_15px_rgba(225,195,122,0.3)] transition-all flex items-center gap-2 text-sm"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Use This Text
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
       </div >
     </div >
   );
