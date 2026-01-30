@@ -145,6 +145,19 @@ export default function SocialMediaTool() {
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
+  // AI Video Generation State
+  const [videoSource, setVideoSource] = useState<'upload' | 'generate'>('upload');
+  const [aiVideoTab, setAiVideoTab] = useState<'image' | 'text'>('image');
+  const [aiSourceImage, setAiSourceImage] = useState<File | null>(null);
+  const [aiSourceImagePreview, setAiSourceImagePreview] = useState<string | null>(null);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiDuration, setAiDuration] = useState<5 | 10 | 15>(5);
+  const [isGeneratingAiVideo, setIsGeneratingAiVideo] = useState(false);
+  const [aiGeneratedVideoUrl, setAiGeneratedVideoUrl] = useState<string | null>(null);
+  const [showAiVideoPreviewModal, setShowAiVideoPreviewModal] = useState(false);
+  const [aiJobStatus, setAiJobStatus] = useState<'idle' | 'pending' | 'processing' | 'completed' | 'failed'>('idle');
+  const [aiJobError, setAiJobError] = useState<string | null>(null);
+
   const TONE_OPTIONS = [
     "Professional",
     "Friendly",
@@ -570,6 +583,97 @@ export default function SocialMediaTool() {
     setPendingVideoFile(null);
     toast.success('Video compressed successfully!');
   };
+
+  // AI Video Generation Handlers
+  const handleAiSourceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+
+    if (!f.type.startsWith('image/')) {
+      toast.error('Please upload a valid image file');
+      return;
+    }
+
+    setAiSourceImage(f);
+    const reader = new FileReader();
+    reader.onloadend = () => setAiSourceImagePreview(String(reader.result));
+    reader.readAsDataURL(f);
+  };
+
+  const handleGenerateAiVideo = async () => {
+    if (!aiSourceImage) {
+      toast.error('Please upload a source image first');
+      return;
+    }
+
+    setIsGeneratingAiVideo(true);
+    setAiJobStatus('pending');
+    setAiJobError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('user_id', user!.id);
+      formData.append('source_image', aiSourceImage);
+      formData.append('prompt', aiPrompt || 'Animate this image with smooth motion');
+      formData.append('duration', String(aiDuration));
+      formData.append('aspect_ratio', '9:16');
+
+      toast.info('Starting AI video generation...');
+
+      const response = await fetch('https://n8n.smartcontentsolutions.co.uk/webhook/ai-video-generate', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.video_url) {
+        setAiGeneratedVideoUrl(result.video_url);
+        setAiJobStatus('completed');
+        setShowAiVideoPreviewModal(true);
+        toast.success('AI video generated successfully!');
+      } else {
+        throw new Error(result.error || 'Video generation failed');
+      }
+    } catch (error: any) {
+      console.error('AI video generation error:', error);
+      setAiJobStatus('failed');
+      setAiJobError(error.message);
+      toast.error(`Failed to generate video: ${error.message}`);
+    } finally {
+      setIsGeneratingAiVideo(false);
+    }
+  };
+
+  const handleUseAiVideo = async () => {
+    if (!aiGeneratedVideoUrl) return;
+
+    try {
+      // Download the generated video and convert to File object
+      const response = await fetch(aiGeneratedVideoUrl);
+      const blob = await response.blob();
+      const file = new File([blob], `ai-video-${Date.now()}.mp4`, { type: 'video/mp4' });
+
+      // Set it as the video file for posting
+      setVideoFile(file);
+      setVideoPreview(aiGeneratedVideoUrl);
+      setShowAiVideoPreviewModal(false);
+
+      // Switch to upload mode to show the video in the posting workflow
+      setVideoSource('upload');
+
+      toast.success('AI video attached to post!');
+    } catch (error: any) {
+      console.error('Error using AI video:', error);
+      toast.error('Failed to attach AI video');
+    }
+  };
+
 
   const sendToBackend = async () => {
     const form = new FormData();
@@ -1803,64 +1907,608 @@ export default function SocialMediaTool() {
               </div>
 
               <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-                <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
-                  Media <span className="text-[#5B5C60] font-normal">(optional)</span>
-                </h3>
-                {videoPreview ? (
-                  <div className="relative">
-                    <video src={videoPreview} controls className="w-full rounded-lg max-h-64 bg-black/20" />
+              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+
+                {/* Video Source Toggle */}
+
+                <div className="mb-6">
+
+                  <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Video Source</h3>
+
+                  <div className="grid grid-cols-2 gap-3">
+
                     <button
-                      onClick={() => {
-                        setVideoFile(null);
-                        setVideoPreview(null);
-                      }}
-                      className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500 z-10"
+
+                      onClick={() => setVideoSource('upload')}
+
+                      className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${videoSource === 'upload'
+
+                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+
+                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+
+                        }`}
+
                     >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setIsDragging(false);
-                      const f = e.dataTransfer.files[0];
-                      if (!f) return;
-                      // Validate
-                      if (!f.type.startsWith('video/')) {
-                        toast.error('Please upload a valid video file');
-                        return;
-                      }
-                      setVideoFile(f);
-                      const reader = new FileReader();
-                      reader.onloadend = () => setVideoPreview(String(reader.result));
-                      reader.readAsDataURL(f);
-                    }}
-                    onClick={() => document.getElementById('file-upload-video')?.click()}
-                    className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all duration-300 ${isDragging
-                      ? 'border-[#E1C37A] bg-[#E1C37A]/5'
-                      : 'border-[#5B5C60]/50 hover:border-[#E1C37A]/50 hover:bg-[#3B3C3E]/20'
-                      }`}
-                  >
-                    <div className="flex justify-center gap-4 mb-4">
-                      <div className="w-14 h-14 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
-                        <Video className="w-7 h-7 text-[#E1C37A]" />
+
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${videoSource === 'upload' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
+
+                        }`}>
+
+                        <Upload className={`w-5 h-5 ${videoSource === 'upload' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+
                       </div>
-                    </div>
-                    <p className="text-[#D6D7D8] font-medium mb-2">Drop your video here</p>
-                    <p className="text-[#5B5C60] text-sm">or click to browse</p>
+
+                      <div className="text-left">
+
+                        <p className={`font-medium text-sm ${videoSource === 'upload' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
+
+                          Upload Video
+
+                        </p>
+
+                        <p className="text-xs text-[#5B5C60]">From your device</p>
+
+                      </div>
+
+                    </button>
+
+
+
+                    <button
+
+                      onClick={() => setVideoSource('generate')}
+
+                      className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${videoSource === 'generate'
+
+                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+
+                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+
+                        }`}
+
+                    >
+
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${videoSource === 'generate' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
+
+                        }`}>
+
+                        <Sparkles className={`w-5 h-5 ${videoSource === 'generate' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+
+                      </div>
+
+                      <div className="text-left">
+
+                        <p className={`font-medium text-sm ${videoSource === 'generate' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
+
+                          Generate AI Video
+
+                        </p>
+
+                        <p className="text-xs text-[#5B5C60]">Powered by Higgsfield</p>
+
+                      </div>
+
+                    </button>
+
                   </div>
+
+                </div>
+
+
+
+                {/* Upload Video Mode */}
+
+                {videoSource === 'upload' && (
+
+                  <>
+
+                    <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
+
+                      Media <span className="text-[#5B5C60] font-normal">(optional)</span>
+
+                    </h3>
+
+                    {videoPreview ? (
+
+                      <div className="relative">
+
+                        <video src={videoPreview} controls className="w-full rounded-lg max-h-64 bg-black/20" />
+
+                        <button
+
+                          onClick={() => {
+
+                            setVideoFile(null);
+
+                            setVideoPreview(null);
+
+                          }}
+
+                          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500 z-10"
+
+                        >
+
+                          <X className="w-4 h-4" />
+
+                        </button>
+
+                      </div>
+
+                    ) : (
+
+                      <div
+
+                        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+
+                        onDragLeave={() => setIsDragging(false)}
+
+                        onDrop={(e) => {
+
+                          e.preventDefault();
+
+                          setIsDragging(false);
+
+                          const f = e.dataTransfer.files[0];
+
+                          if (!f) return;
+
+                          // Validate
+
+                          if (!f.type.startsWith('video/')) {
+
+                            toast.error('Please upload a valid video file');
+
+                            return;
+
+                          }
+
+                          setVideoFile(f);
+
+                          const reader = new FileReader();
+
+                          reader.onloadend = () => setVideoPreview(String(reader.result));
+
+                          reader.readAsDataURL(f);
+
+                        }}
+
+                        onClick={() => document.getElementById('file-upload-video')?.click()}
+
+                        className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all duration-300 ${isDragging
+
+                          ? 'border-[#E1C37A] bg-[#E1C37A]/5'
+
+                          : 'border-[#5B5C60]/50 hover:border-[#E1C37A]/50 hover:bg-[#3B3C3E]/20'
+
+                          }`}
+
+                      >
+
+                        <div className="flex justify-center gap-4 mb-4">
+
+                          <div className="w-14 h-14 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
+
+                            <Video className="w-7 h-7 text-[#E1C37A]" />
+
+                          </div>
+
+                        </div>
+
+                        <p className="text-[#D6D7D8] font-medium mb-2">Drop your video here</p>
+
+                        <p className="text-[#5B5C60] text-sm">or click to browse</p>
+
+                      </div>
+
+                    )}
+
+                    <input
+
+                      id="file-upload-video"
+
+                      type="file"
+
+                      hidden
+
+                      accept="video/*"
+
+                      onChange={handleVideoUpload}
+
+                    />
+
+                  </>
+
                 )}
-                <input
-                  id="file-upload-video"
-                  type="file"
-                  hidden
-                  accept="video/*"
-                  onChange={handleVideoUpload}
-                />
+
+
+
+                {/* Generate AI Video Mode */}
+
+                {videoSource === 'generate' && (
+
+                  <>
+
+                    {/* AI Video Tabs */}
+
+                    <div className="flex items-center gap-2 mb-6 bg-[#2C2C2E] rounded-xl p-1">
+
+                      <button
+
+                        onClick={() => setAiVideoTab('image')}
+
+                        className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${aiVideoTab === 'image'
+
+                          ? 'bg-[#E1C37A]/20 text-[#E1C37A]'
+
+                          : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
+
+                          }`}
+
+                      >
+
+                        Image → Video
+
+                      </button>
+
+                      <button
+
+                        onClick={() => setAiVideoTab('text')}
+
+                        className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative ${aiVideoTab === 'text'
+
+                          ? 'bg-[#E1C37A]/20 text-[#E1C37A]'
+
+                          : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
+
+                          }`}
+
+                      >
+
+                        Text → Video
+
+                        <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#5B5C60]/30 text-[#A9AAAC]">Soon</span>
+
+                      </button>
+
+                    </div>
+
+
+
+                    {/* Image → Video Tab */}
+
+                    {aiVideoTab === 'image' && (
+
+                      <div className="space-y-4">
+
+                        {/* Source Image Upload */}
+
+                        <div>
+
+                          <label className="text-sm font-semibold text-[#D6D7D8] mb-3 block">
+
+                            Source Image <span className="text-red-400">*</span>
+
+                          </label>
+
+                          {aiSourceImagePreview ? (
+
+                            <div className="relative">
+
+                              <img src={aiSourceImagePreview} className="w-full rounded-lg max-h-64 object-contain bg-black/20" alt="Source" />
+
+                              <button
+
+                                onClick={() => {
+
+                                  setAiSourceImage(null);
+
+                                  setAiSourceImagePreview(null);
+
+                                }}
+
+                                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500"
+
+                              >
+
+                                <X className="w-4 h-4" />
+
+                              </button>
+
+                            </div>
+
+                          ) : (
+
+                            <div
+
+                              onClick={() => document.getElementById('ai-source-image-upload')?.click()}
+
+                              className="cursor-pointer rounded-xl border-2 border-dashed border-[#5B5C60]/50 hover:border-[#E1C37A]/50 hover:bg-[#3B3C3E]/20 p-8 text-center transition-all duration-300"
+
+                            >
+
+                              <div className="flex justify-center mb-3">
+
+                                <div className="w-12 h-12 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
+
+                                  <ImageIcon className="w-6 h-6 text-[#E1C37A]" />
+
+                                </div>
+
+                              </div>
+
+                              <p className="text-[#D6D7D8] font-medium mb-1">Upload source image</p>
+
+                              <p className="text-[#5B5C60] text-xs">9:16 aspect ratio recommended for shorts</p>
+
+                            </div>
+
+                          )}
+
+                          <input
+
+                            id="ai-source-image-upload"
+
+                            type="file"
+
+                            hidden
+
+                            accept="image/*"
+
+                            onChange={handleAiSourceImageUpload}
+
+                          />
+
+                        </div>
+
+
+
+                        {/* Motion Prompt */}
+
+                        <div>
+
+                          <label className="text-sm font-semibold text-[#D6D7D8] mb-3 block">
+
+                            Motion Description <span className="text-[#5B5C60] font-normal">(optional)</span>
+
+                          </label>
+
+                          <textarea
+
+                            value={aiPrompt}
+
+                            onChange={(e) => setAiPrompt(e.target.value)}
+
+                            rows={3}
+
+                            placeholder="Describe how you want the image to move (e.g., 'Gentle camera zoom in with subtle parallax effect')"
+
+                            className="w-full rounded-xl bg-[#2C2C2E] border border-white/10 p-3 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none text-sm"
+
+                          />
+
+                        </div>
+
+
+
+                        {/* Duration Selector */}
+
+                        <div>
+
+                          <label className="text-sm font-semibold text-[#D6D7D8] mb-3 block">Duration</label>
+
+                          <div className="grid grid-cols-3 gap-3">
+
+                            {[5, 10, 15].map((duration) => (
+
+                              <button
+
+                                key={duration}
+
+                                onClick={() => setAiDuration(duration as 5 | 10 | 15)}
+
+                                className={`p-3 rounded-xl border transition-all duration-300 ${aiDuration === duration
+
+                                  ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50 text-[#E1C37A]'
+
+                                  : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20 text-[#A9AAAC]'
+
+                                  }`}
+
+                              >
+
+                                <p className="font-semibold text-lg">{duration}s</p>
+
+                              </button>
+
+                            ))}
+
+                          </div>
+
+                        </div>
+
+
+
+                        {/* Generate Button */}
+
+                        <button
+
+                          onClick={handleGenerateAiVideo}
+
+                          disabled={!aiSourceImage || isGeneratingAiVideo}
+
+                          className="w-full py-4 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+
+                        >
+
+                          {isGeneratingAiVideo ? (
+
+                            <>
+
+                              <Loader2 className="w-5 h-5 animate-spin" />
+
+                              Generating Video...
+
+                            </>
+
+                          ) : (
+
+                            <>
+
+                              <Sparkles className="w-5 h-5" />
+
+                              Generate Preview
+
+                            </>
+
+                          )}
+
+                        </button>
+
+
+
+                        {/* Status Messages */}
+
+                        {aiJobStatus === 'pending' && (
+
+                          <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm">
+
+                            <Loader2 className="w-4 h-4 inline-block animate-spin mr-2" />
+
+                            Initializing AI video generation...
+
+                          </div>
+
+                        )}
+
+                        {aiJobStatus === 'processing' && (
+
+                          <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm">
+
+                            <Loader2 className="w-4 h-4 inline-block animate-spin mr-2" />
+
+                            Processing your video... This may take a minute.
+
+                          </div>
+
+                        )}
+
+                        {aiJobStatus === 'failed' && aiJobError && (
+
+                          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+
+                            <X className="w-4 h-4 inline-block mr-2" />
+
+                            {aiJobError}
+
+                          </div>
+
+                        )}
+
+                      </div>
+
+                    )}
+
+
+
+                    {/* Text → Video Tab (Coming Soon) */}
+
+                    {aiVideoTab === 'text' && (
+
+                      <div className="text-center py-12">
+
+                        <div className="w-16 h-16 rounded-full bg-[#E1C37A]/10 flex items-center justify-center mx-auto mb-4">
+
+                          <Sparkles className="w-8 h-8 text-[#E1C37A]" />
+
+                        </div>
+
+                        <h4 className="text-lg font-semibold text-[#D6D7D8] mb-2">Coming Soon</h4>
+
+                        <p className="text-[#A9AAAC] text-sm max-w-md mx-auto">
+
+                          Text-to-video generation will be available in Phase 2. For now, use Image → Video to create stunning shorts!
+
+                        </p>
+
+                      </div>
+
+                    )}
+
+                  </>
+
+
+        {/* AI Video Preview Modal */}
+        <AnimatePresence>
+          {showAiVideoPreviewModal && aiGeneratedVideoUrl && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                className="bg-[#3B3C3E] rounded-2xl w-full max-w-2xl border border-[#E1C37A]/30 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#2C2C2E]">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#E1C37A]/10 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5 text-[#E1C37A]" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-[#D6D7D8]">AI Video Preview</h3>
+                      <p className="text-xs text-[#A9AAAC]">Generated by Higgsfield AI</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowAiVideoPreviewModal(false)}
+                    className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
+                  >
+                    <X className="w-5 h-5 text-[#A9AAAC]" />
+                  </button>
+                </div>
+
+                {/* Video Player */}
+                <div className="p-6 overflow-y-auto custom-scrollbar">
+                  <div className="relative rounded-xl overflow-hidden bg-black">
+                    <video 
+                      src={aiGeneratedVideoUrl} 
+                      controls 
+                      autoPlay
+                      loop
+                      className="w-full max-h-[60vh] object-contain"
+                    />
+                  </div>
+                  <p className="text-xs text-[#5B5C60] mt-3 text-center">
+                    Preview your AI-generated video. Click "Use this video" to attach it to your post.
+                  </p>
+                </div>
+
+                {/* Footer */}
+                <div className="p-6 border-t border-white/10 bg-[#2C2C2E] flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowAiVideoPreviewModal(false)}
+                    className="px-5 py-2.5 rounded-xl border border-white/10 text-[#D6D7D8] hover:bg-white/5 transition-colors text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUseAiVideo}
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold shadow-lg hover:shadow-[0_0_15px_rgba(225,195,122,0.3)] transition-all flex items-center gap-2 text-sm"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Use This Video
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+                )}
+
               </div>
+
+
 
               <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 space-y-4">
                 <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Caption & AI Settings</h3>
