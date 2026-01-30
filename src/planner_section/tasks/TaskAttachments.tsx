@@ -92,10 +92,8 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
           type: file.type,
           size: file.size,
         });
-
-        // Validate file size (max 200MB)
         if (file.size > 200 * 1024 * 1024) {
-          toast.error(`${file.name} is too large (max 200MB)`);
+          toast.error(`${file.name} is too large (max 50MB)`);
           continue;
         }
 
@@ -304,7 +302,7 @@ export function TaskAttachments({ taskId, compact = false, className }: TaskAtta
                 {isDragging ? "Drop files here" : "Click to upload or drag and drop"}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                PDF, Word, Excel, Images, etc. (Max 200MB)
+                PDF, Word, Excel, Images, etc. (Max 50MB)
               </p>
             </>
           )}
