@@ -2593,185 +2593,186 @@ export default function SocialMediaTool() {
                 </div>
               </div>
             </div>
-        </motion.div>
+          </div>
 
-        {/* Success Modal */}
-        <AnimatePresence>
-          {showSuccessModal && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="bg-[#3B3C3E] rounded-3xl p-8 max-w-md w-full border border-[#E1C37A]/30 shadow-[0_0_50px_rgba(225,195,122,0.2)] text-center relative overflow-hidden"
-              >
-                {/* Animated background glow */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#E1C37A]/10 rounded-full blur-[80px] -z-10" />
-
-                <div className="w-20 h-20 rounded-full bg-[#E1C37A]/20 flex items-center justify-center mx-auto mb-6">
-                  <CheckCircle className="w-10 h-10 text-[#E1C37A]" />
-                </div>
-
-                <h2 className="text-2xl font-bold text-white mb-3">Post Successful!</h2>
-                <p className="text-[#A9AAAC] mb-8 leading-relaxed">
-                  Your content has been {postMode === 'publish' ? 'published' : 'scheduled'} across your selected social platforms.
-                </p>
-
-                <button
-                  onClick={() => setShowSuccessModal(false)}
-                  className="w-full py-4 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.4)] transition-all duration-300"
+          {/* Success Modal */}
+          <AnimatePresence>
+            {showSuccessModal && (
+              <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  className="bg-[#3B3C3E] rounded-3xl p-8 max-w-md w-full border border-[#E1C37A]/30 shadow-[0_0_50px_rgba(225,195,122,0.2)] text-center relative overflow-hidden"
                 >
-                  Great, thanks!
-                </button>
-              </motion.div>
-            </div>
-          )
-          }
-        </AnimatePresence >
+                  {/* Animated background glow */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-64 bg-[#E1C37A]/10 rounded-full blur-[80px] -z-10" />
 
-        {/* Video Compression Modal */}
-        {pendingVideoFile && (
-          <VideoCompressionModal
-            isOpen={showCompressionModal}
-            onClose={() => {
-              setShowCompressionModal(false);
-              setPendingVideoFile(null);
-            }}
-            file={pendingVideoFile}
-            onCompressionComplete={handleCompressionComplete}
-            maxSizeMB={MAX_VIDEO_SIZE_MB}
-          />
-        )}
-        {/* AI Preview Modal */}
-        <AnimatePresence>
-          {showPreviewModal && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="bg-[#3B3C3E] rounded-2xl w-full max-w-2xl border border-[#E1C37A]/30 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#2C2C2E]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#E1C37A]/10 flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 text-[#E1C37A]" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-[#D6D7D8]">AI Preview</h3>
-                      <p className="text-xs text-[#A9AAAC]">Tone: <span className="text-[#E1C37A]">{tone}</span></p>
-                    </div>
+                  <div className="w-20 h-20 rounded-full bg-[#E1C37A]/20 flex items-center justify-center mx-auto mb-6">
+                    <CheckCircle className="w-10 h-10 text-[#E1C37A]" />
                   </div>
-                  <button
-                    onClick={() => setShowPreviewModal(false)}
-                    className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
-                  >
-                    <X className="w-5 h-5 text-[#A9AAAC]" />
-                  </button>
-                </div>
 
-                {/* Content */}
-                <div className="p-6 overflow-y-auto custom-scrollbar">
-                  <label className="text-sm text-[#A9AAAC] mb-2 block">Enhanced Caption:</label>
-                  <textarea
-                    value={previewText}
-                    onChange={(e) => setPreviewText(e.target.value)}
-                    rows={10}
-                    className="w-full bg-[#1A1A1C] border border-white/10 rounded-xl p-4 text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-1 focus:ring-[#E1C37A]/30 leading-relaxed custom-scrollbar"
-                  />
-                  <p className="text-xs text-[#5B5C60] mt-2">
-                    Feel free to edit this text. When you apply it, this will become your final caption.
+                  <h2 className="text-2xl font-bold text-white mb-3">Post Successful!</h2>
+                  <p className="text-[#A9AAAC] mb-8 leading-relaxed">
+                    Your content has been {postMode === 'publish' ? 'published' : 'scheduled'} across your selected social platforms.
                   </p>
-                </div>
 
-                {/* Footer */}
-                <div className="p-6 border-t border-white/10 bg-[#2C2C2E] flex justify-end gap-3">
                   <button
-                    onClick={() => setShowPreviewModal(false)}
-                    className="px-5 py-2.5 rounded-xl border border-white/10 text-[#D6D7D8] hover:bg-white/5 transition-colors text-sm"
+                    onClick={() => setShowSuccessModal(false)}
+                    className="w-full py-4 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.4)] transition-all duration-300"
                   >
-                    Cancel
+                    Great, thanks!
                   </button>
-                  <button
-                    onClick={handleUseEnhancedText}
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold shadow-lg hover:shadow-[0_0_15px_rgba(225,195,122,0.3)] transition-all flex items-center gap-2 text-sm"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Use This Text
-                  </button>
-                </div>
-              </motion.div>
-            </div>
+                </motion.div>
+              </div>
+            )
+            }
+          </AnimatePresence >
+
+          {/* Video Compression Modal */}
+          {pendingVideoFile && (
+            <VideoCompressionModal
+              isOpen={showCompressionModal}
+              onClose={() => {
+                setShowCompressionModal(false);
+                setPendingVideoFile(null);
+              }}
+              file={pendingVideoFile}
+              onCompressionComplete={handleCompressionComplete}
+              maxSizeMB={MAX_VIDEO_SIZE_MB}
+            />
           )}
-        </AnimatePresence>
-
-        {/* AI Video Preview Modal - New Feature */}
-        <AnimatePresence>
-          {showAiVideoPreviewModal && aiGeneratedVideoUrl && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                className="bg-[#3B3C3E] rounded-2xl w-full max-w-2xl border border-[#E1C37A]/30 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#2C2C2E]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#E1C37A]/10 flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 text-[#E1C37A]" />
+          {/* AI Preview Modal */}
+          <AnimatePresence>
+            {showPreviewModal && (
+              <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  className="bg-[#3B3C3E] rounded-2xl w-full max-w-2xl border border-[#E1C37A]/30 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#2C2C2E]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-[#E1C37A]/10 flex items-center justify-center">
+                        <Sparkles className="w-5 h-5 text-[#E1C37A]" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-[#D6D7D8]">AI Preview</h3>
+                        <p className="text-xs text-[#A9AAAC]">Tone: <span className="text-[#E1C37A]">{tone}</span></p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-bold text-[#D6D7D8]">AI Video Preview</h3>
-                      <p className="text-xs text-[#A9AAAC]">Generated by Higgsfield AI</p>
-                    </div>
+                    <button
+                      onClick={() => setShowPreviewModal(false)}
+                      className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-5 h-5 text-[#A9AAAC]" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => setShowAiVideoPreviewModal(false)}
-                    className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
-                  >
-                    <X className="w-5 h-5 text-[#A9AAAC]" />
-                  </button>
-                </div>
 
-                {/* Video Player */}
-                <div className="p-6 overflow-y-auto custom-scrollbar">
-                  <div className="relative rounded-xl overflow-hidden bg-black">
-                    <video
-                      src={aiGeneratedVideoUrl}
-                      controls
-                      autoPlay
-                      loop
-                      className="w-full max-h-[60vh] object-contain"
+                  {/* Content */}
+                  <div className="p-6 overflow-y-auto custom-scrollbar">
+                    <label className="text-sm text-[#A9AAAC] mb-2 block">Enhanced Caption:</label>
+                    <textarea
+                      value={previewText}
+                      onChange={(e) => setPreviewText(e.target.value)}
+                      rows={10}
+                      className="w-full bg-[#1A1A1C] border border-white/10 rounded-xl p-4 text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-1 focus:ring-[#E1C37A]/30 leading-relaxed custom-scrollbar"
                     />
+                    <p className="text-xs text-[#5B5C60] mt-2">
+                      Feel free to edit this text. When you apply it, this will become your final caption.
+                    </p>
                   </div>
-                  <p className="text-xs text-[#5B5C60] mt-3 text-center">
-                    Preview your AI-generated video. Click "Use this video" to attach it to your post.
-                  </p>
-                </div>
 
-                {/* Footer */}
-                <div className="p-6 border-t border-white/10 bg-[#2C2C2E] flex justify-end gap-3">
-                  <button
-                    onClick={() => setShowAiVideoPreviewModal(false)}
-                    className="px-5 py-2.5 rounded-xl border border-white/10 text-[#D6D7D8] hover:bg-white/5 transition-colors text-sm"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleUseAiVideo}
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold shadow-lg hover:shadow-[0_0_15px_rgba(225,195,122,0.3)] transition-all flex items-center gap-2 text-sm"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Use This Video
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+                  {/* Footer */}
+                  <div className="p-6 border-t border-white/10 bg-[#2C2C2E] flex justify-end gap-3">
+                    <button
+                      onClick={() => setShowPreviewModal(false)}
+                      className="px-5 py-2.5 rounded-xl border border-white/10 text-[#D6D7D8] hover:bg-white/5 transition-colors text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleUseEnhancedText}
+                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold shadow-lg hover:shadow-[0_0_15px_rgba(225,195,122,0.3)] transition-all flex items-center gap-2 text-sm"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Use This Text
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
+          {/* AI Video Preview Modal - New Feature */}
+          <AnimatePresence>
+            {showAiVideoPreviewModal && aiGeneratedVideoUrl && (
+              <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  className="bg-[#3B3C3E] rounded-2xl w-full max-w-2xl border border-[#E1C37A]/30 shadow-2xl relative overflow-hidden flex flex-col max-h-[90vh]"
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#2C2C2E]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-[#E1C37A]/10 flex items-center justify-center">
+                        <Sparkles className="w-5 h-5 text-[#E1C37A]" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-[#D6D7D8]">AI Video Preview</h3>
+                        <p className="text-xs text-[#A9AAAC]">Generated by Higgsfield AI</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowAiVideoPreviewModal(false)}
+                      className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-5 h-5 text-[#A9AAAC]" />
+                    </button>
+                  </div>
+
+                  {/* Video Player */}
+                  <div className="p-6 overflow-y-auto custom-scrollbar">
+                    <div className="relative rounded-xl overflow-hidden bg-black">
+                      <video
+                        src={aiGeneratedVideoUrl}
+                        controls
+                        autoPlay
+                        loop
+                        className="w-full max-h-[60vh] object-contain"
+                      />
+                    </div>
+                    <p className="text-xs text-[#5B5C60] mt-3 text-center">
+                      Preview your AI-generated video. Click "Use this video" to attach it to your post.
+                    </p>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="p-6 border-t border-white/10 bg-[#2C2C2E] flex justify-end gap-3">
+                    <button
+                      onClick={() => setShowAiVideoPreviewModal(false)}
+                      className="px-5 py-2.5 rounded-xl border border-white/10 text-[#D6D7D8] hover:bg-white/5 transition-colors text-sm"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleUseAiVideo}
+                      className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold shadow-lg hover:shadow-[0_0_15px_rgba(225,195,122,0.3)] transition-all flex items-center gap-2 text-sm"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Use This Video
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
+        </motion.div>
       </div >
     </div >
   );
