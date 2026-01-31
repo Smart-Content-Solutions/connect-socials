@@ -53,6 +53,7 @@ export default function TrainAIContent({ sites, onTrainingComplete }: TrainAICon
                     wp_url: site.site_url,
                     wp_username: site.username,
                     wp_app_password: site.app_password,
+                    user_id: user?.id || '',
                     company_name: formData.company_name,
                     brand_voice: formData.brand_voice,
                     target_audience: formData.target_audience,

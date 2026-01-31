@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Sparkles } from 'lucide-react';
+import { Brain, Sparkles, LayoutDashboard } from 'lucide-react';
+import DashboardAIContent from './DashboardAIContent';
 import TrainAIContent from './TrainAIContent';
 import EditorAIContent from './EditorAIContent';
 import { toast } from "sonner";
@@ -15,7 +16,7 @@ export interface WordPressSite {
 }
 
 export default function AIAgentTool() {
-    const [activeTab, setActiveTab] = useState<'train' | 'editor'>('train');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'train' | 'editor'>('dashboard');
     const [sites, setSites] = useState<WordPressSite[]>([]);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -51,7 +52,8 @@ export default function AIAgentTool() {
 
     useEffect(() => {
         if (scrollContainerRef.current) {
-            const scrollTo = activeTab === 'train' ? 0 : scrollContainerRef.current.scrollWidth / 2;
+            const tabIndex = activeTab === 'dashboard' ? 0 : activeTab === 'train' ? 1 : 2;
+            const scrollTo = tabIndex * scrollContainerRef.current.offsetWidth;
             const start = scrollContainerRef.current.scrollLeft;
             const end = scrollTo;
             const duration = 800;
@@ -95,7 +97,9 @@ export default function AIAgentTool() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center">
-                            {activeTab === 'train' ? (
+                            {activeTab === 'dashboard' ? (
+                                <LayoutDashboard className="w-6 h-6 text-white" />
+                            ) : activeTab === 'train' ? (
                                 <Brain className="w-6 h-6 text-white" />
                             ) : (
                                 <Sparkles className="w-6 h-6 text-white" />
@@ -104,7 +108,11 @@ export default function AIAgentTool() {
                         <div>
                             <h1 className="text-2xl font-bold text-[#D6D7D8]">AI Agent</h1>
                             <p className="text-[#A9AAAC] text-sm">
-                                {activeTab === 'train' ? 'Train your AI on your website content' : 'Enhance posts with AI-powered optimization'}
+                                {activeTab === 'dashboard'
+                                    ? 'Monitor AI activity and performance'
+                                    : activeTab === 'train'
+                                        ? 'Train your AI on your website content'
+                                        : 'Enhance posts with AI-powered optimization'}
                             </p>
                         </div>
                     </div>
@@ -112,10 +120,20 @@ export default function AIAgentTool() {
                     {/* Tab Switcher */}
                     <div className="flex items-center gap-1 bg-[#3B3C3E]/40 backdrop-blur-[20px] rounded-xl p-1 border border-white/5">
                         <button
+                            onClick={() => setActiveTab('dashboard')}
+                            className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${activeTab === 'dashboard'
+                                ? 'bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-400'
+                                : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
+                                }`}
+                        >
+                            <LayoutDashboard className="w-4 h-4" />
+                            Dashboard
+                        </button>
+                        <button
                             onClick={() => setActiveTab('train')}
                             className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${activeTab === 'train'
-                                    ? 'bg-purple-500/20 text-purple-400'
-                                    : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
+                                ? 'bg-purple-500/20 text-purple-400'
+                                : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
                                 }`}
                         >
                             <Brain className="w-4 h-4" />
@@ -124,8 +142,8 @@ export default function AIAgentTool() {
                         <button
                             onClick={() => setActiveTab('editor')}
                             className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${activeTab === 'editor'
-                                    ? 'bg-blue-500/20 text-blue-400'
-                                    : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
+                                ? 'bg-blue-500/20 text-blue-400'
+                                : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
                                 }`}
                         >
                             <Sparkles className="w-4 h-4" />
@@ -147,6 +165,14 @@ export default function AIAgentTool() {
                         className="flex overflow-x-hidden scroll-smooth"
                         style={{ scrollSnapType: 'x mandatory' }}
                     >
+                        {/* Dashboard Panel */}
+                        <div
+                            className="w-full flex-shrink-0 p-6 md:p-8"
+                            style={{ scrollSnapAlign: 'start' }}
+                        >
+                            <DashboardAIContent />
+                        </div>
+
                         {/* Train AI Panel */}
                         <div
                             className="w-full flex-shrink-0 p-6 md:p-8"

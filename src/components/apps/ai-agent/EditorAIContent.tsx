@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, ArrowRight, Loader2, Wand2 } from 'lucide-react';
 import { toast } from "sonner";
+import { useUser } from "@clerk/clerk-react";
 import GlassCard from './GlassCard';
 import PostSelector from './components/PostSelector';
 import ImageUploadZone from './components/ImageUploadZone';
@@ -13,6 +14,7 @@ interface EditorAIContentProps {
 }
 
 export default function EditorAIContent({ sites }: EditorAIContentProps) {
+    const { user } = useUser();
     const [isLoading, setIsLoading] = useState(false);
     const [selectedSiteId, setSelectedSiteId] = useState<string>("");
     const [selectedPostId, setSelectedPostId] = useState<number | null>(null);
@@ -49,6 +51,7 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
                 wp_url: site.site_url,
                 wp_username: site.username,
                 wp_app_password: site.app_password,
+                user_id: user?.id || '',
                 user_instruction: userInstruction
             };
             // Add fields individually so n8n can read them as standard form inputs
@@ -75,7 +78,7 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
             // For binary, we need the webhook to accept it.
             // My workflow handles binary + json input.
 
-            
+
 
             const response = await fetch('https://n8n.smartcontentsolutions.co.uk/webhook/post-editor-agent', {
                 method: 'POST',
