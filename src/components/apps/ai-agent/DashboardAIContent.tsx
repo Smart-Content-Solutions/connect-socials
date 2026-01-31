@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUser } from "@clerk/clerk-react";
-import { supabase } from "@/lib/supabase";
+import { supabaseAI as supabase } from "@/lib/supabaseAIAgent";
 
 interface AIActivity {
     id: string;
@@ -72,6 +72,7 @@ export default function DashboardAIContent() {
         setError(null);
 
         try {
+            console.log("Fetching activities for user:", user.id);
             // Fetch all activities for the user
             const { data, error: fetchError } = await supabase
                 .from('ai_agent_activities')
@@ -80,8 +81,12 @@ export default function DashboardAIContent() {
                 .order('created_at', { ascending: false })
                 .limit(50);
 
-            if (fetchError) throw fetchError;
+            if (fetchError) {
+                console.error("Supabase Error:", fetchError);
+                throw fetchError;
+            }
 
+            console.log("Activities found:", data?.length || 0);
             const activitiesData = data as AIActivity[] || [];
             setActivities(activitiesData);
 

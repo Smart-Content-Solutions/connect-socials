@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { supabaseAI as supabase } from "@/lib/supabaseAIAgent";
 
 export interface TrainingActivityData {
     site_name: string;

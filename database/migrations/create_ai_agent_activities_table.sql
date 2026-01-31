@@ -39,23 +39,16 @@ CREATE INDEX IF NOT EXISTS idx_ai_agent_activities_user_type_date
 -- Add RLS (Row Level Security) policies
 ALTER TABLE ai_agent_activities ENABLE ROW LEVEL SECURITY;
 
--- Policy: Users can view their own activities
+-- Policy: Users can only view their own activities via the frontend
+-- Backend (n8n) uses service_role key which bypasses all RLS
 CREATE POLICY "Users can view own activities"
     ON ai_agent_activities
     FOR SELECT
     USING (user_id = current_setting('request.jwt.claims', true)::json->>'sub');
 
--- Policy: Users can insert their own activities
-CREATE POLICY "Users can insert own activities"
-    ON ai_agent_activities
-    FOR INSERT
-    WITH CHECK (user_id = current_setting('request.jwt.claims', true)::json->>'sub');
-
--- Policy: Users can update their own activities
-CREATE POLICY "Users can update own activities"
-    ON ai_agent_activities
-    FOR UPDATE
-    USING (user_id = current_setting('request.jwt.claims', true)::json->>'sub');
+-- Note: INSERT and UPDATE policies are not needed because:
+-- 1. Frontend never inserts/updates (only n8n does)
+-- 2. n8n uses service_role key which bypasses all RLS policies
 
 -- Add trigger to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_ai_agent_activities_updated_at()
