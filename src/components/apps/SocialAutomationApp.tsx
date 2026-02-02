@@ -1411,7 +1411,7 @@ export default function SocialMediaTool() {
                             ? (p.id === 'facebook' && selectedFacebookPage
                               ? `Page: ${selectedFacebookPage.name}`
                               : p.id === 'instagram'
-                                ? `Connected as @${instagramData?.username || 'hsuswiowkskow'}`
+                                ? `Connected as @${instagramData?.username || 'User'}`
                                 : 'Connected')
                             : 'Not connected'}
                         </p>
@@ -1554,7 +1554,7 @@ export default function SocialMediaTool() {
                             ? (p.id === 'facebook' && selectedFacebookPage
                               ? `Page: ${selectedFacebookPage.name}`
                               : p.id === 'instagram'
-                                ? `Connected as @${instagramData?.username || 'hsuswiowkskow'}`
+                                ? `Connected as @${instagramData?.username || 'User'}`
                                 : 'Connected')
                             : 'Not connected'}
                         </p>
