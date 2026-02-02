@@ -115,6 +115,14 @@ export default function SocialMediaTool() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (errorMsg && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [errorMsg]);
+
   const [loadingPlatform, setLoadingPlatform] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showBlueskyModal, setShowBlueskyModal] = useState(false);
@@ -194,21 +202,33 @@ export default function SocialMediaTool() {
         body: form
       });
 
-      if (!res.ok) throw new Error("AI enhancement request failed");
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText || "AI enhancement request failed");
+      }
 
-      const rawData = await res.json();
+      const responseText = await res.text();
+      if (!responseText) {
+        throw new Error("Empty response from enhancement service. Ensure n8n workflow 'Respond to Webhook' is configured.");
+      }
+
+      let rawData;
+      try {
+        rawData = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse AI response:", responseText);
+        throw new Error("Invalid JSON response from AI service");
+      }
+
       console.log("AI Preview Raw Response:", rawData);
 
       // n8n often returns an array, so we handle both cases
       const data = Array.isArray(rawData) ? rawData[0] : rawData;
+      const isPreview = String(data.is_preview) === "true"; // Handles both boolean and string
+      const enhancedCaption = data.enhanced_caption || data.caption;
 
-      // Check for formatted response (from Set node) or raw workflow response
-      if (data.status === "success" && data.enhanced_caption) {
-        setPreviewText(data.enhanced_caption);
-        setShowPreviewModal(true);
-      } else if (data.is_preview === "true" && data.caption) {
-        // Fallback: n8n is returning raw workflow data instead of Set node output
-        setPreviewText(data.caption);
+      if (enhancedCaption && (data.status === "success" || isPreview)) {
+        setPreviewText(enhancedCaption);
         setShowPreviewModal(true);
       } else {
         throw new Error(data.message || "Could not generate enhanced text");
@@ -1288,7 +1308,7 @@ export default function SocialMediaTool() {
         )}
 
         {errorMsg && (
-          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
+          <div ref={errorRef} className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
             {errorMsg}
           </div>
         )}
