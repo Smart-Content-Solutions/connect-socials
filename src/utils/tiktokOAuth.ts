@@ -54,11 +54,14 @@ export async function initiateTikTokAuth(): Promise<void> {
   localStorage.setItem(OAUTH_STATE_KEY, state);
   localStorage.setItem(OAUTH_INITIATOR_USER_KEY, clerkUserId);
 
-  const scope = "user.info.basic";
+  const scope = "user.info.basic,user.info.profile,user.info.stats,video.list,video.upload,video.publish";
+
+  // Use the client key provided by the user
+  const CLIENT_KEY = "awnmeaaxhw1uhtjy";
 
   const authUrl =
     "https://www.tiktok.com/v2/auth/authorize/?" +
-    `client_key=${encodeURIComponent(TIKTOK_CLIENT_KEY)}` +
+    `client_key=${encodeURIComponent(CLIENT_KEY)}` +
     `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
     `&response_type=code` +
     `&scope=${encodeURIComponent(scope)}` +

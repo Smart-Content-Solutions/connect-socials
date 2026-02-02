@@ -80,6 +80,14 @@ export default function CreatePostContent(): JSX.Element {
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (errorMsg && errorRef.current) {
+      errorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [errorMsg]);
+
   const CONNECTED = {
     linkedin: !!linkedin,
     facebook: !!facebook,
@@ -221,7 +229,7 @@ export default function CreatePostContent(): JSX.Element {
       )}
 
       {errorMsg && (
-        <div className="p-3 mb-4 bg-red-100 border border-red-300 text-red-700 rounded">
+        <div ref={errorRef} className="p-3 mb-4 bg-red-100 border border-red-300 text-red-700 rounded">
           {errorMsg}
         </div>
       )}

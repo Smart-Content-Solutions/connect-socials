@@ -2,11 +2,7 @@ import React, { useState, useEffect, ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Sparkles, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  SoundProvider,
-  SoundToggle,
-  useSounds
-} from "../../components/shared/SoundEffects";
+
 import {
   SubscriptionProvider,
   useSubscription
@@ -72,13 +68,13 @@ function LayoutContent({ children }: { children: ReactNode }) {
             ))}
 
             {isAuthenticated ? (
-              <SoundLink
+              <Link
                 to="/account"
                 className="btn-gold px-6 py-2.5 rounded-full text-sm flex items-center gap-2"
               >
                 <User className="w-4 h-4" />
                 Account
-              </SoundLink>
+              </Link>
             ) : (
               <button
                 onClick={() => login()}
@@ -124,13 +120,13 @@ function LayoutContent({ children }: { children: ReactNode }) {
                 ))}
 
                 {isAuthenticated ? (
-                  <SoundLink
+                  <Link
                     to="/account"
                     className="btn-gold px-6 py-3 rounded-full text-sm flex items-center justify-center gap-2 mt-4"
                   >
                     <User className="w-4 h-4" />
                     My Account
-                  </SoundLink>
+                  </Link>
                 ) : (
                   <button
                     onClick={() => login()}
@@ -220,7 +216,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
               reserved.
             </p>
             <div className="flex gap-6 items-center">
-              <SoundToggle />
+
               <Link to="/privacy" className="text-sm text-[#5B5C60] hover:text-[#A9AAAC]">
                 Privacy
               </Link>
@@ -236,38 +232,13 @@ function LayoutContent({ children }: { children: ReactNode }) {
 }
 
 /* ================= SOUND-ENABLED LINK ================= */
-function SoundLink({
-  to,
-  children,
-  className,
-  ...props
-}: {
-  to: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  const { playHover, playClick } = useSounds();
 
-  return (
-    <Link
-      to={to}
-      className={className}
-      onMouseEnter={playHover}
-      onClick={playClick}
-      {...props}
-    >
-      {children}
-    </Link>
-  );
-}
 
 /* ================= ROOT LAYOUT ================= */
 export default function Layout({ children }: { children: ReactNode }) {
   return (
-    <SoundProvider>
       <SubscriptionProvider>
         <LayoutContent>{children}</LayoutContent>
       </SubscriptionProvider>
-    </SoundProvider>
   );
 }

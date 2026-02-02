@@ -29,6 +29,15 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
     const [tone, setTone] = useState("Professional");
     const [customTone, setCustomTone] = useState("");
     const [image, setImage] = useState<File | null>(null);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+    const errorRef = React.useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (errorMsg && errorRef.current) {
+            errorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    }, [errorMsg]);
 
     const [loading, setLoading] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
@@ -168,8 +177,15 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
     };
 
     const handleSubmit = async () => {
-        if (selectedSiteIds.length === 0) return;
-        if (!topic.trim()) return;
+        setErrorMsg(null);
+        if (selectedSiteIds.length === 0) {
+            setErrorMsg("Please select at least one WordPress site.");
+            return;
+        }
+        if (!topic.trim()) {
+            setErrorMsg("Please enter a topic or title for your post.");
+            return;
+        }
 
         setLoading(true);
         setProgress(0);
@@ -302,7 +318,7 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
                 setImage(null);
                 setImagePreview(null);
             } else {
-                toast.error("Failed to trigger automation. Please check site credentials.");
+                setErrorMsg("Failed to trigger automation for any of the selected sites. Please check your site connections and credentials.");
                 setProgress(0);
             }
         }, 500);
@@ -347,6 +363,13 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
                         </div>
                     </GlassCard>
                 </motion.div>
+            )}
+
+            {errorMsg && (
+                <div ref={errorRef} className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/50 text-red-200 text-sm flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+                    {errorMsg}
+                </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -596,7 +619,7 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
 
                     <GoldButton
                         onClick={handleSubmit}
-                        disabled={!isValid || loading}
+                        disabled={loading}
                         className="w-full py-4 text-base flex items-center justify-center gap-2"
                     >
                         {loading ? (
