@@ -71,6 +71,7 @@ import {
   clearBlueskyCredentials,
   isBlueskyConnected
 } from "@/utils/blueskyOAuth";
+import { supabase } from "@/lib/supabase";
 import VideoCompressionModal from "../modals/VideoCompressionModal";
 
 import DashboardContent from "../social/DashboardContent";
@@ -610,6 +611,9 @@ export default function SocialMediaTool() {
     reader.readAsDataURL(f);
   };
 
+
+
+
   const handleGenerateAiVideo = async () => {
     if (!aiSourceImage) {
       toast.error('Please upload a source image first');
@@ -628,9 +632,9 @@ export default function SocialMediaTool() {
       formData.append('duration', String(aiDuration));
       formData.append('aspect_ratio', '9:16');
 
-      toast.info('Starting AI video generation...');
+      toast.info('Starting AI video generation... This may take 2-3 minutes.');
 
-      const response = await fetch('https://n8n.smartcontentsolutions.co.uk/webhook-test/ai-video-generate', {
+      const response = await fetch('https://n8n.smartcontentsolutions.co.uk/webhook/ai-video-generate', {
         method: 'POST',
         body: formData
       });
@@ -642,23 +646,78 @@ export default function SocialMediaTool() {
 
       const result = await response.json();
 
-      if (result.success && result.video_url) {
-        setAiGeneratedVideoUrl(result.video_url);
-        setAiJobStatus('completed');
-        setShowAiVideoPreviewModal(true);
-        toast.success('AI video generated successfully!');
+      if (result.success && result.job_id) {
+        // Job started successfully, now poll for completion
+        const jobId = result.job_id;
+        toast.info('Job started! Processing in background...');
+        setAiJobStatus('processing');
+
+        // Poll Supabase for status update
+        const checkStatus = async () => {
+          const { data, error } = await supabase
+            .from('ai_video_jobs')
+            .select('*')
+            .eq('higgsfield_job_id', jobId)
+            .single();
+
+          if (error) {
+            console.error("Polling error:", error);
+            return false; // Continue polling on transient errors
+          }
+
+          if (data.status === 'completed' && data.output_url) {
+            setAiGeneratedVideoUrl(data.output_url);
+            setAiJobStatus('completed');
+            setShowAiVideoPreviewModal(true);
+            toast.success('AI video generated successfully!');
+            return true; // Stop polling
+          }
+
+          if (data.status === 'failed') {
+            throw new Error(data.error_message || 'Video generation failed');
+          }
+
+          return false; // Continue polling
+        };
+
+        // Poll every 5 seconds up to 5 minutes
+        const pollInterval = 5000;
+        const maxAttempts = 60; // 5 minutes
+        let attempts = 0;
+
+        const pollTimer = setInterval(async () => {
+          attempts++;
+          try {
+            const isFinished = await checkStatus();
+            if (isFinished || attempts >= maxAttempts) {
+              clearInterval(pollTimer);
+              setIsGeneratingAiVideo(false);
+              if (attempts >= maxAttempts) {
+                toast.error('Timed out waiting for video. Check "Task History" later.');
+                setAiJobStatus('failed'); // Technically unknown, but effectively failed for UI
+              }
+            }
+          } catch (err: any) {
+            clearInterval(pollTimer);
+            setIsGeneratingAiVideo(false);
+            setAiJobStatus('failed');
+            setAiJobError(err.message);
+            toast.error(`Failed: ${err.message}`);
+          }
+        }, pollInterval);
+
       } else {
-        throw new Error(result.error || 'Video generation failed');
+        throw new Error(result.error || 'Failed to start video job');
       }
     } catch (error: any) {
       console.error('AI video generation error:', error);
       setAiJobStatus('failed');
       setAiJobError(error.message);
       toast.error(`Failed to generate video: ${error.message}`);
-    } finally {
       setIsGeneratingAiVideo(false);
     }
   };
+
 
   const handleUseAiVideo = async () => {
     if (!aiGeneratedVideoUrl) return;
