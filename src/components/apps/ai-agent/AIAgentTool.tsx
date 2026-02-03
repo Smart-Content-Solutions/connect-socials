@@ -90,7 +90,7 @@ export default function AIAgentTool() {
         <div className="min-h-screen pt-24 pb-20 bg-[#1A1A1C] text-[#D6D7D8] overflow-hidden relative">
             {/* Ambient glow effects */}
             <div className="fixed top-1/4 -left-32 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[150px] pointer-events-none" />
-            <div className="fixed bottom-1/4 -right-32 w-[400px] h-[400px] bg-blue-500/10 rounded-full blur-[150px] pointer-events-none" />
+            <div className="fixed bottom-1/4 -right-32 w-[400px] h-[400px] bg-purple-500/10 rounded-full blur-[150px] pointer-events-none" />
 
             <div className="max-w-7xl mx-auto px-6">
                 {/* Header with Title and Tabs */}
@@ -142,7 +142,7 @@ export default function AIAgentTool() {
                         <button
                             onClick={() => setActiveTab('editor')}
                             className={`px-5 py-2 rounded-lg text-sm font-medium transition-all duration-300 flex items-center gap-2 ${activeTab === 'editor'
-                                ? 'bg-blue-500/20 text-blue-400'
+                                ? 'bg-purple-500/20 text-purple-400'
                                 : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
                                 }`}
                         >

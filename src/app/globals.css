@@ -1,0 +1,33 @@
+.task-editor-content ul[data-checked="false"] > li {
+  list-style: none;
+  position: relative;
+  padding-left: 1.5em;
+}
+
+.task-editor-content ul[data-checked="false"] > li::before {
+  content: "\2610"; /* Unicode checkbox */
+  position: absolute;
+  left: 0;
+  color: #a9aaac; /* Muted foreground color */
+  cursor: pointer;
+}
+
+.task-editor-content ul[data-checked="true"] > li {
+  list-style: none;
+  position: relative;
+  padding-left: 1.5em;
+}
+
+.task-editor-content ul[data-checked="true"] > li::before {
+  content: "\2611"; /* Unicode checked checkbox */
+  position: absolute;
+  left: 0;
+  color: #E1C37A; /* Highlight color */
+  cursor: pointer;
+  text-decoration: line-through;
+}
+
+.task-editor-content ul[data-checked="true"] > li span {
+  text-decoration: line-through;
+  color: #5B5C60; /* More muted color for completed items */
+}

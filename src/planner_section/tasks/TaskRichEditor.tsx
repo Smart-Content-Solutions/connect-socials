@@ -57,15 +57,7 @@ export function TaskRichEditor({ value, onChange, placeholder, className }: Task
     return DOMPurify.sanitize(text, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
   };
 
-  const insertCheckbox = () => {
-    const selection = window.getSelection();
-    const selectedText = sanitizeText(selection?.toString() || "Item");
-    const checkbox = `<div class="task-checkbox flex items-center gap-2 my-1">
-      <input type="checkbox" class="w-4 h-4 rounded border-border" />
-      <span>${selectedText}</span>
-    </div>`;
-    execCommand("insertHTML", checkbox);
-  };
+
 
   const insertToggle = () => {
     const selection = window.getSelection();
@@ -92,7 +84,7 @@ export function TaskRichEditor({ value, onChange, placeholder, className }: Task
     { icon: Heading2, action: () => execCommand("formatBlock", "h2"), tooltip: "Heading 2" },
     { type: "separator" },
     { icon: List, action: () => execCommand("insertUnorderedList"), tooltip: "Bullet list" },
-    { icon: ListChecks, action: insertCheckbox, tooltip: "Checkbox" },
+    { icon: ListChecks, action: () => execCommand("insertUnorderedList"), tooltip: "Checkbox" },
     { icon: ToggleLeft, action: insertToggle, tooltip: "Toggle list" },
     { type: "separator" },
     { icon: Code, action: insertCodeBlock, tooltip: "Code block" },
@@ -132,10 +124,11 @@ export function TaskRichEditor({ value, onChange, placeholder, className }: Task
           "min-h-[150px] p-3 focus:outline-none prose prose-sm max-w-none",
           "prose-headings:text-foreground prose-p:text-foreground",
           "prose-strong:text-foreground prose-em:text-foreground",
-          "prose-ul:text-foreground prose-ol:text-foreground",
+          "prose-ul:text-foreground prose-ol:text-foreground prose-li:list-disc prose-li:ml-5",
           "prose-blockquote:border-primary prose-blockquote:text-muted-foreground",
           "prose-code:text-primary prose-pre:bg-surface",
-          "[&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-muted-foreground"
+          "[&:empty]:before:content-[attr(data-placeholder)] [&:empty]:before:text-muted-foreground",
+          "task-editor-content"
         )}
         data-placeholder={placeholder || "Add description with rich formatting..."}
         suppressContentEditableWarning

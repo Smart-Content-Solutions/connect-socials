@@ -9,18 +9,12 @@ import {
   Loader2,
   Link as LinkIcon,
   Unlink,
-  Facebook,
-  Instagram,
-  Twitter,
-  Linkedin,
-  Music,
-  Pin,
-  Youtube,
-  MapPin,
-  MessageCircle,
-  FileText,
-  AtSign,
-  Cloud,
+   Facebook,
+   Instagram,
+   Twitter,
+   Linkedin,
+   Music,
+   Youtube,
   Sparkles,
   Send,
   X,
@@ -62,14 +56,6 @@ import {
   isTikTokConnected
 } from "@/utils/tiktokOAuth";
 
-import {
-  initiateBlueskyAuth,
-  saveBlueskyCredentials,
-  getBlueskyCredentials,
-  clearBlueskyCredentials,
-  isBlueskyConnected
-} from "@/utils/blueskyOAuth";
-
 import { needsCompression } from "@/utils/videoCompressor";
 import VideoCompressionModal from "../modals/VideoCompressionModal";
 
@@ -90,15 +76,9 @@ const platformColors: Record<string, string> = {
   instagram: '#E4405F',
   x: '#000000',
   linkedin: '#0A66C2',
-  tiktok: '#000000',
-  pinterest: '#E60023',
-  youtube: '#FF0000',
-  google_business: '#4285F4',
-  reddit: '#FF4500',
-  medium: '#000000',
-  threads: '#000000',
-  bluesky: '#0085FF'
-};
+   tiktok: '#000000',
+   youtube: '#FF0000',
+ };
 
 export default function SocialMediaTool() {
   const { user, isSignedIn, isLoaded } = useUser();
@@ -125,11 +105,6 @@ export default function SocialMediaTool() {
 
   const [loadingPlatform, setLoadingPlatform] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [showBlueskyModal, setShowBlueskyModal] = useState(false);
-  const [blueskyUsername, setBlueskyUsername] = useState("");
-  const [blueskyPassword, setBlueskyPassword] = useState("");
-  const [blueskyError, setBlueskyError] = useState("");
-  const [isEditingBluesky, setIsEditingBluesky] = useState(false);
   const [showFacebookPagesModal, setShowFacebookPagesModal] = useState(false);
   const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
   const [selectedFacebookPage, setSelectedFacebookPage] = useState<FacebookPage | null>(null);
@@ -139,7 +114,6 @@ export default function SocialMediaTool() {
   const [facebookBusinesses, setFacebookBusinesses] = useState<{ id: string; name: string }[]>([]);
   const [selectedBusiness, setSelectedBusiness] = useState<{ id: string; name: string } | null>(null);
 
-  const [showBlueskyInfo, setShowBlueskyInfo] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Instagram State
@@ -322,63 +296,10 @@ export default function SocialMediaTool() {
   }, [activeTab]);
 
 
-  const handleBlueskyConnect = () => {
-    const credentials = getBlueskyCredentials();
-    if (credentials?.connected && !isEditingBluesky) {
-      setIsEditingBluesky(true);
-      setBlueskyUsername(credentials.username);
-      setBlueskyPassword(credentials.password);
-    } else {
-      setIsEditingBluesky(false);
-      setBlueskyUsername("");
-      setBlueskyPassword("");
-    }
-    setBlueskyError("");
-    setShowBlueskyModal(true);
-  };
-
-  const handleBlueskyDisconnect = () => {
-    clearBlueskyCredentials();
-    setLoadingPlatform(null);
-    setBlueskyUsername("");
-    setBlueskyPassword("");
-    setIsEditingBluesky(false);
-  };
-
-  const handleBlueskySubmit = async () => {
-    setBlueskyError("");
-
-    if (!blueskyUsername.trim()) {
-      setBlueskyError("Username is required");
-      return;
-    }
-
-    if (!blueskyPassword.trim()) {
-      setBlueskyError("Password is required");
-      return;
-    }
-
-    try {
-      setLoadingPlatform("bluesky");
-      if (!user) throw new Error("User not authenticated");
-
-      await initiateBlueskyAuth(blueskyUsername.trim(), blueskyPassword.trim(), user.id);
-
-      setShowBlueskyModal(false);
-      setBlueskyUsername("");
-      setBlueskyPassword("");
-      setIsEditingBluesky(false);
-    } catch (err: any) {
-      setBlueskyError(err.message || "Failed to connect Bluesky. Check backend.");
-    } finally {
-      setLoadingPlatform(null);
-    }
-  };
-
   const ALL_PLATFORMS: Platform[] = [
     {
       id: "facebook",
-      name: "Facebook",
+      name: "Facebook Reels",
       icon: Facebook,
       connect: initiateFacebookAuth,
       disconnect: clearFacebookAuthData,
@@ -386,7 +307,7 @@ export default function SocialMediaTool() {
     },
     {
       id: "instagram",
-      name: "Instagram",
+      name: "Instagram Reels",
       icon: Instagram,
       connect: initiateInstagramAuth,
       disconnect: clearInstagramAuthData,
@@ -409,53 +330,15 @@ export default function SocialMediaTool() {
       isConnected: isTikTokConnected
     },
     {
-      id: "bluesky",
-      name: "Bluesky",
-      icon: Cloud,
-      connect: handleBlueskyConnect,
-      disconnect: handleBlueskyDisconnect,
-      isConnected: isBlueskyConnected
-    },
-    {
       id: "x",
-      name: "X (Twitter)",
+      name: "X (Twitter) Video",
       icon: Twitter,
       isConnected: () => false
     },
     {
-      id: "pinterest",
-      name: "Pinterest",
-      icon: Pin,
-      isConnected: () => false
-    },
-    {
       id: "youtube",
-      name: "YouTube",
+      name: "YouTube Shorts",
       icon: Youtube,
-      isConnected: () => false
-    },
-    {
-      id: "google_business",
-      name: "Google Business",
-      icon: MapPin,
-      isConnected: () => false
-    },
-    {
-      id: "reddit",
-      name: "Reddit",
-      icon: MessageCircle,
-      isConnected: () => false
-    },
-    {
-      id: "medium",
-      name: "Medium",
-      icon: FileText,
-      isConnected: () => false
-    },
-    {
-      id: "threads",
-      name: "Threads",
-      icon: AtSign,
       isConnected: () => false
     }
   ];
@@ -873,123 +756,7 @@ export default function SocialMediaTool() {
       <div className="fixed top-1/4 -left-32 w-[500px] h-[500px] bg-[#E1C37A]/10 rounded-full blur-[150px] pointer-events-none" />
       <div className="fixed bottom-1/4 -right-32 w-[400px] h-[400px] bg-[#B6934C]/10 rounded-full blur-[150px] pointer-events-none" />
 
-      {showBlueskyModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-[#3B3C3E] rounded-2xl p-8 max-w-md w-full border border-white/10 shadow-2xl">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-[#0085FF]/20 flex items-center justify-center">
-                  <Cloud className="w-6 h-6 text-[#0085FF]" />
-                </div>
-                <h2 className="text-xl font-bold text-[#D6D7D8]">
-                  {isEditingBluesky ? "Edit Bluesky" : "Connect Bluesky"}
-                </h2>
-              </div>
 
-              <div className="flex items-center gap-2">
-                {/* INFO BUTTON — INSERTED HERE */}
-                <div className="relative">
-                  <button
-                    onClick={() => setShowBlueskyInfo(!showBlueskyInfo)}
-                    className="w-8 h-8 rounded-lg bg-[#3B3C3E] hover:bg-[#4B4C4E] flex items-center justify-center transition-colors"
-                    title="How to find username & App Password"
-                  >
-                    <Sparkles className="w-4 h-4 text-[#A9AAAC]" />
-                  </button>
-
-                  {showBlueskyInfo && (
-                    <div className="absolute right-0 mt-2 w-80 p-4 rounded-xl bg-[#2C2C2E] border border-white/10 shadow-xl text-sm z-50">
-                      <p className="text-[#D6D7D8] font-semibold mb-2">How to get your Bluesky login details</p>
-
-                      <ul className="space-y-2 text-[#A9AAAC]">
-                        <li>
-                          <b>1. Username</b>:
-                          Open your Bluesky profile → your username ends with <code>.bsky.social</code>
-                        </li>
-                        <li>
-                          <b>2. App Password</b>:
-                          Go to Bluesky → Settings → <b>App Passwords</b> → Create a new password.
-                        </li>
-                        <li>
-                          <b>Do NOT use your main password.</b> Use only an App Password.
-                        </li>
-                      </ul>
-
-                      <button
-                        onClick={() => setShowBlueskyInfo(false)}
-                        className="mt-3 px-3 py-1 rounded-lg bg-[#3B3C3E] text-[#D6D7D8] text-xs hover:bg-[#4B4C4E]"
-                      >
-                        Got it
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* CLOSE BUTTON */}
-                <button
-                  onClick={() => {
-                    setShowBlueskyModal(false);
-                    setBlueskyError("");
-                    setIsEditingBluesky(false);
-                  }}
-                  className="w-8 h-8 rounded-lg bg-[#3B3C3E] hover:bg-[#4B4C4E] flex items-center justify-center transition-colors"
-                >
-                  <X className="w-5 h-5 text-[#A9AAAC]" />
-                </button>
-              </div>
-            </div>
-
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#D6D7D8] mb-2">
-                  Username or Email
-                </label>
-                <input
-                  type="text"
-                  value={blueskyUsername}
-                  onChange={(e) => setBlueskyUsername(e.target.value)}
-                  placeholder="username.bsky.social"
-                  className="w-full rounded-xl bg-[#3B3C3E]/50 border border-white/10 p-3 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#0085FF]/50 focus:ring-2 focus:ring-[#0085FF]/20"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[#D6D7D8] mb-2">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={blueskyPassword}
-                  onChange={(e) => setBlueskyPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full rounded-xl bg-[#3B3C3E]/50 border border-white/10 p-3 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#0085FF]/50 focus:ring-2 focus:ring-[#0085FF]/20"
-                />
-              </div>
-
-              {blueskyError && (
-                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-                  {blueskyError}
-                </div>
-              )}
-
-              <div className="bg-[#0085FF]/10 border border-[#0085FF]/20 rounded-lg p-3">
-                <p className="text-sm text-[#A9AAAC]">
-                  💡 Use your Bluesky username (e.g., username.bsky.social) and password
-                </p>
-              </div>
-
-              <button
-                onClick={handleBlueskySubmit}
-                className="w-full py-3 px-6 rounded-full bg-gradient-to-r from-[#0085FF] to-[#0066CC] text-white font-medium hover:shadow-[0_0_20px_rgba(0,133,255,0.3)] transition-all duration-300 flex items-center justify-center gap-2"
-              >
-                <CheckCircle className="w-5 h-5" />
-                {isEditingBluesky ? "Update Credentials" : "Connect"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Facebook Business Selection Modal */}
       {showBusinessModal && (
