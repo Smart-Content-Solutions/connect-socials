@@ -1500,10 +1500,15 @@ export default function SocialMediaTool() {
                 <div
                   className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
                 >
-                  {ALL_PLATFORMS.map((p) => {
+                  {ALL_PLATFORMS.filter(p => ['facebook', 'instagram', 'tiktok', 'youtube', 'bluesky'].includes(p.id)).map((p) => {
                     const connected = p.isConnected();
                     const Icon = p.icon;
                     const color = platformColors[p.id] || '#E1C37A';
+
+                    // Rename for video context
+                    let displayName = p.name;
+                    if (p.id === 'facebook') displayName = 'Facebook Reels';
+                    if (p.id === 'instagram') displayName = 'Instagram Reels';
 
                     return (
                       <div
@@ -1538,7 +1543,7 @@ export default function SocialMediaTool() {
                           </div>
                         </div>
 
-                        <h3 className="text-[#D6D7D8] font-semibold text-lg mb-1">{p.name}</h3>
+                        <h3 className="text-[#D6D7D8] font-semibold text-lg mb-1">{displayName}</h3>
                         <p className="text-[#5B5C60] text-sm mb-4">
                           {connected
                             ? (p.id === 'facebook' && selectedFacebookPage
@@ -1882,10 +1887,15 @@ export default function SocialMediaTool() {
                   <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.length} selected)</span>
                 </h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                  {ALL_PLATFORMS.filter(p => p.isConnected()).map((p) => {
+                  {ALL_PLATFORMS.filter(p => p.isConnected() && ['facebook', 'instagram', 'tiktok', 'youtube', 'bluesky'].includes(p.id)).map((p) => {
                     const selected = isSelected(p.id);
                     const Icon = p.icon;
                     const color = platformColors[p.id];
+
+                    // Rename for video context
+                    let displayName = p.name;
+                    if (p.id === 'facebook') displayName = 'Facebook Reels';
+                    if (p.id === 'instagram') displayName = 'Instagram Reels';
 
                     return (
                       <button
@@ -1908,7 +1918,7 @@ export default function SocialMediaTool() {
                           <Icon className="w-5 h-5" style={{ color }} />
                         </div>
                         <p className={`text-xs font-medium ${selected ? 'text-[#E1C37A]' : 'text-[#A9AAAC]'}`}>
-                          {p.id === 'facebook' && selectedFacebookPage ? selectedFacebookPage.name : p.name}
+                          {p.id === 'facebook' && selectedFacebookPage ? selectedFacebookPage.name : displayName}
                         </p>
                       </button>
                     );

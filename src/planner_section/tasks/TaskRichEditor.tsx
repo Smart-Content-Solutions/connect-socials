@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Bold, Italic, List, ListChecks, Code, ToggleLeft,
-  Heading1, Heading2, Quote, Minus
+  Heading1, Heading2, Quote, Minus, Text
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DOMPurify from "dompurify";
@@ -82,6 +82,7 @@ export function TaskRichEditor({ value, onChange, placeholder, className }: Task
     { type: "separator" },
     { icon: Heading1, action: () => execCommand("formatBlock", "h1"), tooltip: "Heading 1" },
     { icon: Heading2, action: () => execCommand("formatBlock", "h2"), tooltip: "Heading 2" },
+    { icon: Text, action: () => execCommand("formatBlock", "p"), tooltip: "Normal text" },
     { type: "separator" },
     { icon: List, action: () => execCommand("insertUnorderedList"), tooltip: "Bullet list" },
     { icon: ListChecks, action: () => execCommand("insertUnorderedList"), tooltip: "Checkbox" },

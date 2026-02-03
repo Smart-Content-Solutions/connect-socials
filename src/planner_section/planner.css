@@ -5,7 +5,7 @@
 @layer base {
     .planner-theme {
         --background: 240 6% 6%;
-        --foreground: 0 0% 95%;
+        --foreground: 0 0% 100%;
 
         --card: 240 5% 10%;
         --card-foreground: 0 0% 95%;
