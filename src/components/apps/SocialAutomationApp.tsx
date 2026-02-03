@@ -630,7 +630,7 @@ export default function SocialMediaTool() {
 
       toast.info('Starting AI video generation...');
 
-      const response = await fetch('https://n8n.smartcontentsolutions.co.uk/webhook/ai-video-generate', {
+      const response = await fetch('https://n8n.smartcontentsolutions.co.uk/webhook-test/ai-video-generate', {
         method: 'POST',
         body: formData
       });
