@@ -71,7 +71,7 @@ import {
   clearBlueskyCredentials,
   isBlueskyConnected
 } from "@/utils/blueskyOAuth";
-import { supabase } from "@/lib/supabase";
+import { aiAgentSupabase as supabase } from "@/lib/ai-agent-supabase";
 import VideoCompressionModal from "../modals/VideoCompressionModal";
 
 import DashboardContent from "../social/DashboardContent";
