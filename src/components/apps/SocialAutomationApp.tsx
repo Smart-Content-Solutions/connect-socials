@@ -1500,7 +1500,7 @@ export default function SocialMediaTool() {
                 <div
                   className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
                 >
-                  {ALL_PLATFORMS.filter(p => ['facebook', 'instagram', 'tiktok', 'youtube', 'linkedin'].includes(p.id)).map((p) => {
+                  {ALL_PLATFORMS.filter(p => ['facebook', 'instagram', 'tiktok', 'youtube', 'linkedin', 'twitter'].includes(p.id)).map((p) => {
                     const connected = p.isConnected();
                     const Icon = p.icon;
                     const color = platformColors[p.id] || '#E1C37A';
@@ -1509,6 +1509,8 @@ export default function SocialMediaTool() {
                     let displayName = p.name;
                     if (p.id === 'facebook') displayName = 'Facebook Reels';
                     if (p.id === 'instagram') displayName = 'Instagram Reels';
+                    if (p.id === 'youtube') displayName = 'Youtube Shorts';
+                    if (p.id == 'twitter') displayName = 'Twitter Video';
 
                     return (
                       <div
