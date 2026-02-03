@@ -122,8 +122,8 @@ export function TaskRichEditor({ value, onChange, placeholder, className }: Task
         contentEditable
         onInput={handleInput}
         className={cn(
-          "min-h-[150px] p-3 focus:outline-none prose prose-sm max-w-none",
-          "prose-headings:text-foreground prose-p:text-foreground",
+          "min-h-[150px] p-3 focus:outline-none prose prose-sm max-w-none text-foreground",
+          "prose-headings:text-foreground",
           "prose-strong:text-foreground prose-em:text-foreground",
           "prose-ul:text-foreground prose-ol:text-foreground prose-li:list-disc prose-li:ml-5",
           "prose-blockquote:border-primary prose-blockquote:text-muted-foreground",
