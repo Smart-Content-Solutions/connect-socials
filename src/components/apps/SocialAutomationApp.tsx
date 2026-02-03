@@ -9,12 +9,12 @@ import {
   Loader2,
   Link as LinkIcon,
   Unlink,
-   Facebook,
-   Instagram,
-   Twitter,
-   Linkedin,
-   Music,
-   Youtube,
+  Facebook,
+  Instagram,
+  Twitter,
+  Linkedin,
+  Music,
+  Youtube,
   Sparkles,
   Send,
   X,
@@ -23,7 +23,13 @@ import {
   Clock,
   LayoutDashboard,
   Edit2,
-  Eye
+  Eye,
+  Cloud,
+  Pin,
+  MapPin,
+  MessageCircle,
+  FileText,
+  AtSign
 } from "lucide-react";
 
 import {
@@ -57,6 +63,14 @@ import {
 } from "@/utils/tiktokOAuth";
 
 import { needsCompression } from "@/utils/videoCompressor";
+
+import {
+  initiateBlueskyAuth,
+  saveBlueskyCredentials,
+  getBlueskyCredentials,
+  clearBlueskyCredentials,
+  isBlueskyConnected
+} from "@/utils/blueskyOAuth";
 import VideoCompressionModal from "../modals/VideoCompressionModal";
 
 import DashboardContent from "../social/DashboardContent";
@@ -76,9 +90,10 @@ const platformColors: Record<string, string> = {
   instagram: '#E4405F',
   x: '#000000',
   linkedin: '#0A66C2',
-   tiktok: '#000000',
-   youtube: '#FF0000',
- };
+  tiktok: '#000000',
+  youtube: '#FF0000',
+  bluesky: '#0085FF'
+};
 
 export default function SocialMediaTool() {
   const { user, isSignedIn, isLoaded } = useUser();
@@ -105,6 +120,11 @@ export default function SocialMediaTool() {
 
   const [loadingPlatform, setLoadingPlatform] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [showBlueskyModal, setShowBlueskyModal] = useState(false);
+  const [blueskyUsername, setBlueskyUsername] = useState("");
+  const [blueskyPassword, setBlueskyPassword] = useState("");
+  const [blueskyError, setBlueskyError] = useState("");
+  const [isEditingBluesky, setIsEditingBluesky] = useState(false);
   const [showFacebookPagesModal, setShowFacebookPagesModal] = useState(false);
   const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
   const [selectedFacebookPage, setSelectedFacebookPage] = useState<FacebookPage | null>(null);
@@ -295,11 +315,60 @@ export default function SocialMediaTool() {
     }
   }, [activeTab]);
 
+  const handleBlueskyConnect = () => {
+    const credentials = getBlueskyCredentials();
+    if (credentials?.connected && !isEditingBluesky) {
+      setIsEditingBluesky(true);
+      setBlueskyUsername(credentials.username);
+      setBlueskyPassword(credentials.password);
+    } else {
+      setIsEditingBluesky(false);
+      setBlueskyUsername("");
+      setBlueskyPassword("");
+    }
+    setBlueskyError("");
+    setShowBlueskyModal(true);
+  };
+
+  const handleBlueskyDisconnect = () => {
+    clearBlueskyCredentials();
+    setLoadingPlatform(null);
+    setBlueskyUsername("");
+    setBlueskyPassword("");
+    setIsEditingBluesky(false);
+  };
+
+  const handleBlueskySubmit = async () => {
+    setBlueskyError("");
+    if (!blueskyUsername.trim()) {
+      setBlueskyError("Username is required");
+      return;
+    }
+    if (!blueskyPassword.trim()) {
+      setBlueskyError("Password is required");
+      return;
+    }
+
+    try {
+      setLoadingPlatform("bluesky");
+      if (!user) throw new Error("User not authenticated");
+      await initiateBlueskyAuth(blueskyUsername.trim(), blueskyPassword.trim(), user.id);
+      setShowBlueskyModal(false);
+      setBlueskyUsername("");
+      setBlueskyPassword("");
+      setIsEditingBluesky(false);
+    } catch (err: any) {
+      setBlueskyError(err.message || "Failed to connect Bluesky. Check backend.");
+    } finally {
+      setLoadingPlatform(null);
+    }
+  };
+
 
   const ALL_PLATFORMS: Platform[] = [
     {
       id: "facebook",
-      name: "Facebook Reels",
+      name: "Facebook",
       icon: Facebook,
       connect: initiateFacebookAuth,
       disconnect: clearFacebookAuthData,
@@ -307,7 +376,7 @@ export default function SocialMediaTool() {
     },
     {
       id: "instagram",
-      name: "Instagram Reels",
+      name: "Instagram",
       icon: Instagram,
       connect: initiateInstagramAuth,
       disconnect: clearInstagramAuthData,
@@ -330,15 +399,53 @@ export default function SocialMediaTool() {
       isConnected: isTikTokConnected
     },
     {
+      id: "bluesky",
+      name: "Bluesky",
+      icon: Cloud,
+      connect: handleBlueskyConnect,
+      disconnect: handleBlueskyDisconnect,
+      isConnected: isBlueskyConnected
+    },
+    {
       id: "x",
-      name: "X (Twitter) Video",
+      name: "X (Twitter)",
       icon: Twitter,
       isConnected: () => false
     },
     {
+      id: "pinterest",
+      name: "Pinterest",
+      icon: Pin,
+      isConnected: () => false
+    },
+    {
       id: "youtube",
-      name: "YouTube Shorts",
+      name: "YouTube",
       icon: Youtube,
+      isConnected: () => false
+    },
+    {
+      id: "google_business",
+      name: "Google Business",
+      icon: MapPin,
+      isConnected: () => false
+    },
+    {
+      id: "reddit",
+      name: "Reddit",
+      icon: MessageCircle,
+      isConnected: () => false
+    },
+    {
+      id: "medium",
+      name: "Medium",
+      icon: FileText,
+      isConnected: () => false
+    },
+    {
+      id: "threads",
+      name: "Threads",
+      icon: AtSign,
       isConnected: () => false
     }
   ];
@@ -757,6 +864,122 @@ export default function SocialMediaTool() {
       <div className="fixed bottom-1/4 -right-32 w-[400px] h-[400px] bg-[#B6934C]/10 rounded-full blur-[150px] pointer-events-none" />
 
 
+
+      {showBlueskyModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#3B3C3E] rounded-2xl p-8 max-w-md w-full border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-[#0085FF]/20 flex items-center justify-center">
+                  <Cloud className="w-6 h-6 text-[#0085FF]" />
+                </div>
+                <h2 className="text-xl font-bold text-[#D6D7D8]">
+                  {isEditingBluesky ? "Edit Bluesky" : "Connect Bluesky"}
+                </h2>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* INFO BUTTON — INSERTED HERE */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowBlueskyInfo(!showBlueskyInfo)}
+                    className="w-8 h-8 rounded-lg bg-[#3B3C3E] hover:bg-[#4B4C4E] flex items-center justify-center transition-colors"
+                    title="How to find username & App Password"
+                  >
+                    <Sparkles className="w-4 h-4 text-[#A9AAAC]" />
+                  </button>
+
+                  {showBlueskyInfo && (
+                    <div className="absolute right-0 mt-2 w-80 p-4 rounded-xl bg-[#2C2C2E] border border-white/10 shadow-xl text-sm z-50">
+                      <p className="text-[#D6D7D8] font-semibold mb-2">How to get your Bluesky login details</p>
+                      <ul className="space-y-2 text-[#A9AAAC]">
+                        <li>
+                          <b>1. Username</b>:
+                          Open your Bluesky profile → your username ends with <code>.bsky.social</code>
+                        </li>
+                        <li>
+                          <b>2. App Password</b>:
+                          Go to Bluesky → Settings → <b>App Passwords</b> → Create a new password.
+                        </li>
+                        <li>
+                          <b>Do NOT use your main password.</b> Use only an App Password.
+                        </li>
+                      </ul>
+
+                      <button
+                        onClick={() => setShowBlueskyInfo(false)}
+                        className="mt-3 px-3 py-1 rounded-lg bg-[#3B3C3E] text-[#D6D7D8] text-xs hover:bg-[#4B4C4E]"
+                      >
+                        Got it
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* CLOSE BUTTON */}
+                <button
+                  onClick={() => {
+                    setShowBlueskyModal(false);
+                    setBlueskyError("");
+                    setIsEditingBluesky(false);
+                  }}
+                  className="w-8 h-8 rounded-lg bg-[#3B3C3E] hover:bg-[#4B4C4E] flex items-center justify-center transition-colors"
+                >
+                  <X className="w-5 h-5 text-[#A9AAAC]" />
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[#D6D7D8] mb-2">
+                  Username or Email
+                </label>
+                <input
+                  type="text"
+                  value={blueskyUsername}
+                  onChange={(e) => setBlueskyUsername(e.target.value)}
+                  placeholder="username.bsky.social"
+                  className="w-full rounded-xl bg-[#3B3C3E]/50 border border-white/10 p-3 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#0085FF]/50 focus:ring-2 focus:ring-[#0085FF]/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#D6D7D8] mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={blueskyPassword}
+                  onChange={(e) => setBlueskyPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full rounded-xl bg-[#3B3C3E]/50 border border-white/10 p-3 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#0085FF]/50 focus:ring-2 focus:ring-[#0085FF]/20"
+                />
+              </div>
+
+              {blueskyError && (
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                  {blueskyError}
+                </div>
+              )}
+
+              <div className="bg-[#0085FF]/10 border border-[#0085FF]/20 rounded-lg p-3">
+                <p className="text-sm text-[#A9AAAC]">
+                  💡 Use your Bluesky username (e.g., username.bsky.social) and password
+                </p>
+              </div>
+
+              <button
+                onClick={handleBlueskySubmit}
+                className="w-full py-3 px-6 rounded-full bg-gradient-to-r from-[#0085FF] to-[#0066CC] text-white font-medium hover:shadow-[0_0_20px_rgba(0,133,255,0.3)] transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                <CheckCircle className="w-5 h-5" />
+                {isEditingBluesky ? "Update Credentials" : "Connect"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Facebook Business Selection Modal */}
       {showBusinessModal && (
@@ -1694,690 +1917,688 @@ export default function SocialMediaTool() {
               </div>
 
               <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-                <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
 
-                  {/* Video Source Toggle */}
+                {/* Video Source Toggle */}
 
-                  <div className="mb-6">
+                <div className="mb-6">
 
-                    <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Video Source</h3>
+                  <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Video Source</h3>
 
-                    <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
 
-                      <button
+                    <button
 
-                        onClick={() => setVideoSource('upload')}
+                      onClick={() => setVideoSource('upload')}
 
-                        className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${videoSource === 'upload'
+                      className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${videoSource === 'upload'
 
-                          ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
 
-                          : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
 
-                          }`}
+                        }`}
 
-                      >
+                    >
 
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${videoSource === 'upload' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${videoSource === 'upload' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
 
-                          }`}>
+                        }`}>
 
-                          <Upload className={`w-5 h-5 ${videoSource === 'upload' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+                        <Upload className={`w-5 h-5 ${videoSource === 'upload' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
 
-                        </div>
+                      </div>
 
-                        <div className="text-left">
+                      <div className="text-left">
 
-                          <p className={`font-medium text-sm ${videoSource === 'upload' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
+                        <p className={`font-medium text-sm ${videoSource === 'upload' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
 
-                            Upload Video
+                          Upload Video
 
-                          </p>
+                        </p>
 
-                          <p className="text-xs text-[#5B5C60]">From your device</p>
+                        <p className="text-xs text-[#5B5C60]">From your device</p>
 
-                        </div>
+                      </div>
 
-                      </button>
-
+                    </button>
 
 
-                      <button
 
-                        onClick={() => setVideoSource('generate')}
+                    <button
 
-                        className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${videoSource === 'generate'
+                      onClick={() => setVideoSource('generate')}
 
-                          ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${videoSource === 'generate'
 
-                          : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
 
-                          }`}
+                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
 
-                      >
+                        }`}
 
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${videoSource === 'generate' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
+                    >
 
-                          }`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${videoSource === 'generate' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
 
-                          <Sparkles className={`w-5 h-5 ${videoSource === 'generate' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+                        }`}>
 
-                        </div>
+                        <Sparkles className={`w-5 h-5 ${videoSource === 'generate' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
 
-                        <div className="text-left">
+                      </div>
 
-                          <p className={`font-medium text-sm ${videoSource === 'generate' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
+                      <div className="text-left">
 
-                            Generate AI Video
+                        <p className={`font-medium text-sm ${videoSource === 'generate' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
 
-                          </p>
+                          Generate AI Video
 
-                          <p className="text-xs text-[#5B5C60]">Powered by Higgsfield</p>
+                        </p>
 
-                        </div>
+                        <p className="text-xs text-[#5B5C60]">Powered by Higgsfield</p>
 
-                      </button>
+                      </div>
 
-                    </div>
+                    </button>
 
                   </div>
 
+                </div>
 
 
-                  {/* Upload Video Mode */}
 
-                  {videoSource === 'upload' && (
+                {/* Upload Video Mode */}
 
-                    <>
+                {videoSource === 'upload' && (
 
-                      <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
+                  <>
 
-                        Media <span className="text-[#5B5C60] font-normal">(optional)</span>
+                    <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
 
-                      </h3>
+                      Media <span className="text-[#5B5C60] font-normal">(optional)</span>
 
-                      {videoPreview ? (
+                    </h3>
 
-                        <div className="relative">
+                    {videoPreview ? (
 
-                          <video src={videoPreview} controls className="w-full rounded-lg max-h-64 bg-black/20" />
+                      <div className="relative">
 
-                          <button
+                        <video src={videoPreview} controls className="w-full rounded-lg max-h-64 bg-black/20" />
 
-                            onClick={() => {
+                        <button
 
-                              setVideoFile(null);
+                          onClick={() => {
 
-                              setVideoPreview(null);
+                            setVideoFile(null);
 
-                            }}
-
-                            className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500 z-10"
-
-                          >
-
-                            <X className="w-4 h-4" />
-
-                          </button>
-
-                        </div>
-
-                      ) : (
-
-                        <div
-
-                          onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-
-                          onDragLeave={() => setIsDragging(false)}
-
-                          onDrop={(e) => {
-
-                            e.preventDefault();
-
-                            setIsDragging(false);
-
-                            const f = e.dataTransfer.files[0];
-
-                            if (!f) return;
-
-                            // Validate
-
-                            if (!f.type.startsWith('video/')) {
-
-                              toast.error('Please upload a valid video file');
-
-                              return;
-
-                            }
-
-                            setVideoFile(f);
-
-                            const reader = new FileReader();
-
-                            reader.onloadend = () => setVideoPreview(String(reader.result));
-
-                            reader.readAsDataURL(f);
+                            setVideoPreview(null);
 
                           }}
 
-                          onClick={() => document.getElementById('file-upload-video')?.click()}
-
-                          className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all duration-300 ${isDragging
-
-                            ? 'border-[#E1C37A] bg-[#E1C37A]/5'
-
-                            : 'border-[#5B5C60]/50 hover:border-[#E1C37A]/50 hover:bg-[#3B3C3E]/20'
-
-                            }`}
+                          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500 z-10"
 
                         >
 
-                          <div className="flex justify-center gap-4 mb-4">
-
-                            <div className="w-14 h-14 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
-
-                              <Video className="w-7 h-7 text-[#E1C37A]" />
-
-                            </div>
-
-                          </div>
-
-                          <p className="text-[#D6D7D8] font-medium mb-2">Drop your video here</p>
-
-                          <p className="text-[#5B5C60] text-sm">or click to browse</p>
-
-                        </div>
-
-                      )}
-
-                      <input
-
-                        id="file-upload-video"
-
-                        type="file"
-
-                        hidden
-
-                        accept="video/*"
-
-                        onChange={handleVideoUpload}
-
-                      />
-
-                    </>
-
-                  )}
-
-
-
-                  {/* Generate AI Video Mode */}
-
-                  {videoSource === 'generate' && (
-
-                    <>
-
-                      {/* AI Video Tabs */}
-
-                      <div className="flex items-center gap-2 mb-6 bg-[#2C2C2E] rounded-xl p-1">
-
-                        <button
-
-                          onClick={() => setAiVideoTab('image')}
-
-                          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${aiVideoTab === 'image'
-
-                            ? 'bg-[#E1C37A]/20 text-[#E1C37A]'
-
-                            : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
-
-                            }`}
-
-                        >
-
-                          Image → Video
-
-                        </button>
-
-                        <button
-
-                          onClick={() => setAiVideoTab('text')}
-
-                          className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative ${aiVideoTab === 'text'
-
-                            ? 'bg-[#E1C37A]/20 text-[#E1C37A]'
-
-                            : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
-
-                            }`}
-
-                        >
-
-                          Text → Video
-
-                          <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#5B5C60]/30 text-[#A9AAAC]">Soon</span>
+                          <X className="w-4 h-4" />
 
                         </button>
 
                       </div>
 
+                    ) : (
+
+                      <div
+
+                        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+
+                        onDragLeave={() => setIsDragging(false)}
+
+                        onDrop={(e) => {
+
+                          e.preventDefault();
+
+                          setIsDragging(false);
+
+                          const f = e.dataTransfer.files[0];
+
+                          if (!f) return;
+
+                          // Validate
+
+                          if (!f.type.startsWith('video/')) {
+
+                            toast.error('Please upload a valid video file');
+
+                            return;
+
+                          }
+
+                          setVideoFile(f);
+
+                          const reader = new FileReader();
+
+                          reader.onloadend = () => setVideoPreview(String(reader.result));
+
+                          reader.readAsDataURL(f);
+
+                        }}
+
+                        onClick={() => document.getElementById('file-upload-video')?.click()}
+
+                        className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all duration-300 ${isDragging
+
+                          ? 'border-[#E1C37A] bg-[#E1C37A]/5'
+
+                          : 'border-[#5B5C60]/50 hover:border-[#E1C37A]/50 hover:bg-[#3B3C3E]/20'
+
+                          }`}
+
+                      >
+
+                        <div className="flex justify-center gap-4 mb-4">
+
+                          <div className="w-14 h-14 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
+
+                            <Video className="w-7 h-7 text-[#E1C37A]" />
+
+                          </div>
+
+                        </div>
+
+                        <p className="text-[#D6D7D8] font-medium mb-2">Drop your video here</p>
+
+                        <p className="text-[#5B5C60] text-sm">or click to browse</p>
+
+                      </div>
+
+                    )}
+
+                    <input
+
+                      id="file-upload-video"
+
+                      type="file"
+
+                      hidden
+
+                      accept="video/*"
+
+                      onChange={handleVideoUpload}
+
+                    />
+
+                  </>
+
+                )}
 
 
-                      {/* Image → Video Tab */}
 
-                      {aiVideoTab === 'image' && (
+                {/* Generate AI Video Mode */}
 
-                        <div className="space-y-4">
+                {videoSource === 'generate' && (
 
-                          {/* Source Image Upload */}
+                  <>
 
-                          <div>
+                    {/* AI Video Tabs */}
 
-                            <label className="text-sm font-semibold text-[#D6D7D8] mb-3 block">
+                    <div className="flex items-center gap-2 mb-6 bg-[#2C2C2E] rounded-xl p-1">
 
-                              Source Image <span className="text-red-400">*</span>
+                      <button
 
-                            </label>
+                        onClick={() => setAiVideoTab('image')}
 
-                            {aiSourceImagePreview ? (
+                        className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${aiVideoTab === 'image'
 
-                              <div className="relative">
+                          ? 'bg-[#E1C37A]/20 text-[#E1C37A]'
 
-                                <img src={aiSourceImagePreview} className="w-full rounded-lg max-h-64 object-contain bg-black/20" alt="Source" />
+                          : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
 
-                                <button
+                          }`}
 
-                                  onClick={() => {
+                      >
 
-                                    setAiSourceImage(null);
+                        Image → Video
 
-                                    setAiSourceImagePreview(null);
+                      </button>
 
-                                  }}
+                      <button
 
-                                  className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500"
+                        onClick={() => setAiVideoTab('text')}
 
-                                >
+                        className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative ${aiVideoTab === 'text'
 
-                                  <X className="w-4 h-4" />
+                          ? 'bg-[#E1C37A]/20 text-[#E1C37A]'
 
-                                </button>
+                          : 'text-[#A9AAAC] hover:text-[#D6D7D8]'
 
-                              </div>
+                          }`}
 
-                            ) : (
+                      >
 
-                              <div
+                        Text → Video
 
-                                onClick={() => document.getElementById('ai-source-image-upload')?.click()}
+                        <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#5B5C60]/30 text-[#A9AAAC]">Soon</span>
 
-                                className="cursor-pointer rounded-xl border-2 border-dashed border-[#5B5C60]/50 hover:border-[#E1C37A]/50 hover:bg-[#3B3C3E]/20 p-8 text-center transition-all duration-300"
+                      </button>
+
+                    </div>
+
+
+
+                    {/* Image → Video Tab */}
+
+                    {aiVideoTab === 'image' && (
+
+                      <div className="space-y-4">
+
+                        {/* Source Image Upload */}
+
+                        <div>
+
+                          <label className="text-sm font-semibold text-[#D6D7D8] mb-3 block">
+
+                            Source Image <span className="text-red-400">*</span>
+
+                          </label>
+
+                          {aiSourceImagePreview ? (
+
+                            <div className="relative">
+
+                              <img src={aiSourceImagePreview} className="w-full rounded-lg max-h-64 object-contain bg-black/20" alt="Source" />
+
+                              <button
+
+                                onClick={() => {
+
+                                  setAiSourceImage(null);
+
+                                  setAiSourceImagePreview(null);
+
+                                }}
+
+                                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500"
 
                               >
 
-                                <div className="flex justify-center mb-3">
+                                <X className="w-4 h-4" />
 
-                                  <div className="w-12 h-12 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
+                              </button>
 
-                                    <ImageIcon className="w-6 h-6 text-[#E1C37A]" />
+                            </div>
 
-                                  </div>
+                          ) : (
+
+                            <div
+
+                              onClick={() => document.getElementById('ai-source-image-upload')?.click()}
+
+                              className="cursor-pointer rounded-xl border-2 border-dashed border-[#5B5C60]/50 hover:border-[#E1C37A]/50 hover:bg-[#3B3C3E]/20 p-8 text-center transition-all duration-300"
+
+                            >
+
+                              <div className="flex justify-center mb-3">
+
+                                <div className="w-12 h-12 rounded-xl bg-[#E1C37A]/10 flex items-center justify-center">
+
+                                  <ImageIcon className="w-6 h-6 text-[#E1C37A]" />
 
                                 </div>
 
-                                <p className="text-[#D6D7D8] font-medium mb-1">Upload source image</p>
-
-                                <p className="text-[#5B5C60] text-xs">9:16 aspect ratio recommended for shorts</p>
-
                               </div>
 
-                            )}
+                              <p className="text-[#D6D7D8] font-medium mb-1">Upload source image</p>
 
-                            <input
-
-                              id="ai-source-image-upload"
-
-                              type="file"
-
-                              hidden
-
-                              accept="image/*"
-
-                              onChange={handleAiSourceImageUpload}
-
-                            />
-
-                          </div>
-
-
-
-                          {/* Motion Prompt */}
-
-                          <div>
-
-                            <label className="text-sm font-semibold text-[#D6D7D8] mb-3 block">
-
-                              Motion Description <span className="text-[#5B5C60] font-normal">(optional)</span>
-
-                            </label>
-
-                            <textarea
-
-                              value={aiPrompt}
-
-                              onChange={(e) => setAiPrompt(e.target.value)}
-
-                              rows={3}
-
-                              placeholder="Describe how you want the image to move (e.g., 'Gentle camera zoom in with subtle parallax effect')"
-
-                              className="w-full rounded-xl bg-[#2C2C2E] border border-white/10 p-3 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none text-sm"
-
-                            />
-
-                          </div>
-
-
-
-                          {/* Duration Selector */}
-
-                          <div>
-
-                            <label className="text-sm font-semibold text-[#D6D7D8] mb-3 block">Duration</label>
-
-                            <div className="grid grid-cols-3 gap-3">
-
-                              {[5, 10, 15].map((duration) => (
-
-                                <button
-
-                                  key={duration}
-
-                                  onClick={() => setAiDuration(duration as 5 | 10 | 15)}
-
-                                  className={`p-3 rounded-xl border transition-all duration-300 ${aiDuration === duration
-
-                                    ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50 text-[#E1C37A]'
-
-                                    : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20 text-[#A9AAAC]'
-
-                                    }`}
-
-                                >
-
-                                  <p className="font-semibold text-lg">{duration}s</p>
-
-                                </button>
-
-                              ))}
-
-                            </div>
-
-                          </div>
-
-
-
-                          {/* Generate Button */}
-
-                          <button
-
-                            onClick={handleGenerateAiVideo}
-
-                            disabled={!aiSourceImage || isGeneratingAiVideo}
-
-                            className="w-full py-4 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-
-                          >
-
-                            {isGeneratingAiVideo ? (
-
-                              <>
-
-                                <Loader2 className="w-5 h-5 animate-spin" />
-
-                                Generating Video...
-
-                              </>
-
-                            ) : (
-
-                              <>
-
-                                <Sparkles className="w-5 h-5" />
-
-                                Generate Preview
-
-                              </>
-
-                            )}
-
-                          </button>
-
-
-
-                          {/* Status Messages */}
-
-                          {aiJobStatus === 'pending' && (
-
-                            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm">
-
-                              <Loader2 className="w-4 h-4 inline-block animate-spin mr-2" />
-
-                              Initializing AI video generation...
+                              <p className="text-[#5B5C60] text-xs">9:16 aspect ratio recommended for shorts</p>
 
                             </div>
 
                           )}
 
-                          {aiJobStatus === 'processing' && (
+                          <input
 
-                            <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm">
+                            id="ai-source-image-upload"
 
-                              <Loader2 className="w-4 h-4 inline-block animate-spin mr-2" />
+                            type="file"
 
-                              Processing your video... This may take a minute.
+                            hidden
 
-                            </div>
+                            accept="image/*"
 
-                          )}
+                            onChange={handleAiSourceImageUpload}
 
-                          {aiJobStatus === 'failed' && aiJobError && (
-
-                            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
-
-                              <X className="w-4 h-4 inline-block mr-2" />
-
-                              {aiJobError}
-
-                            </div>
-
-                          )}
+                          />
 
                         </div>
 
-                      )}
+
+
+                        {/* Motion Prompt */}
+
+                        <div>
+
+                          <label className="text-sm font-semibold text-[#D6D7D8] mb-3 block">
+
+                            Motion Description <span className="text-[#5B5C60] font-normal">(optional)</span>
+
+                          </label>
+
+                          <textarea
+
+                            value={aiPrompt}
+
+                            onChange={(e) => setAiPrompt(e.target.value)}
+
+                            rows={3}
+
+                            placeholder="Describe how you want the image to move (e.g., 'Gentle camera zoom in with subtle parallax effect')"
+
+                            className="w-full rounded-xl bg-[#2C2C2E] border border-white/10 p-3 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none text-sm"
+
+                          />
+
+                        </div>
 
 
 
-                      {/* Text → Video Tab (Coming Soon) */}
+                        {/* Duration Selector */}
 
-                      {aiVideoTab === 'text' && (
+                        <div>
 
-                        <div className="text-center py-12">
+                          <label className="text-sm font-semibold text-[#D6D7D8] mb-3 block">Duration</label>
 
-                          <div className="w-16 h-16 rounded-full bg-[#E1C37A]/10 flex items-center justify-center mx-auto mb-4">
+                          <div className="grid grid-cols-3 gap-3">
 
-                            <Sparkles className="w-8 h-8 text-[#E1C37A]" />
+                            {[5, 10, 15].map((duration) => (
+
+                              <button
+
+                                key={duration}
+
+                                onClick={() => setAiDuration(duration as 5 | 10 | 15)}
+
+                                className={`p-3 rounded-xl border transition-all duration-300 ${aiDuration === duration
+
+                                  ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50 text-[#E1C37A]'
+
+                                  : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20 text-[#A9AAAC]'
+
+                                  }`}
+
+                              >
+
+                                <p className="font-semibold text-lg">{duration}s</p>
+
+                              </button>
+
+                            ))}
 
                           </div>
 
-                          <h4 className="text-lg font-semibold text-[#D6D7D8] mb-2">Coming Soon</h4>
-
-                          <p className="text-[#A9AAAC] text-sm max-w-md mx-auto">
-
-                            Text-to-video generation will be available in Phase 2. For now, use Image → Video to create stunning shorts!
-
-                          </p>
-
                         </div>
 
-                      )}
-
-                    </>
 
 
-                  )}
+                        {/* Generate Button */}
 
-                </div>
+                        <button
 
+                          onClick={handleGenerateAiVideo}
 
+                          disabled={!aiSourceImage || isGeneratingAiVideo}
 
-                <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 space-y-4">
-                  <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Caption & AI Settings</h3>
-                  <div className="relative">
-                    <textarea
-                      value={caption}
-                      onChange={(e) => setCaption(e.target.value)}
-                      rows={6}
-                      placeholder="Write your caption here..."
-                      className="w-full rounded-xl bg-[#3B3C3E]/30 border border-white/10 p-4 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none"
-                    />
-                    <div className="absolute bottom-3 right-3 text-xs text-[#5B5C60]">
-                      {caption.length} characters
-                    </div>
-                  </div>
+                          className="w-full py-4 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-xs text-[#A9AAAC] font-medium ml-1">Content Tone</label>
-                      <select
-                        value={tone}
-                        onChange={(e) => setTone(e.target.value)}
-                        className="w-full bg-[#2C2C2E] border border-white/10 rounded-xl px-4 py-3 text-[#D6D7D8] focus:outline-none focus:border-[#E1C37A]/50 appearance-none cursor-pointer"
-                      >
-                        {TONE_OPTIONS.map(t => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </select>
-                    </div>
+                        >
 
-                    <div className="space-y-2">
-                      <label className="text-xs text-[#A9AAAC] font-medium ml-1">AI Options</label>
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#2C2C2E] border border-white/10 h-[50px]">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className={`w-4 h-4 ${aiEnhance ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
-                          <span className="text-sm text-[#D6D7D8]">Enhancement</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {aiEnhance && (
-                            <button
-                              onClick={handlePreview}
-                              disabled={isGeneratingPreview || !caption.trim()}
-                              className="text-xs bg-[#E1C37A]/10 text-[#E1C37A] border border-[#E1C37A]/30 px-3 py-1 rounded-lg hover:bg-[#E1C37A]/20 transition-colors flex items-center gap-1.5"
-                            >
-                              {isGeneratingPreview ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <Eye className="w-3 h-3" />
-                              )}
-                              Preview
-                            </button>
+                          {isGeneratingAiVideo ? (
+
+                            <>
+
+                              <Loader2 className="w-5 h-5 animate-spin" />
+
+                              Generating Video...
+
+                            </>
+
+                          ) : (
+
+                            <>
+
+                              <Sparkles className="w-5 h-5" />
+
+                              Generate Preview
+
+                            </>
+
                           )}
-                          <button
-                            onClick={() => setAiEnhance(!aiEnhance)}
-                            className={`relative w-10 h-6 rounded-full transition-colors duration-300 ${aiEnhance ? 'bg-[#E1C37A]' : 'bg-[#4B4C4E]'}`}
-                          >
-                            <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-black transition-transform duration-300 ${aiEnhance ? 'translate-x-4' : 'translate-x-0'}`} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-                  <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">When to Post</h3>
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <button
-                      onClick={() => setPostMode('publish')}
-                      className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
-                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
-                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                        }`}
-                    >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'publish' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
-                        }`}>
-                        <Send className={`w-5 h-5 ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
-                      </div>
-                      <div className="text-left">
-                        <p className={`font-medium ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
-                          Post Now
-                        </p>
-                        <p className="text-xs text-[#5B5C60]">Publish immediately</p>
-                      </div>
-                    </button>
+                        </button>
 
-                    <button
-                      onClick={() => setPostMode('schedule')}
-                      className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
-                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
-                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                        }`}
-                    >
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'schedule' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
-                        }`}>
-                        <Clock className={`w-5 h-5 ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+
+
+                        {/* Status Messages */}
+
+                        {aiJobStatus === 'pending' && (
+
+                          <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm">
+
+                            <Loader2 className="w-4 h-4 inline-block animate-spin mr-2" />
+
+                            Initializing AI video generation...
+
+                          </div>
+
+                        )}
+
+                        {aiJobStatus === 'processing' && (
+
+                          <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm">
+
+                            <Loader2 className="w-4 h-4 inline-block animate-spin mr-2" />
+
+                            Processing your video... This may take a minute.
+
+                          </div>
+
+                        )}
+
+                        {aiJobStatus === 'failed' && aiJobError && (
+
+                          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+
+                            <X className="w-4 h-4 inline-block mr-2" />
+
+                            {aiJobError}
+
+                          </div>
+
+                        )}
+
                       </div>
-                      <div className="text-left">
-                        <p className={`font-medium ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
-                          Schedule
-                        </p>
-                        <p className="text-xs text-[#5B5C60]">Choose date & time</p>
-                      </div>
-                    </button>
-                  </div>
 
-                  {postMode === 'schedule' && (
-                    <input
-                      type="datetime-local"
-                      className="w-full bg-[#3B3C3E]/50 border border-white/10 p-3 rounded-xl text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20"
-                      value={scheduledTime}
-                      onChange={(e) => setScheduledTime(e.target.value)}
-                      style={{ colorScheme: 'dark' }}
-                    />
-                  )}
-                </div>
-
-                <div className="flex justify-end gap-4">
-                  <button
-                    onClick={() => {
-                      setCaption("");
-                      setVideoFile(null);
-                      setVideoPreview(null);
-                      setSelectedPlatforms([]);
-                    }}
-                    className="px-6 py-3 rounded-full bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-all duration-300"
-                  >
-                    Clear
-                  </button>
-
-                  <button
-                    onClick={handlePublish}
-                    disabled={loading}
-                    className="px-8 py-3 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-medium hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center gap-2 disabled:opacity-50"
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Publishing…
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-5 h-5" />
-                        {postMode === 'publish' ? 'Publish Now' : 'Schedule Post'}
-                      </>
                     )}
+
+
+
+                    {/* Text → Video Tab (Coming Soon) */}
+
+                    {aiVideoTab === 'text' && (
+
+                      <div className="text-center py-12">
+
+                        <div className="w-16 h-16 rounded-full bg-[#E1C37A]/10 flex items-center justify-center mx-auto mb-4">
+
+                          <Sparkles className="w-8 h-8 text-[#E1C37A]" />
+
+                        </div>
+
+                        <h4 className="text-lg font-semibold text-[#D6D7D8] mb-2">Coming Soon</h4>
+
+                        <p className="text-[#A9AAAC] text-sm max-w-md mx-auto">
+
+                          Text-to-video generation will be available in Phase 2. For now, use Image → Video to create stunning shorts!
+
+                        </p>
+
+                      </div>
+
+                    )}
+
+                  </>
+
+
+                )}
+
+              </div>
+
+
+
+              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 space-y-4">
+                <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Caption & AI Settings</h3>
+                <div className="relative">
+                  <textarea
+                    value={caption}
+                    onChange={(e) => setCaption(e.target.value)}
+                    rows={6}
+                    placeholder="Write your caption here..."
+                    className="w-full rounded-xl bg-[#3B3C3E]/30 border border-white/10 p-4 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none"
+                  />
+                  <div className="absolute bottom-3 right-3 text-xs text-[#5B5C60]">
+                    {caption.length} characters
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs text-[#A9AAAC] font-medium ml-1">Content Tone</label>
+                    <select
+                      value={tone}
+                      onChange={(e) => setTone(e.target.value)}
+                      className="w-full bg-[#2C2C2E] border border-white/10 rounded-xl px-4 py-3 text-[#D6D7D8] focus:outline-none focus:border-[#E1C37A]/50 appearance-none cursor-pointer"
+                    >
+                      {TONE_OPTIONS.map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs text-[#A9AAAC] font-medium ml-1">AI Options</label>
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#2C2C2E] border border-white/10 h-[50px]">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className={`w-4 h-4 ${aiEnhance ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+                        <span className="text-sm text-[#D6D7D8]">Enhancement</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {aiEnhance && (
+                          <button
+                            onClick={handlePreview}
+                            disabled={isGeneratingPreview || !caption.trim()}
+                            className="text-xs bg-[#E1C37A]/10 text-[#E1C37A] border border-[#E1C37A]/30 px-3 py-1 rounded-lg hover:bg-[#E1C37A]/20 transition-colors flex items-center gap-1.5"
+                          >
+                            {isGeneratingPreview ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Eye className="w-3 h-3" />
+                            )}
+                            Preview
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setAiEnhance(!aiEnhance)}
+                          className={`relative w-10 h-6 rounded-full transition-colors duration-300 ${aiEnhance ? 'bg-[#E1C37A]' : 'bg-[#4B4C4E]'}`}
+                        >
+                          <span className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-black transition-transform duration-300 ${aiEnhance ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+                <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">When to Post</h3>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <button
+                    onClick={() => setPostMode('publish')}
+                    className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
+                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                      }`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'publish' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
+                      }`}>
+                      <Send className={`w-5 h-5 ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+                    </div>
+                    <div className="text-left">
+                      <p className={`font-medium ${postMode === 'publish' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
+                        Post Now
+                      </p>
+                      <p className="text-xs text-[#5B5C60]">Publish immediately</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setPostMode('schedule')}
+                    className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
+                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                      }`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${postMode === 'schedule' ? 'bg-[#E1C37A]/20' : 'bg-[#3B3C3E]'
+                      }`}>
+                      <Clock className={`w-5 h-5 ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#5B5C60]'}`} />
+                    </div>
+                    <div className="text-left">
+                      <p className={`font-medium ${postMode === 'schedule' ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>
+                        Schedule
+                      </p>
+                      <p className="text-xs text-[#5B5C60]">Choose date & time</p>
+                    </div>
                   </button>
                 </div>
+
+                {postMode === 'schedule' && (
+                  <input
+                    type="datetime-local"
+                    className="w-full bg-[#3B3C3E]/50 border border-white/10 p-3 rounded-xl text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20"
+                    value={scheduledTime}
+                    onChange={(e) => setScheduledTime(e.target.value)}
+                    style={{ colorScheme: 'dark' }}
+                  />
+                )}
+              </div>
+
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => {
+                    setCaption("");
+                    setVideoFile(null);
+                    setVideoPreview(null);
+                    setSelectedPlatforms([]);
+                  }}
+                  className="px-6 py-3 rounded-full bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-all duration-300"
+                >
+                  Clear
+                </button>
+
+                <button
+                  onClick={handlePublish}
+                  disabled={loading}
+                  className="px-8 py-3 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-medium hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center gap-2 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Publishing…
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-5 h-5" />
+                      {postMode === 'publish' ? 'Publish Now' : 'Schedule Post'}
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
