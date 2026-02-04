@@ -154,7 +154,7 @@ export default function SocialMediaTool() {
   const [aiSourceImage, setAiSourceImage] = useState<File | null>(null);
   const [aiSourceImagePreview, setAiSourceImagePreview] = useState<string | null>(null);
   const [aiPrompt, setAiPrompt] = useState('');
-  const [aiDuration, setAiDuration] = useState<5 | 10 | 15>(5);
+  const [aiDuration, setAiDuration] = useState<5 | 10>(5);
   const [isGeneratingAiVideo, setIsGeneratingAiVideo] = useState(false);
   const [aiGeneratedVideoUrl, setAiGeneratedVideoUrl] = useState<string | null>(null);
   const [showAiVideoPreviewModal, setShowAiVideoPreviewModal] = useState(false);
@@ -2393,15 +2393,15 @@ export default function SocialMediaTool() {
 
                           <label className="text-sm font-semibold text-[#D6D7D8] mb-3 block">Duration</label>
 
-                          <div className="grid grid-cols-3 gap-3">
+                          <div className="grid grid-cols-2 gap-3">
 
-                            {[5, 10, 15].map((duration) => (
+                            {[5, 10].map((duration) => (
 
                               <button
 
                                 key={duration}
 
-                                onClick={() => setAiDuration(duration as 5 | 10 | 15)}
+                                onClick={() => setAiDuration(duration as 5 | 10)}
 
                                 className={`p-3 rounded-xl border transition-all duration-300 ${aiDuration === duration
 

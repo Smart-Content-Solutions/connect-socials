@@ -480,7 +480,7 @@ const App = () => (
           <FeedbackPrompt />
 
           {/* ✅ AI Support Agent */}
-          {/* <SupportChat /> */}
+          <SupportChat />
         </BrowserRouter>
       </SubscriptionProvider>
     </TooltipProvider>
