@@ -1431,7 +1431,7 @@ export default function SocialMediaTool() {
                     }}
                   />
 
-                  {ALL_PLATFORMS.filter(p => p.id !== 'youtube').map((p) => {
+                  {ALL_PLATFORMS.filter(p => p.id !== 'youtube' && p.id !== 'tiktok').map((p) => {
                     const connected = p.isConnected();
                     const Icon = p.icon;
                     const color = platformColors[p.id] || '#E1C37A';
@@ -1723,7 +1723,7 @@ export default function SocialMediaTool() {
                   <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.length} selected)</span>
                 </h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                  {ALL_PLATFORMS.filter(p => p.isConnected() && p.id !== 'youtube').map((p) => {
+                  {ALL_PLATFORMS.filter(p => p.isConnected() && p.id !== 'youtube' && p.id !== 'tiktok').map((p) => {
                     const selected = isSelected(p.id);
                     const Icon = p.icon;
                     const color = platformColors[p.id];
