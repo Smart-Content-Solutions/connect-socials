@@ -74,6 +74,7 @@ import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
 
 // ✅ Feedback
 import FeedbackPrompt from "./components/feedback/FeedbackPrompt";
+import SupportChat from "./components/support-chat/SupportChat";
 
 
 // ✅ NEW: Stripe success / cancel pages
@@ -477,6 +478,9 @@ const App = () => (
 
           {/* ✅ Global Feedback Prompt */}
           <FeedbackPrompt />
+
+          {/* ✅ AI Support Agent */}
+          {/* <SupportChat /> */}
         </BrowserRouter>
       </SubscriptionProvider>
     </TooltipProvider>

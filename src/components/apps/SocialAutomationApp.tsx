@@ -666,6 +666,7 @@ export default function SocialMediaTool() {
           }
 
           if (data.status === 'completed' && data.output_url) {
+            console.log("✅ Video generation completed. URL:", data.output_url);
             setAiGeneratedVideoUrl(data.output_url);
             setAiJobStatus('completed');
             setShowAiVideoPreviewModal(true);
@@ -677,6 +678,7 @@ export default function SocialMediaTool() {
             throw new Error(data.error_message || 'Video generation failed');
           }
 
+          console.log("⏳ Polling status:", data.status);
           return false; // Continue polling
         };
 
@@ -723,9 +725,23 @@ export default function SocialMediaTool() {
     if (!aiGeneratedVideoUrl) return;
 
     try {
+      console.log("⬇️ Downloading video from:", aiGeneratedVideoUrl);
+
       // Download the generated video and convert to File object
       const response = await fetch(aiGeneratedVideoUrl);
+
+      if (!response.ok) {
+        console.error("❌ Failed to fetch video:", response.status, response.statusText);
+        throw new Error(`Failed to download video: ${response.status} ${response.statusText}`);
+      }
+
       const blob = await response.blob();
+      console.log("📦 Video blob size:", blob.size);
+
+      if (blob.size < 1000) {
+        console.warn("⚠️ Warning: Video file is suspiciously small. It might be an error message.");
+      }
+
       const file = new File([blob], `ai-video-${Date.now()}.mp4`, { type: 'video/mp4' });
 
       // Set it as the video file for posting
@@ -739,7 +755,7 @@ export default function SocialMediaTool() {
       toast.success('AI video attached to post!');
     } catch (error: any) {
       console.error('Error using AI video:', error);
-      toast.error('Failed to attach AI video');
+      toast.error(`Failed to attach AI video: ${error.message}`);
     }
   };
 
@@ -1415,7 +1431,7 @@ export default function SocialMediaTool() {
                     }}
                   />
 
-                  {ALL_PLATFORMS.map((p) => {
+                  {ALL_PLATFORMS.filter(p => p.id !== 'youtube').map((p) => {
                     const connected = p.isConnected();
                     const Icon = p.icon;
                     const color = platformColors[p.id] || '#E1C37A';
@@ -1559,7 +1575,7 @@ export default function SocialMediaTool() {
                 <div
                   className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
                 >
-                  {ALL_PLATFORMS.filter(p => ['facebook', 'instagram', 'tiktok', 'youtube', 'linkedin', 'twitter'].includes(p.id)).map((p) => {
+                  {ALL_PLATFORMS.filter(p => ['facebook', 'instagram', 'tiktok', 'youtube', 'linkedin', 'x'].includes(p.id)).map((p) => {
                     const connected = p.isConnected();
                     const Icon = p.icon;
                     const color = platformColors[p.id] || '#E1C37A';
@@ -1569,7 +1585,7 @@ export default function SocialMediaTool() {
                     if (p.id === 'facebook') displayName = 'Facebook Reels';
                     if (p.id === 'instagram') displayName = 'Instagram Reels';
                     if (p.id === 'youtube') displayName = 'Youtube Shorts';
-                    if (p.id == 'twitter') displayName = 'Twitter Video';
+                    if (p.id === 'x') displayName = 'Twitter Video';
 
                     return (
                       <div
@@ -1707,7 +1723,7 @@ export default function SocialMediaTool() {
                   <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.length} selected)</span>
                 </h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                  {ALL_PLATFORMS.filter(p => p.isConnected()).map((p) => {
+                  {ALL_PLATFORMS.filter(p => p.isConnected() && p.id !== 'youtube').map((p) => {
                     const selected = isSelected(p.id);
                     const Icon = p.icon;
                     const color = platformColors[p.id];
@@ -1948,7 +1964,7 @@ export default function SocialMediaTool() {
                   <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.length} selected)</span>
                 </h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                  {ALL_PLATFORMS.filter(p => p.isConnected() && ['facebook', 'instagram', 'tiktok', 'youtube', 'linkedin'].includes(p.id)).map((p) => {
+                  {ALL_PLATFORMS.filter(p => p.isConnected() && ['facebook', 'instagram', 'tiktok', 'youtube', 'linkedin', 'x'].includes(p.id)).map((p) => {
                     const selected = isSelected(p.id);
                     const Icon = p.icon;
                     const color = platformColors[p.id];
