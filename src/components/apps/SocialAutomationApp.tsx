@@ -634,7 +634,7 @@ export default function SocialMediaTool() {
 
       toast.info('Starting AI video generation... This may take 2-3 minutes.');
 
-      const response = await fetch('https://n8n.smartcontentsolutions.co.uk/webhook-test/ai-video-generate', {
+      const response = await fetch('https://n8n.smartcontentsolutions.co.uk/webhook/ai-video-generate', {
         method: 'POST',
         body: formData
       });
