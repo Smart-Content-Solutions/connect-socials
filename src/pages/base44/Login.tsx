@@ -7,8 +7,7 @@ export default function Login() {
         routing="path"
         path="/login"           // <-- REQUIRED!!!
         signUpUrl="/sign-up"
-        afterSignInUrl="/home"
-        afterSignUpUrl="/home"
+        fallbackRedirectUrl="/home"
         appearance={{
           elements: {
             socialButtonsBlockButton: "bg-white shadow-md p-3 rounded-lg",
@@ -18,7 +17,7 @@ export default function Login() {
             socialButtonsVariant: "iconButton",
           },
         }}
-        preferredSignInStrategy="oauth_google"
+
       />
     </div>
   );
