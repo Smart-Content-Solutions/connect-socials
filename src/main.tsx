@@ -13,9 +13,7 @@ if (!PUBLISHABLE_KEY) {
 
 // Always use ClerkProvider — do NOT bypass it
 createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-    <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
-      <App />
-    </ClerkProvider>
-  </React.StrictMode>
+  <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+    <App />
+  </ClerkProvider>
 );
