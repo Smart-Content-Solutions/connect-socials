@@ -1,13 +1,21 @@
 import React from "react";
 import { motion } from "framer-motion";
 
-export default function SectionHeading({ 
-  badge, 
-  title, 
-  subtitle, 
+interface SectionHeadingProps {
+  badge?: string;
+  title: string;
+  subtitle?: string;
+  centered?: boolean;
+  goldTitle?: boolean;
+}
+
+export default function SectionHeading({
+  badge,
+  title,
+  subtitle,
   centered = true,
-  goldTitle = false 
-}) {
+  goldTitle = false
+}: SectionHeadingProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
