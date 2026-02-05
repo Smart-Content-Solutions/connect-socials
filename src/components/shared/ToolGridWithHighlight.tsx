@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Lock, ArrowRight, Check, Shield } from "lucide-react";
 import { motion } from "framer-motion";
 import { useSubscription } from "../subscription/useSubscription";
+import { hasEntitlement as hasEntitlementLib, hasAccessToFeature, FEATURE_ENTITLEMENTS } from "@/lib/entitlements";
 
 interface ToolItem {
   id: string | number;
@@ -11,6 +12,8 @@ interface ToolItem {
   icon: React.ElementType;
   slug?: string;
   planRequired: string;
+  requiredEntitlement?: string;
+  requiredFeature?: keyof typeof FEATURE_ENTITLEMENTS;
 }
 
 interface ToolCardProps {
@@ -35,23 +38,28 @@ function ToolCard({
   const { hasAccessToTool, user } = useSubscription();
 
   // ✅ CLERK-SAFE ADMIN CHECK
-  const isAdmin = user?.publicMetadata?.role === "admin";
-  const isEarlyAccess = user?.publicMetadata?.role === "early_access";
+  const baseTier = (user?.base_tier || user?.publicMetadata?.base_tier) as string;
+  const entitlements = (user?.entitlements || user?.publicMetadata?.entitlements || []) as string[];
+  const isAdmin = baseTier === "admin";
 
-  // ✅ Special case: early_access users can access Social Media, WordPress, and AI Agent tools
-  const isAllowedForEarlyAccess = [
-    "social-automation",
-    "wordpress-seo",
-    "ai-agent"
-  ].includes(tool.id as string) || [
-    "social-automation",
-    "wordpress-seo",
-    "ai-agent"
-  ].includes(tool.slug as string);
+  // Check access using entitlements system
+  const hasAccess = React.useMemo(() => {
+    // Admin always has access
+    if (isAdmin) return true;
 
-  const hasEarlyAccessToThisTool = isEarlyAccess && isAllowedForEarlyAccess;
+    // Check if tool requires specific entitlement
+    if (tool.requiredEntitlement) {
+      return hasEntitlementLib(entitlements, baseTier || "free", tool.requiredEntitlement);
+    }
 
-  const hasAccess = isAdmin || hasEarlyAccessToThisTool || hasAccessToTool(tool.planRequired);
+    // Check if tool requires specific feature
+    if (tool.requiredFeature) {
+      return hasAccessToFeature(entitlements, baseTier || "free", tool.requiredFeature);
+    }
+
+    // Fallback to plan-based check
+    return hasAccessToTool(tool.planRequired);
+  }, [baseTier, entitlements, tool, isAdmin, hasAccessToTool]);
 
   const Icon = tool.icon;
 

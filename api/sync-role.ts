@@ -79,14 +79,17 @@ export default async function handler(req: any, res: any) {
         // Update Clerk
         const user = await clerkClient.users.getUser(userId);
         const currentRole = (user.publicMetadata?.role as string);
+        const currentBaseTier = (user.publicMetadata?.base_tier as string);
 
-        console.log(`[Sync] Valid payment verified. Updating user role. Current: ${currentRole}`);
+        console.log(`[Sync] Valid payment verified. Updating user role. Current: ${currentRole || currentBaseTier}`);
 
-        if (currentRole !== "admin") {
+        if (currentRole !== "admin" && currentBaseTier !== "admin") {
             await clerkClient.users.updateUser(userId, {
                 publicMetadata: {
                     ...(user.publicMetadata || {}),
-                    role: "early_access",
+                    base_tier: "early_access",
+                    entitlements: user.publicMetadata?.entitlements || [],
+                    role: "early_access", // Backward compatibility
                     stripeCustomerId: session.customer as string,
                     subscriptionId: session.subscription as string,
                     planName: session.metadata?.planName || "Early Access",

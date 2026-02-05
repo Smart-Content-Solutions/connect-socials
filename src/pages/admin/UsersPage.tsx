@@ -1,225 +1,393 @@
-import { useEffect, useMemo, useState } from "react";
-import { useAuth } from "@clerk/clerk-react";
+import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { useUser } from '@clerk/clerk-react';
+import {
+  Users,
+  Shield,
+  Star,
+  User as UserIcon,
+  Search,
+  Filter,
+  Plus,
+  Minus,
+  Loader2,
+  Crown,
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 
-type Role = "admin" | "early_access" | "user";
-
-type AdminUser = {
+interface ClerkUser {
   id: string;
-  name: string | null;
-  email: string | null;
-  role: string;
+  firstName: string | null;
+  lastName: string | null;
+  emailAddresses: Array<{ emailAddress: string }>;
+  publicMetadata: {
+    role?: string;
+    base_tier?: string;
+    entitlements?: string[];
+    subscription_status?: string;
+  };
   createdAt: number;
-};
-
-const roleLabel: Record<Role, string> = {
-  admin: "Admin",
-  early_access: "Early Access",
-  user: "User",
-};
-
-async function safeReadJson(res: Response) {
-  const text = await res.text();
-  try {
-    return { json: JSON.parse(text), text };
-  } catch {
-    return { json: null, text };
-  }
 }
 
+const TIER_COLORS = {
+  admin: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  early_access: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  pro: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  free: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+};
+
+const TIER_ICONS = {
+  admin: Crown,
+  early_access: Star,
+  pro: Shield,
+  free: UserIcon,
+};
+
+const AVAILABLE_ENTITLEMENTS = [
+  'social_automation',
+  'wp_ai_agent',
+  'ai_agent',
+  'ai_video',
+];
+
 export default function UsersPage() {
-  const { getToken, isLoaded, isSignedIn } = useAuth();
-
-  const [users, setUsers] = useState<AdminUser[]>([]);
+  const { user: currentUser } = useUser();
+  const [users, setUsers] = useState<ClerkUser[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [pendingRoles, setPendingRoles] = useState<Record<string, Role>>({});
-  const [saving, setSaving] = useState<Record<string, boolean>>({});
-  const [savedMsg, setSavedMsg] = useState<Record<string, string>>({});
-
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      if (!isLoaded) throw new Error("Auth is still loading. Please refresh.");
-      if (!isSignedIn) throw new Error("You must be signed in.");
-
-      const token = await getToken();
-      if (!token) throw new Error("Missing auth token. Please sign out/in.");
-
-      const res = await fetch("/api/admin-users", {
-        method: "GET",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const { json, text } = await safeReadJson(res);
-
-      if (!res.ok) {
-        throw new Error(json?.error || text || "Failed to load users");
-      }
-
-      const list: AdminUser[] = json?.users || [];
-      setUsers(list);
-
-      const init: Record<string, Role> = {};
-      for (const u of list) {
-        const r = (u.role || "user").toString().toLowerCase();
-        init[u.id] =
-          r === "admin" || r === "early_access" || r === "user"
-            ? (r as Role)
-            : "user";
-      }
-      setPendingRoles(init);
-    } catch (e: any) {
-      setError(e.message || "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterTier, setFilterTier] = useState<string>('all');
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isLoaded) return;
+    fetchUsers();
+  }, []);
 
-    if (!isSignedIn) {
-      setLoading(false);
-      setError("You must be signed in to view this page.");
-      return;
-    }
-
-    loadUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded, isSignedIn]);
-
-  const rows = useMemo(() => users, [users]);
-
-  const setRoleFor = (userId: string, role: Role) => {
-    setPendingRoles((prev) => ({ ...prev, [userId]: role }));
-    setSavedMsg((prev) => ({ ...prev, [userId]: "" }));
-  };
-
-  const saveRole = async (userId: string) => {
-    const role = pendingRoles[userId] || "user";
-
+  async function fetchUsers() {
     try {
-      setSaving((prev) => ({ ...prev, [userId]: true }));
-      setSavedMsg((prev) => ({ ...prev, [userId]: "" }));
-
-      if (!isLoaded) throw new Error("Auth is still loading. Try again.");
-      if (!isSignedIn) throw new Error("You must be signed in.");
-
-      const token = await getToken();
-      if (!token) throw new Error("Missing auth token. Please sign out/in.");
-
-      const res = await fetch("/api/admin-update-user-role", {
-        method: "POST",
+      setLoading(true);
+      const response = await fetch('/api/admin-list-users', {
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${await currentUser?.getToken()}`,
         },
-        body: JSON.stringify({ userId, role }),
       });
 
-      const { json, text } = await safeReadJson(res);
-
-      if (!res.ok) {
-        throw new Error(json?.error || text || "Failed to update role");
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
       }
 
-      setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role } : u)));
-
-      setSavedMsg((prev) => ({ ...prev, [userId]: "Saved" }));
-      setTimeout(() => {
-        setSavedMsg((prev) => ({ ...prev, [userId]: "" }));
-      }, 1500);
-    } catch (e: any) {
-      setSavedMsg((prev) => ({ ...prev, [userId]: e.message || "Failed" }));
+      const data = await response.json();
+      setUsers(data.users || []);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
     } finally {
-      setSaving((prev) => ({ ...prev, [userId]: false }));
+      setLoading(false);
     }
-  };
+  }
+
+  async function updateUserTier(userId: string, newTier: string) {
+    try {
+      setUpdatingUserId(userId);
+      const response = await fetch('/api/admin-update-user-role', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${await currentUser?.getToken()}`,
+        },
+        body: JSON.stringify({
+          userId,
+          base_tier: newTier,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update user tier');
+      }
+
+      toast.success(`User tier updated to ${newTier}`);
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error updating user tier:', error);
+      toast.error('Failed to update user tier');
+    } finally {
+      setUpdatingUserId(null);
+    }
+  }
+
+  async function toggleEntitlement(
+    userId: string,
+    entitlement: string,
+    hasIt: boolean
+  ) {
+    try {
+      setUpdatingUserId(userId);
+      const response = await fetch('/api/admin-update-user-role', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${await currentUser?.getToken()}`,
+        },
+        body: JSON.stringify({
+          userId,
+          [hasIt ? 'removeEntitlement' : 'addEntitlement']: entitlement,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update entitlement');
+      }
+
+      toast.success(
+        hasIt
+          ? `Removed ${entitlement} entitlement`
+          : `Added ${entitlement} entitlement`
+      );
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error updating entitlement:', error);
+      toast.error('Failed to update entitlement');
+    } finally {
+      setUpdatingUserId(null);
+    }
+  }
+
+  const filteredUsers = users.filter((user) => {
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch =
+      !searchQuery ||
+      user.emailAddresses[0]?.emailAddress.toLowerCase().includes(searchLower) ||
+      `${user.firstName} ${user.lastName}`.toLowerCase().includes(searchLower);
+
+    const userTier =
+      user.publicMetadata?.base_tier || user.publicMetadata?.role || 'free';
+    const matchesTier = filterTier === 'all' || userTier === filterTier;
+
+    return matchesSearch && matchesTier;
+  });
+
+  if (loading) {
+    return (
+      <div className="flex bg-background items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <div className="mb-4">
-        <h1 className="text-2xl font-semibold">Users</h1>
-        <p className="text-muted-foreground">
-          Manage user roles. “Early Access” is for customers who purchased your
-          Early Access plan.
+    <div className="space-y-6">
+      {/* Page Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        <h1 className="text-2xl font-bold text-white uppercase tracking-tight">
+          User Management
+        </h1>
+        <p className="text-gray-400 mt-1">
+          Manage user access tiers and entitlements
         </p>
+      </motion.div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {['admin', 'early_access', 'pro', 'free'].map((tier) => {
+          const count = users.filter(
+            (u) =>
+              (u.publicMetadata?.base_tier || u.publicMetadata?.role || 'free') ===
+              tier
+          ).length;
+          const Icon = TIER_ICONS[tier as keyof typeof TIER_ICONS];
+
+          return (
+            <Card key={tier} className="bg-gray-900/50 border-gray-800">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-400 capitalize">{tier.replace(/_/g, ' ')}</p>
+                    <p className="text-2xl font-bold text-white mt-1">{count}</p>
+                  </div>
+                  <Icon className="w-8 h-8 text-gray-600" />
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      {loading && <div>Loading users…</div>}
+      {/* Filters */}
+      <Card className="bg-gray-900/50 border-gray-800">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Input
+                placeholder="Search by email or name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-gray-800 border-gray-700"
+              />
+            </div>
+            <Select value={filterTier} onValueChange={setFilterTier}>
+              <SelectTrigger className="w-full md:w-[200px] bg-gray-800 border-gray-700">
+                <Filter className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Filter by tier" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Tiers</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="early_access">Early Access</SelectItem>
+                <SelectItem value="pro">Pro</SelectItem>
+                <SelectItem value="free">Free</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
-      {error && (
-        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm">
-          {error}
-        </div>
-      )}
+      {/* Users Table */}
+      <Card className="bg-gray-900/50 border-gray-800">
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <Users className="w-5 h-5" />
+            Users ({filteredUsers.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {filteredUsers.map((user) => {
+              const tier =
+                user.publicMetadata?.base_tier ||
+                user.publicMetadata?.role ||
+                'free';
+              const entitlements = user.publicMetadata?.entitlements || [];
+              const Icon = TIER_ICONS[tier as keyof typeof TIER_ICONS];
+              const isUpdating = updatingUserId === user.id;
 
-      {!loading && !error && (
-        <div className="rounded-xl border border-border/60 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30">
-              <tr>
-                <th className="text-left p-3">Name</th>
-                <th className="text-left p-3">Email</th>
-                <th className="text-left p-3">Role</th>
-                <th className="text-left p-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.length === 0 ? (
-                <tr>
-                  <td className="p-3 text-muted-foreground" colSpan={4}>
-                    No users found.
-                  </td>
-                </tr>
-              ) : (
-                rows.map((u) => {
-                  const current = pendingRoles[u.id] || "user";
-                  const isSaving = !!saving[u.id];
-                  const msg = savedMsg[u.id] || "";
-
-                  return (
-                    <tr key={u.id} className="border-t border-border/40">
-                      <td className="p-3">{u.name || "—"}</td>
-                      <td className="p-3">{u.email || "—"}</td>
-                      <td className="p-3">
-                        <select
-                          className="rounded-md border border-border/60 bg-background px-3 py-2"
-                          value={current}
-                          onChange={(e) => setRoleFor(u.id, e.target.value as Role)}
-                        >
-                          <option value="user">{roleLabel.user}</option>
-                          <option value="early_access">{roleLabel.early_access}</option>
-                          <option value="admin">{roleLabel.admin}</option>
-                        </select>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-3">
-                          <button
-                            className="rounded-md bg-primary px-3 py-2 text-primary-foreground disabled:opacity-60"
-                            onClick={() => saveRole(u.id)}
-                            disabled={isSaving}
-                          >
-                            {isSaving ? "Saving…" : "Save"}
-                          </button>
-                          {msg && (
-                            <span className="text-xs text-muted-foreground">
-                              {msg}
-                            </span>
-                          )}
+              return (
+                <motion.div
+                  key={user.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="p-4 bg-gray-800/50 rounded-lg border border-gray-700"
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                    {/* User Info */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-5 h-5 text-gray-400" />
+                        <div>
+                          <p className="font-medium text-white">
+                            {user.firstName} {user.lastName}
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            {user.emailAddresses[0]?.emailAddress}
+                          </p>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+                      </div>
+                    </div>
+
+                    {/* Tier Selector */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-400">Tier:</span>
+                      <Select
+                        value={tier}
+                        onValueChange={(newTier) =>
+                          updateUserTier(user.id, newTier)
+                        }
+                        disabled={isUpdating}
+                      >
+                        <SelectTrigger
+                          className={`w-[140px] ${TIER_COLORS[tier as keyof typeof TIER_COLORS]
+                            }`}
+                        >
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="early_access">
+                            Early Access
+                          </SelectItem>
+                          <SelectItem value="pro">Pro</SelectItem>
+                          <SelectItem value="free">Free</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Entitlements */}
+                    <div className="flex flex-wrap gap-2">
+                      {AVAILABLE_ENTITLEMENTS.map((ent) => {
+                        const hasEntitlement = entitlements.includes(ent);
+                        return (
+                          <Button
+                            key={ent}
+                            size="sm"
+                            variant={hasEntitlement ? 'default' : 'outline'}
+                            onClick={() =>
+                              toggleEntitlement(user.id, ent, hasEntitlement)
+                            }
+                            disabled={isUpdating}
+                            className={
+                              hasEntitlement
+                                ? 'bg-green-600 hover:bg-green-700'
+                                : ''
+                            }
+                          >
+                            {hasEntitlement ? (
+                              <Minus className="w-3 h-3 mr-1" />
+                            ) : (
+                              <Plus className="w-3 h-3 mr-1" />
+                            )}
+                            {ent.replace(/_/g, ' ')}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Show effective entitlements */}
+                  {entitlements.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-gray-700">
+                      <p className="text-xs text-gray-500 mb-2">
+                        Active Entitlements:
+                      </p>
+                      <div className="flex flex-wrap gap-1">
+                        {entitlements.map((ent) => (
+                          <Badge
+                            key={ent}
+                            variant="secondary"
+                            className="text-xs"
+                          >
+                            {ent}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+
+            {filteredUsers.length === 0 && (
+              <div className="text-center py-12">
+                <Users className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-400">No users found</p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

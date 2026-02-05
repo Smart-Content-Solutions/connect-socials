@@ -107,6 +107,14 @@ export default function SocialMediaTool() {
 
   const [postMode, setPostMode] = useState("publish");
   const [scheduledTime, setScheduledTime] = useState("");
+  
+  // Multi-file upload states (NEW)
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [videoFiles, setVideoFiles] = useState<File[]>([]);
+  const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
+  
+  // Legacy single-file states (for backward compatibility during transition)
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -122,6 +130,7 @@ export default function SocialMediaTool() {
   const [loadingPlatform, setLoadingPlatform] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showBlueskyModal, setShowBlueskyModal] = useState(false);
+  const [showBlueskyInfo, setShowBlueskyInfo] = useState(false);
   const [blueskyUsername, setBlueskyUsername] = useState("");
   const [blueskyPassword, setBlueskyPassword] = useState("");
   const [blueskyError, setBlueskyError] = useState("");
@@ -482,29 +491,85 @@ export default function SocialMediaTool() {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setImageFile(f);
-    const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(String(reader.result));
-    reader.readAsDataURL(f);
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    // Limit to 10 images max
+    const maxFiles = 10;
+    const selectedFiles = files.slice(0, maxFiles);
+    
+    if (files.length > maxFiles) {
+      toast.warning(`Only ${maxFiles} images can be uploaded at once. Using the first ${maxFiles}.`);
+    }
+    
+    setImageFiles(prev => [...prev, ...selectedFiles].slice(0, maxFiles));
+    
+    // Generate previews for all selected files
+    selectedFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviews(prev => [...prev, String(reader.result)].slice(0, maxFiles));
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const f = e.dataTransfer.files[0];
-    if (!f) return;
-    setImageFile(f);
-    const reader = new FileReader();
-    reader.onloadend = () => setImagePreview(String(reader.result));
-    reader.readAsDataURL(f);
+    const files = Array.from(e.dataTransfer.files);
+    const imageFilesDropped = files.filter(f => f.type.startsWith('image/'));
+    
+    if (imageFilesDropped.length === 0) return;
+    
+    // Limit to 10 images max
+    const maxFiles = 10;
+    const selectedFiles = imageFilesDropped.slice(0, maxFiles);
+    
+    if (imageFilesDropped.length > maxFiles) {
+      toast.warning(`Only ${maxFiles} images can be uploaded at once. Using the first ${maxFiles}.`);
+    }
+    
+    setImageFiles(prev => [...prev, ...selectedFiles].slice(0, maxFiles));
+    
+    // Generate previews for all selected files
+    selectedFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviews(prev => [...prev, String(reader.result)].slice(0, maxFiles));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Remove specific image from multi-upload
+  const removeImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Remove specific video from multi-upload
+  const removeVideo = (index: number) => {
+    setVideoFiles(prev => prev.filter((_, i) => i !== index));
+    setVideoPreviews(prev => {
+      const newPreviews = prev.filter((_, i) => i !== index);
+      // Revoke object URLs to prevent memory leaks
+      URL.revokeObjectURL(prev[index]);
+      return newPreviews;
+    });
   };
 
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [showCompressionModal, setShowCompressionModal] = useState(false);
   const [pendingVideoFile, setPendingVideoFile] = useState<File | null>(null);
+
+  // Post type options (NEW)
+  const [postAsStory, setPostAsStory] = useState(false);
+  const [videoPostTypes, setVideoPostTypes] = useState({
+    instagram: { feed: true, reel: false, story: false },
+    facebook: { feed: true, reel: false, story: false }
+  });
 
   const handleFacebookBusinessSelection = async () => {
     const authData = getFacebookAuthData();
@@ -565,27 +630,49 @@ export default function SocialMediaTool() {
   const MAX_VIDEO_SIZE_MB = 50;
 
   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (!f) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    // Validate file type
-    if (!f.type.startsWith('video/')) {
-      toast.error('Please upload a valid video file');
+    // Filter only video files
+    const videoFilesSelected = files.filter(f => f.type.startsWith('video/'));
+    
+    if (videoFilesSelected.length === 0) {
+      toast.error('Please upload valid video files');
       return;
     }
 
-    // Check if compression is needed
-    if (needsCompression(f, MAX_VIDEO_SIZE_MB)) {
-      const sizeMB = (f.size / (1024 * 1024)).toFixed(1);
-      toast.info(`Video is ${sizeMB}MB - starting smart compression...`);
-      setPendingVideoFile(f);
-      setShowCompressionModal(true);
-      return;
+    // Check if Instagram is selected - only Instagram supports multi-video
+    const isInstagramSelected = selectedPlatforms.includes('instagram');
+    const maxVideos = isInstagramSelected ? 10 : 1;
+    
+    const selectedFiles = videoFilesSelected.slice(0, maxVideos);
+    
+    if (videoFilesSelected.length > maxVideos) {
+      toast.warning(`Only ${isInstagramSelected ? '10 videos' : '1 video'} can be uploaded${isInstagramSelected ? '' : ' for non-Instagram platforms'}.`);
     }
 
-    // File is small enough, use directly
-    setVideoFile(f);
-    setVideoPreview(URL.createObjectURL(f));
+    // For single video uploads (non-Instagram or single file), use existing flow
+    if (selectedFiles.length === 1) {
+      const f = selectedFiles[0];
+      
+      // Check if compression is needed
+      if (needsCompression(f, MAX_VIDEO_SIZE_MB)) {
+        const sizeMB = (f.size / (1024 * 1024)).toFixed(1);
+        toast.info(`Video is ${sizeMB}MB - starting smart compression...`);
+        setPendingVideoFile(f);
+        setShowCompressionModal(true);
+        return;
+      }
+
+      // File is small enough, use directly
+      setVideoFile(f);
+      setVideoPreview(URL.createObjectURL(f));
+    } else {
+      // Multiple videos for Instagram carousel
+      setVideoFiles(selectedFiles);
+      setVideoPreviews(selectedFiles.map(f => URL.createObjectURL(f)));
+      toast.success(`${selectedFiles.length} videos added for Instagram carousel`);
+    }
   };
 
   // Handle compressed video from modal
@@ -774,6 +861,9 @@ export default function SocialMediaTool() {
     // Explicitly for image flow
     form.append("type", "image");
 
+    // Add is_story flag for Instagram/Facebook
+    form.append("is_story", postAsStory ? "true" : "false");
+
     if (postMode === "schedule") {
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       console.log("=== SCHEDULING DEBUG ===");
@@ -785,17 +875,20 @@ export default function SocialMediaTool() {
       form.append("user_timezone", userTimezone);
     }
 
+    // Handle multiple images (NEW multi-upload support)
+    if (imageFiles.length > 0) {
+      imageFiles.forEach((file, i) => form.append(`media[${i}]`, file));
+    } else if (imageFile) {
+      // Legacy single image support
+      form.append("image", imageFile);
+    }
+
     // Log all form data being sent
     console.log("=== FORM DATA BEING SENT ===");
     for (let [key, value] of form.entries()) {
       console.log(`${key}:`, value);
     }
     console.log("============================");
-
-
-    if (imageFile) {
-      form.append("image", imageFile);
-    }
 
     if (selectedPlatforms.includes("bluesky")) {
       const blueskyCredentials = getBlueskyCredentials();
@@ -826,13 +919,21 @@ export default function SocialMediaTool() {
     }
     form.append("type", "video");
 
+    // Add video post types for Instagram and Facebook
+    form.append('instagram_post_types', JSON.stringify(videoPostTypes.instagram));
+    form.append('facebook_post_types', JSON.stringify(videoPostTypes.facebook));
+
     if (postMode === "schedule") {
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       form.append("scheduled_time", scheduledTime);
       form.append("user_timezone", userTimezone);
     }
 
-    if (videoFile) {
+    // Handle multiple videos (NEW multi-upload support for Instagram carousel)
+    if (videoFiles.length > 0) {
+      videoFiles.forEach((file, i) => form.append(`video[${i}]`, file));
+    } else if (videoFile) {
+      // Legacy single video support
       form.append("video", videoFile);
     } else {
       throw new Error("Video file is required for video posts");
@@ -903,10 +1004,26 @@ export default function SocialMediaTool() {
 
       // Clear all state
       setCaption("");
+      
+      // Clear legacy single-file states
       setImageFile(null);
       setImagePreview(null);
       setVideoFile(null);
       setVideoPreview(null);
+      
+      // Clear multi-file states (NEW)
+      setImageFiles([]);
+      setImagePreviews([]);
+      setVideoFiles([]);
+      setVideoPreviews([]);
+      
+      // Reset post type options
+      setPostAsStory(false);
+      setVideoPostTypes({
+        instagram: { feed: true, reel: false, story: false },
+        facebook: { feed: true, reel: false, story: false }
+      });
+      
       setSelectedPlatforms([]);
 
       setTimeout(() => setIsSuccess(false), 5000);
@@ -1760,9 +1877,53 @@ export default function SocialMediaTool() {
 
               <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
                 <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
-                  Media <span className="text-[#5B5C60] font-normal">(optional)</span>
+                  Media <span className="text-[#5B5C60] font-normal">({imageFiles.length > 0 ? `${imageFiles.length} images` : imagePreview ? '1 image' : 'optional'})</span>
                 </h3>
-                {imagePreview ? (
+                
+                {/* Multi-image preview grid */}
+                {imagePreviews.length > 0 ? (
+                  <div className="relative">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-4">
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative group">
+                          <img 
+                            src={preview} 
+                            className="w-full h-24 object-cover rounded-lg bg-black/20" 
+                            alt={`Preview ${index + 1}`} 
+                          />
+                          <button
+                            onClick={() => removeImage(index)}
+                            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                          <span className="absolute bottom-1 right-1 text-xs text-white bg-black/50 px-1.5 rounded">
+                            {index + 1}
+                          </span>
+                        </div>
+                      ))}
+                      {/* Add more button */}
+                      {imagePreviews.length < 10 && (
+                        <button
+                          onClick={() => document.getElementById('file-upload')?.click()}
+                          className="w-full h-24 rounded-lg border-2 border-dashed border-[#5B5C60]/50 hover:border-[#E1C37A]/50 flex items-center justify-center transition-colors"
+                        >
+                          <ImageIcon className="w-6 h-6 text-[#5B5C60]" />
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => {
+                        setImageFiles([]);
+                        setImagePreviews([]);
+                      }}
+                      className="text-sm text-red-400 hover:text-red-300 flex items-center gap-1"
+                    >
+                      <X className="w-4 h-4" />
+                      Clear all images
+                    </button>
+                  </div>
+                ) : imagePreview ? (
                   <div className="relative">
                     <img src={imagePreview} className="w-full rounded-lg max-h-64 object-contain bg-black/20" alt="Preview" />
                     <button
@@ -1791,18 +1952,50 @@ export default function SocialMediaTool() {
                         <ImageIcon className="w-7 h-7 text-[#E1C37A]" />
                       </div>
                     </div>
-                    <p className="text-[#D6D7D8] font-medium mb-2">Drop your image here</p>
-                    <p className="text-[#5B5C60] text-sm">or click to browse</p>
+                    <p className="text-[#D6D7D8] font-medium mb-2">Drop your images here</p>
+                    <p className="text-[#5B5C60] text-sm">or click to browse (up to 10 images)</p>
                   </div>
                 )}
                 <input
                   id="file-upload"
                   type="file"
                   hidden
-                  accept="image/*,video/*"
+                  accept="image/*"
+                  multiple
                   onChange={handleImageUpload}
                 />
               </div>
+
+              {/* Post as Story Toggle - Only show if Instagram or Facebook is selected */}
+              {(selectedPlatforms.includes('instagram') || selectedPlatforms.includes('facebook')) && (
+                <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 to-purple-500 flex items-center justify-center">
+                        <Instagram className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-[#D6D7D8]">Post as Story</h3>
+                        <p className="text-xs text-[#A9AAAC]">Share to {selectedPlatforms.includes('instagram') && selectedPlatforms.includes('facebook') ? 'Instagram & Facebook' : selectedPlatforms.includes('instagram') ? 'Instagram' : 'Facebook'} Stories</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setPostAsStory(!postAsStory)}
+                      className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${postAsStory ? 'bg-[#E1C37A]' : 'bg-[#4B4C4E]'}`}
+                    >
+                      <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform duration-300 ${postAsStory ? 'translate-x-7' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                  {postAsStory && (
+                    <div className="mt-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                      <p className="text-xs text-yellow-400">
+                        Note: Stories will be posted to {selectedPlatforms.includes('instagram') && selectedPlatforms.includes('facebook') ? 'both Instagram and Facebook' : selectedPlatforms.includes('instagram') ? 'Instagram' : 'Facebook'}. 
+                        {imageFiles.length > 1 ? ` ${imageFiles.length} images will be posted as separate story slides.` : ''}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 space-y-4">
                 <h3 className="text-sm font-semibold text-[#D6D7D8]">Caption & AI Settings</h3>
@@ -1946,6 +2139,9 @@ export default function SocialMediaTool() {
                     setCaption("");
                     setImageFile(null);
                     setImagePreview(null);
+                    setImageFiles([]);
+                    setImagePreviews([]);
+                    setPostAsStory(false);
                     setSelectedPlatforms([]);
                   }}
                   className="px-6 py-3 rounded-full bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-all duration-300"
@@ -2121,11 +2317,111 @@ export default function SocialMediaTool() {
 
                     <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
 
-                      Media <span className="text-[#5B5C60] font-normal">(optional)</span>
+                      Media <span className="text-[#5B5C60] font-normal">({videoFiles.length > 0 ? `${videoFiles.length} videos` : videoPreview ? '1 video' : 'optional'})</span>
 
                     </h3>
 
-                    {videoPreview ? (
+                    {/* Multi-video preview grid */}
+
+                    {videoPreviews.length > 0 ? (
+
+                      <div className="relative">
+
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+
+                          {videoPreviews.map((preview, index) => (
+
+                            <div key={index} className="relative group">
+
+                              <video 
+
+                                src={preview} 
+
+                                className="w-full h-32 object-cover rounded-lg bg-black/20" 
+
+                              />
+
+                              <button
+
+                                onClick={() => removeVideo(index)}
+
+                                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-red-500/80 flex items-center justify-center text-white hover:bg-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+
+                              >
+
+                                <X className="w-3 h-3" />
+
+                              </button>
+
+                              <span className="absolute bottom-1 right-1 text-xs text-white bg-black/50 px-1.5 rounded">
+
+                                {index + 1}
+
+                              </span>
+
+                            </div>
+
+                          ))}
+
+                          {/* Add more button - Only for Instagram */}
+
+                          {videoPreviews.length < 10 && selectedPlatforms.includes('instagram') && (
+
+                            <button
+
+                              onClick={() => document.getElementById('file-upload-video')?.click()}
+
+                              className="w-full h-32 rounded-lg border-2 border-dashed border-[#5B5C60]/50 hover:border-[#E1C37A]/50 flex items-center justify-center transition-colors"
+
+                            >
+
+                              <Video className="w-6 h-6 text-[#5B5C60]" />
+
+                            </button>
+
+                          )}
+
+                        </div>
+
+                        <button
+
+                          onClick={() => {
+
+                            setVideoFiles([]);
+
+                            videoPreviews.forEach(url => URL.revokeObjectURL(url));
+
+                            setVideoPreviews([]);
+
+                          }}
+
+                          className="text-sm text-red-400 hover:text-red-300 flex items-center gap-1"
+
+                        >
+
+                          <X className="w-4 h-4" />
+
+                          Clear all videos
+
+                        </button>
+
+                        {selectedPlatforms.includes('instagram') && videoFiles.length > 1 && (
+
+                          <div className="mt-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+
+                            <p className="text-xs text-blue-400">
+
+                              Instagram carousel with {videoFiles.length} videos. Other platforms will receive only the first video.
+
+                            </p>
+
+                          </div>
+
+                        )}
+
+                      </div>
+
+                    ) : videoPreview ? (
 
                       <div className="relative">
 
@@ -2165,27 +2461,71 @@ export default function SocialMediaTool() {
 
                           setIsDragging(false);
 
-                          const f = e.dataTransfer.files[0];
+                          const files = Array.from(e.dataTransfer.files);
 
-                          if (!f) return;
+                          const videoFilesDropped = files.filter(f => f.type.startsWith('video/'));
 
-                          // Validate
+                          
 
-                          if (!f.type.startsWith('video/')) {
+                          if (videoFilesDropped.length === 0) {
 
-                            toast.error('Please upload a valid video file');
+                            toast.error('Please upload valid video files');
 
                             return;
 
                           }
 
-                          setVideoFile(f);
+                          
 
-                          const reader = new FileReader();
+                          // Check if Instagram is selected
 
-                          reader.onloadend = () => setVideoPreview(String(reader.result));
+                          const isInstagramSelected = selectedPlatforms.includes('instagram');
 
-                          reader.readAsDataURL(f);
+                          const maxVideos = isInstagramSelected ? 10 : 1;
+
+                          const selectedFiles = videoFilesDropped.slice(0, maxVideos);
+
+                          
+
+                          if (videoFilesDropped.length > maxVideos) {
+
+                            toast.warning(`Only ${maxVideos} video${maxVideos > 1 ? 's' : ''} can be uploaded${!isInstagramSelected ? ' for non-Instagram platforms' : ''}.`);
+
+                          }
+
+                          
+
+                          if (selectedFiles.length === 1) {
+
+                            const f = selectedFiles[0];
+
+                            if (needsCompression(f, MAX_VIDEO_SIZE_MB)) {
+
+                              const sizeMB = (f.size / (1024 * 1024)).toFixed(1);
+
+                              toast.info(`Video is ${sizeMB}MB - starting smart compression...`);
+
+                              setPendingVideoFile(f);
+
+                              setShowCompressionModal(true);
+
+                            } else {
+
+                              setVideoFile(f);
+
+                              setVideoPreview(URL.createObjectURL(f));
+
+                            }
+
+                          } else {
+
+                            setVideoFiles(selectedFiles);
+
+                            setVideoPreviews(selectedFiles.map(f => URL.createObjectURL(f)));
+
+                            toast.success(`${selectedFiles.length} videos added for Instagram carousel`);
+
+                          }
 
                         }}
 
@@ -2213,7 +2553,15 @@ export default function SocialMediaTool() {
 
                         <p className="text-[#D6D7D8] font-medium mb-2">Drop your video here</p>
 
-                        <p className="text-[#5B5C60] text-sm">or click to browse</p>
+                        <p className="text-[#5B5C60] text-sm">
+
+                          {selectedPlatforms.includes('instagram') 
+
+                            ? 'or click to browse (up to 10 videos for Instagram)' 
+
+                            : 'or click to browse (1 video for other platforms)'}
+
+                        </p>
 
                       </div>
 
@@ -2229,11 +2577,13 @@ export default function SocialMediaTool() {
 
                       accept="video/*"
 
+                      multiple={selectedPlatforms.includes('instagram')}
+
                       onChange={handleVideoUpload}
 
                     />
 
-                  </>
+                   </>
 
                 )}
 
@@ -2558,7 +2908,167 @@ export default function SocialMediaTool() {
 
               </div>
 
+              {/* Video Post Type Options - Instagram */}
+              {selectedPlatforms.includes('instagram') && (
+                <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 to-purple-500 flex items-center justify-center">
+                      <Instagram className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-[#D6D7D8]">Instagram Post Type</h3>
+                      <p className="text-xs text-[#A9AAAC]">Choose where to publish your video</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-3">
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
+                      videoPostTypes.instagram.feed 
+                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50' 
+                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={videoPostTypes.instagram.feed}
+                        onChange={(e) => setVideoPostTypes(prev => ({
+                          ...prev,
+                          instagram: { ...prev.instagram, feed: e.target.checked }
+                        }))}
+                        className="w-4 h-4 accent-[#E1C37A]"
+                      />
+                      <div>
+                        <p className={`text-sm font-medium ${videoPostTypes.instagram.feed ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>Feed</p>
+                        <p className="text-xs text-[#5B5C60]">Main posts</p>
+                      </div>
+                    </label>
+                    
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
+                      videoPostTypes.instagram.reel 
+                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50' 
+                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={videoPostTypes.instagram.reel}
+                        onChange={(e) => setVideoPostTypes(prev => ({
+                          ...prev,
+                          instagram: { ...prev.instagram, reel: e.target.checked }
+                        }))}
+                        className="w-4 h-4 accent-[#E1C37A]"
+                      />
+                      <div>
+                        <p className={`text-sm font-medium ${videoPostTypes.instagram.reel ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>Reel</p>
+                        <p className="text-xs text-[#5B5C60]">Short videos</p>
+                      </div>
+                    </label>
+                    
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
+                      videoPostTypes.instagram.story 
+                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50' 
+                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={videoPostTypes.instagram.story}
+                        onChange={(e) => setVideoPostTypes(prev => ({
+                          ...prev,
+                          instagram: { ...prev.instagram, story: e.target.checked }
+                        }))}
+                        className="w-4 h-4 accent-[#E1C37A]"
+                      />
+                      <div>
+                        <p className={`text-sm font-medium ${videoPostTypes.instagram.story ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>Story</p>
+                        <p className="text-xs text-[#5B5C60]">24hr stories</p>
+                      </div>
+                    </label>
+                  </div>
+                  
+                  {videoFiles.length > 1 && videoPostTypes.instagram.feed && (
+                    <div className="mt-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                      <p className="text-xs text-blue-400">
+                        Multiple videos will be posted as a carousel to your Instagram feed.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
 
+              {/* Video Post Type Options - Facebook */}
+              {selectedPlatforms.includes('facebook') && (
+                <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-[#1877F2]/20 flex items-center justify-center">
+                      <Facebook className="w-5 h-5 text-[#1877F2]" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-[#D6D7D8]">Facebook Post Type</h3>
+                      <p className="text-xs text-[#A9AAAC]">Choose where to publish your video</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-3">
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
+                      videoPostTypes.facebook.feed 
+                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50' 
+                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={videoPostTypes.facebook.feed}
+                        onChange={(e) => setVideoPostTypes(prev => ({
+                          ...prev,
+                          facebook: { ...prev.facebook, feed: e.target.checked }
+                        }))}
+                        className="w-4 h-4 accent-[#E1C37A]"
+                      />
+                      <div>
+                        <p className={`text-sm font-medium ${videoPostTypes.facebook.feed ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>Feed</p>
+                        <p className="text-xs text-[#5B5C60]">Page posts</p>
+                      </div>
+                    </label>
+                    
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
+                      videoPostTypes.facebook.reel 
+                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50' 
+                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={videoPostTypes.facebook.reel}
+                        onChange={(e) => setVideoPostTypes(prev => ({
+                          ...prev,
+                          facebook: { ...prev.facebook, reel: e.target.checked }
+                        }))}
+                        className="w-4 h-4 accent-[#E1C37A]"
+                      />
+                      <div>
+                        <p className={`text-sm font-medium ${videoPostTypes.facebook.reel ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>Reel</p>
+                        <p className="text-xs text-[#5B5C60]">Short videos</p>
+                      </div>
+                    </label>
+                    
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
+                      videoPostTypes.facebook.story 
+                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50' 
+                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                    }`}>
+                      <input
+                        type="checkbox"
+                        checked={videoPostTypes.facebook.story}
+                        onChange={(e) => setVideoPostTypes(prev => ({
+                          ...prev,
+                          facebook: { ...prev.facebook, story: e.target.checked }
+                        }))}
+                        className="w-4 h-4 accent-[#E1C37A]"
+                      />
+                      <div>
+                        <p className={`text-sm font-medium ${videoPostTypes.facebook.story ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>Story</p>
+                        <p className="text-xs text-[#5B5C60]">24hr stories</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
 
               <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 space-y-4">
                 <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">Caption & AI Settings</h3>
@@ -2701,6 +3211,13 @@ export default function SocialMediaTool() {
                     setCaption("");
                     setVideoFile(null);
                     setVideoPreview(null);
+                    setVideoFiles([]);
+                    videoPreviews.forEach(url => URL.revokeObjectURL(url));
+                    setVideoPreviews([]);
+                    setVideoPostTypes({
+                      instagram: { feed: true, reel: false, story: false },
+                      facebook: { feed: true, reel: false, story: false }
+                    });
                     setSelectedPlatforms([]);
                   }}
                   className="px-6 py-3 rounded-full bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-all duration-300"

@@ -13,13 +13,20 @@ import {
   getUserPlanDetails,
   UserSubscription as AccessControlUserSubscription
 } from "./accessControl";
+import {
+  hasEntitlement as hasEntitlementLib,
+  getEffectiveEntitlements as getEffectiveEntitlementsLib,
+  hasAccessToFeature,
+  FEATURE_ENTITLEMENTS
+} from "@/lib/entitlements";
 
 /* ============================
    ✅ Types (extended with role)
 ============================ */
 
 export interface UserSubscription extends AccessControlUserSubscription {
-  role?: "admin" | "early_access" | "user";
+  base_tier?: "admin" | "pro" | "early_access" | "free";
+  entitlements?: string[];
   publicMetadata?: any;
 }
 
@@ -31,6 +38,9 @@ interface SubscriptionContextType {
 
   hasPlan: (requiredPlan: string) => boolean;
   hasAccessToTool: (toolPlanRequired: string) => boolean;
+  hasEntitlement: (entitlement: string) => boolean;
+  hasFeatureAccess: (feature: keyof typeof FEATURE_ENTITLEMENTS) => boolean;
+  getEffectiveEntitlements: () => string[];
   isSubscriptionActive: () => boolean;
   getPlanDetails: () => any;
 
@@ -59,6 +69,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
     if (isSignedIn && clerkUser) {
       const subscriptionUser: UserSubscription = {
+        base_tier:
+          (clerkUser.publicMetadata?.base_tier as "admin" | "pro" | "early_access" | "free") || "free",
+        entitlements:
+          (clerkUser.publicMetadata?.entitlements as string[]) || [],
         subscription_plan:
           (clerkUser.publicMetadata?.subscription_plan as string) || "none",
         subscription_status:
@@ -68,8 +82,6 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
             | "canceled"
             | "trialing"
             | "none") || "none",
-        role:
-          (clerkUser.publicMetadata?.role as "admin" | "early_access" | "user") || "user",
         publicMetadata: clerkUser.publicMetadata
       };
 
@@ -94,6 +106,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     await clerkUser.reload();
 
     const subscriptionUser: UserSubscription = {
+      base_tier:
+        (clerkUser.publicMetadata?.base_tier as "admin" | "pro" | "early_access" | "free") || "free",
+      entitlements:
+        (clerkUser.publicMetadata?.entitlements as string[]) || [],
       subscription_plan:
         (clerkUser.publicMetadata?.subscription_plan as string) || "none",
       subscription_status:
@@ -103,8 +119,6 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
           | "canceled"
           | "trialing"
           | "none") || "none",
-      role:
-        (clerkUser.publicMetadata?.role as "admin" | "early_access" | "user") || "user",
       publicMetadata: clerkUser.publicMetadata
     };
 
@@ -122,27 +136,37 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
     refreshUser,
 
-    // Admin always “has” any plan
+    // Admin always "has" any plan
     hasPlan: (requiredPlan: string) => {
-      if (user?.role === "admin") return true;
+      if (user?.base_tier === "admin") return true;
       return baseHasPlan(user, requiredPlan);
     },
 
     // Admin always has access to any tool
-    // Early access users have access to Social Media, WordPress, and AI Agent tools
     hasAccessToTool: (toolPlanRequired: string) => {
-      if (user?.role === "admin") return true;
-      // For early_access role, we DON'T grant blanket access here
-      // Access control is handled by RoleProtectedRoute on specific routes
-      // and by custom checks in tool grid components.
-      // This keeps other tools locked in the UI unless they have a real subscription
+      if (user?.base_tier === "admin") return true;
       return baseHasAccessToTool(user, toolPlanRequired);
     },
 
     // Admin subscription is always treated as active
     isSubscriptionActive: () => {
-      if (user?.role === "admin") return true;
+      if (user?.base_tier === "admin") return true;
       return baseIsSubscriptionActive(user);
+    },
+
+    hasEntitlement: (entitlement: string) => {
+      if (!user) return false;
+      return hasEntitlementLib(user.entitlements || [], user.base_tier || "free", entitlement);
+    },
+
+    hasFeatureAccess: (feature: keyof typeof FEATURE_ENTITLEMENTS) => {
+      if (!user) return false;
+      return hasAccessToFeature(user.entitlements || [], user.base_tier || "free", feature);
+    },
+
+    getEffectiveEntitlements: () => {
+      if (!user) return [];
+      return getEffectiveEntitlementsLib(user.entitlements || [], user.base_tier || "free");
     },
 
     getPlanDetails: () => getUserPlanDetails(user),
@@ -191,6 +215,9 @@ export function useSubscription(): SubscriptionContextType {
 
       hasPlan: () => false,
       hasAccessToTool: () => false,
+      hasEntitlement: () => false,
+      hasFeatureAccess: () => false,
+      getEffectiveEntitlements: () => [],
       isSubscriptionActive: () => false,
       getPlanDetails: () => null,
 

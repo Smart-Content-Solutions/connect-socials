@@ -78,25 +78,59 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: "Invalid JSON body" });
     }
 
-    const { userId, role } = body;
-    const allowedRoles = ["admin", "early_access", "user"];
+    const { userId, role, base_tier, addEntitlement, removeEntitlement } = body;
+    const allowedRoles = ["admin", "early_access", "user", "free"];
 
     if (!userId || typeof userId !== "string") {
       return res.status(400).json({ error: "Missing or invalid userId" });
     }
-    if (!role || typeof role !== "string" || !allowedRoles.includes(role)) {
-      return res.status(400).json({ error: "Invalid role" });
+
+    // Get current user data
+    const targetUser = await clerkClient.users.getUser(userId);
+    const currentMetadata = targetUser.publicMetadata || {};
+
+    // Build new metadata
+    const newMetadata: any = {
+      ...currentMetadata,
+    };
+
+    // Handle base_tier or role update
+    if (base_tier && allowedRoles.includes(base_tier)) {
+      newMetadata.base_tier = base_tier;
+      newMetadata.role = base_tier; // Backward compatibility
+    } else if (role && allowedRoles.includes(role)) {
+      newMetadata.base_tier = role;
+      newMetadata.role = role; // Backward compatibility
+    }
+
+    // Ensure entitlements array exists
+    if (!newMetadata.entitlements) {
+      newMetadata.entitlements = [];
+    }
+
+    // Handle entitlement modifications
+    if (addEntitlement && typeof addEntitlement === "string") {
+      if (!newMetadata.entitlements.includes(addEntitlement)) {
+        newMetadata.entitlements.push(addEntitlement);
+      }
+    }
+    if (removeEntitlement && typeof removeEntitlement === "string") {
+      newMetadata.entitlements = newMetadata.entitlements.filter(
+        (e: string) => e !== removeEntitlement
+      );
     }
 
     const updated = await clerkClient.users.updateUser(userId, {
-      publicMetadata: { role },
+      publicMetadata: newMetadata,
     });
 
     return res.status(200).json({
       ok: true,
       user: {
         id: updated.id,
+        base_tier: updated.publicMetadata?.base_tier ?? "free",
         role: updated.publicMetadata?.role ?? "user",
+        entitlements: updated.publicMetadata?.entitlements ?? [],
       },
     });
   } catch (err: any) {

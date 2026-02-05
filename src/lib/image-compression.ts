@@ -1,6 +1,17 @@
 import heic2any from 'heic2any';
 
 /**
+ * Compresses multiple image files in parallel.
+ * - Max width/height: 1920px
+ * - Quality: 0.8
+ * - Format: JPEG (for optimal compression)
+ * - Returns original files if they're already small or compression fails
+ */
+export async function compressImages(files: File[]): Promise<File[]> {
+    return Promise.all(files.map(file => compressImage(file)));
+}
+
+/**
  * Compresses and resizes an image file to ensure efficient upload.
  * - Max width/height: 1920px
  * - Quality: 0.8

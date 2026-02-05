@@ -4,11 +4,14 @@ import { Navigate } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Lock, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { hasEntitlement, hasAccessToFeature, FEATURE_ENTITLEMENTS } from "@/lib/entitlements";
 
 interface RoleProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: "admin" | "early_access" | "user";
   allowedRoles?: Array<"admin" | "early_access" | "user">;
+  requiredEntitlement?: string;
+  requiredFeature?: keyof typeof FEATURE_ENTITLEMENTS;
 }
 
 /**
@@ -44,16 +47,25 @@ export default function RoleProtectedRoute({
     return <Navigate to="/login" replace />;
   }
 
-  // Get user's role from public metadata
+  // Get user's role and entitlements from public metadata
   const userRole = (user?.publicMetadata?.role as string) || "user";
+  const baseTier = (user?.publicMetadata?.base_tier as string) || userRole || "free";
+  const entitlements = (user?.publicMetadata?.entitlements as string[]) || [];
 
   // Check if user has required access
   let hasAccess = false;
 
-  if (requiredRole) {
-    hasAccess = userRole === requiredRole;
+  if (requiredEntitlement) {
+    // New entitlement-based check
+    hasAccess = hasEntitlement(entitlements, baseTier, requiredEntitlement);
+  } else if (requiredFeature) {
+    // Feature-based check
+    hasAccess = hasAccessToFeature(entitlements, baseTier, requiredFeature);
+  } else if (requiredRole) {
+    // Backward compatible role check
+    hasAccess = baseTier === requiredRole || userRole === requiredRole;
   } else if (allowedRoles && allowedRoles.length > 0) {
-    hasAccess = allowedRoles.includes(userRole as any);
+    hasAccess = allowedRoles.includes(baseTier as any) || allowedRoles.includes(userRole as any);
   } else {
     // No role requirement specified, allow access
     hasAccess = true;
@@ -79,7 +91,7 @@ export default function RoleProtectedRoute({
             This tool is available exclusively to Early Access subscribers
           </p>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700">
             <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
