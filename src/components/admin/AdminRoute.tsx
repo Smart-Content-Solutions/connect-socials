@@ -22,8 +22,10 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     return <Navigate to="/login" replace />;
   }
 
-  // Check for admin role in publicMetadata
-  const isAdmin = user?.publicMetadata?.role === "admin";
+  // Check for admin role in publicMetadata (support both role and base_tier fields)
+  const isAdmin =
+    user?.publicMetadata?.role === "admin" ||
+    user?.publicMetadata?.base_tier === "admin";
 
   if (!isAdmin) {
     toast.error("Unauthorized Access: Admins only.");

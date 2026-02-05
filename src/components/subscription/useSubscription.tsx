@@ -70,7 +70,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     if (isSignedIn && clerkUser) {
       const subscriptionUser: UserSubscription = {
         base_tier:
-          (clerkUser.publicMetadata?.base_tier as "admin" | "pro" | "early_access" | "free") || "free",
+          (clerkUser.publicMetadata?.role === "admin" ? "admin" :
+            (clerkUser.publicMetadata?.base_tier as "admin" | "pro" | "early_access" | "free")) || "free",
         entitlements:
           (clerkUser.publicMetadata?.entitlements as string[]) || [],
         subscription_plan:
@@ -107,7 +108,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
     const subscriptionUser: UserSubscription = {
       base_tier:
-        (clerkUser.publicMetadata?.base_tier as "admin" | "pro" | "early_access" | "free") || "free",
+        (clerkUser.publicMetadata?.role === "admin" ? "admin" :
+          (clerkUser.publicMetadata?.base_tier as "admin" | "pro" | "early_access" | "free")) || "free",
       entitlements:
         (clerkUser.publicMetadata?.entitlements as string[]) || [],
       subscription_plan:
