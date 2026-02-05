@@ -54,8 +54,8 @@ export default function ToolPageTemplate({ tool }: ToolPageTemplateProps) {
   const userPlan = (user?.subscription_plan as string) || "none";
 
   // ✅ CLERK-SAFE ADMIN CHECK & EARLY ACCESS CHECK
-  const isAdmin = user?.role === "admin";
-  const isEarlyAccess = user?.role === "early_access";
+  const isAdmin = user?.base_tier === "admin";
+  const isEarlyAccess = user?.base_tier === "early_access";
 
   // ✅ Special case: early_access users can access Social Media, WordPress, and AI Agent tools
   const isAllowedForEarlyAccess = [

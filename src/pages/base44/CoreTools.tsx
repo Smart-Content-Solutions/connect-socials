@@ -16,7 +16,7 @@ export default function CoreTools() {
   const [selectedTool, setSelectedTool] = useState<string>("");
 
   const { user } = useSubscription();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.base_tier === "admin";
 
   // ✅ ✅ ✅ FIX: RECEIVE FULL TOOL OBJECT, NOT STRING
   const handleUnlock = (tool: ToolType) => {
@@ -105,9 +105,8 @@ export default function CoreTools() {
 
               <div className="relative">
                 <div
-                  className={`aspect-video rounded-2xl bg-[#1A1A1C] ${
-                    !isAdmin ? "locked-blur" : ""
-                  }`}
+                  className={`aspect-video rounded-2xl bg-[#1A1A1C] ${!isAdmin ? "locked-blur" : ""
+                    }`}
                 >
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="w-16 h-16 rounded-full metallic-gradient flex items-center justify-center">

@@ -27,8 +27,8 @@ export default function LockedToolCard({
 }: LockedToolCardProps): JSX.Element {
   const { hasAccessToTool, user } = useSubscription();
 
-  const isAdmin = user?.role === "admin";
-  const isEarlyAccess = user?.role === "early_access";
+  const isAdmin = user?.base_tier === "admin";
+  const isEarlyAccess = user?.base_tier === "early_access";
 
   // ✅ Special case: early_access users can access Social Media, WordPress, and AI Agent tools
   const isAllowedForEarlyAccess = [
@@ -91,8 +91,8 @@ export default function LockedToolCard({
               <h3 className="font-semibold text-white">{title}</h3>
               <span
                 className={`text-[10px] px-2 py-0.5 rounded-full ${tier === "Corporate"
-                    ? "bg-[#E1C37A]/20 text-[#E1C37A]"
-                    : "bg-[#D6D7D8]/20 text-[#D6D7D8]"
+                  ? "bg-[#E1C37A]/20 text-[#E1C37A]"
+                  : "bg-[#D6D7D8]/20 text-[#D6D7D8]"
                   }`}
               >
                 {tier}

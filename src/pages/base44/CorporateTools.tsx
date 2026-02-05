@@ -16,7 +16,7 @@ export default function CorporateTools() {
   const [selectedTool, setSelectedTool] = useState<string>("");
 
   const { user } = useSubscription();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.base_tier === "admin";
 
   // ✅ ✅ ✅ FIX: RECEIVE TOOL OBJECT, EXTRACT STRING
   const handleUnlock = (tool: ToolType) => {
