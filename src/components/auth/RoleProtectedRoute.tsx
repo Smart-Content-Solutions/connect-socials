@@ -27,6 +27,8 @@ export default function RoleProtectedRoute({
   children,
   requiredRole,
   allowedRoles,
+  requiredEntitlement,
+  requiredFeature,
 }: RoleProtectedRouteProps) {
   const { user, isLoaded, isSignedIn } = useUser();
 
