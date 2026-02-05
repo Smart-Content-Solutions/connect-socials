@@ -74,8 +74,9 @@ export default function CreatePostContent(): JSX.Element {
   const [postMode, setPostMode] = useState("publish");
   const [scheduledTime, setScheduledTime] = useState("");
 
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
+  const [videoFiles, setVideoFiles] = useState<File[]>([]);
+  const [instagramPostType, setInstagramPostType] = useState<"reel" | "feed" | "story">("reel");
 
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -104,14 +105,25 @@ export default function CreatePostContent(): JSX.Element {
     mastodon: false
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0];
-    if (f) {
-      setImageFile(f);
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(String(reader.result));
-      reader.readAsDataURL(f);
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newFiles = Array.from(files);
+      setVideoFiles((prev) => [...prev, ...newFiles]);
+
+      newFiles.forEach((file) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setVideoPreviews((prev) => [...prev, String(reader.result)]);
+        };
+        reader.readAsDataURL(file);
+      });
     }
+  };
+
+  const removeVideo = (index: number) => {
+    setVideoFiles((prev) => prev.filter((_, i) => i !== index));
+    setVideoPreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
   const isSelected = (id: string) => selectedPlatforms.includes(id);
@@ -154,11 +166,22 @@ export default function CreatePostContent(): JSX.Element {
     console.log("============================");
 
 
-    if (imageFile) {
-      form.append("image", imageFile);
+    // Add Instagram post type selection
+    if (selectedPlatforms.includes("instagram")) {
+      form.append("instagram_post_types", JSON.stringify({
+        feed: instagramPostType === "feed",
+        reel: instagramPostType === "reel",
+        story: instagramPostType === "story"
+      }));
     }
 
-    const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook/social-media", {
+    if (videoFiles.length > 0) {
+      videoFiles.forEach((f, i) => {
+        form.append(`video[${i}]`, f);
+      });
+    }
+
+    const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video", {
       method: "POST",
       body: form
     });
@@ -190,8 +213,8 @@ export default function CreatePostContent(): JSX.Element {
       await sendToBackend();
       setIsSuccess(true);
       setCaption("");
-      setImagePreview(null);
-      setImageFile(null);
+      setVideoPreviews([]);
+      setVideoFiles([]);
       setSelectedPlatforms([]);
       setTimeout(() => setIsSuccess(false), 3000);
     } catch (err: any) {
@@ -251,13 +274,12 @@ export default function CreatePostContent(): JSX.Element {
                   key={p.id}
                   disabled={!connected}
                   onClick={() => togglePlatform(p.id)}
-                  className={`p-3 rounded-xl border transition ${
-                    !connected
+                  className={`p-3 rounded-xl border transition ${!connected
                       ? "opacity-50 cursor-not-allowed bg-gray-100"
                       : selected
-                      ? "scale-105 bg-white shadow-md border-blue-500"
-                      : "bg-white hover:shadow-sm"
-                  }`}
+                        ? "scale-105 bg-white shadow-md border-blue-500"
+                        : "bg-white hover:shadow-sm"
+                    }`}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`${p.bgColor} w-10 h-10 rounded-lg flex items-center justify-center`}>
@@ -293,34 +315,54 @@ export default function CreatePostContent(): JSX.Element {
               <Switch checked={aiEnhance} onCheckedChange={setAiEnhance} />
             </div>
 
-            <div>
-              <Label>Optional Image</Label>
-              <div className="border-2 border-dashed p-4 rounded">
-                {imagePreview ? (
-                  <div className="relative inline-block">
-                    <img src={imagePreview} className="max-h-48 rounded" alt="Preview" />
-                    <button
-                      onClick={() => {
-                        setImageFile(null);
-                        setImagePreview(null);
-                      }}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full px-2"
+            {selectedPlatforms.includes("instagram") && (
+              <div>
+                <Label>Instagram Post Type</Label>
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {(["reel", "feed", "story"] as const).map((type) => (
+                    <Button
+                      key={type}
+                      type="button"
+                      variant={instagramPostType === type ? "default" : "outline"}
+                      onClick={() => setInstagramPostType(type)}
+                      className="capitalize"
                     >
-                      x
-                    </button>
-                  </div>
-                ) : (
-                  <label className="cursor-pointer block text-center">
-                    <input
-                      type="file"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                    />
-                    <Upload className="w-8 h-8 mx-auto text-gray-400" />
-                    <p>Click to upload</p>
-                  </label>
-                )}
+                      {type}s
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Label>Videos (Carousel supported for Instagram)</Label>
+              <div className="border-2 border-dashed p-4 rounded mt-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                  {videoPreviews.map((preview, index) => (
+                    <div key={index} className="relative aspect-video bg-black rounded overflow-hidden">
+                      <video src={preview} className="w-full h-full object-cover" />
+                      <button
+                        onClick={() => removeVideo(index)}
+                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <label className="cursor-pointer block text-center py-4 border-2 border-blue-100 bg-blue-50/50 rounded-lg hover:bg-blue-50 transition">
+                  <input
+                    type="file"
+                    className="hidden"
+                    accept="video/*"
+                    multiple
+                    onChange={handleVideoUpload}
+                  />
+                  <Upload className="w-8 h-8 mx-auto text-blue-500 mb-2" />
+                  <p className="text-sm font-medium text-gray-700">Add Videos</p>
+                  <p className="text-xs text-gray-500 mt-1">Click to browse your files</p>
+                </label>
               </div>
             </div>
 
@@ -350,8 +392,8 @@ export default function CreatePostContent(): JSX.Element {
                 variant="outline"
                 onClick={() => {
                   setCaption("");
-                  setImagePreview(null);
-                  setImageFile(null);
+                  setVideoPreviews([]);
+                  setVideoFiles([]);
                   setSelectedPlatforms([]);
                 }}
               >
