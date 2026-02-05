@@ -102,7 +102,7 @@ export default function HeroSection(): JSX.Element {
                   <ArrowRight className="w-5 h-5" />
                 </Link>
 
-                <Link to="/pro" className="btn-outline px-8 py-4 rounded-full font-medium">
+                <Link to="/pricing" className="btn-outline px-8 py-4 rounded-full font-medium">
                   View Pricing
                 </Link>
               </motion.div>
