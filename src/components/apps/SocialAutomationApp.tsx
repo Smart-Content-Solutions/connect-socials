@@ -144,6 +144,7 @@ export default function SocialMediaTool() {
 
   // AI & Preview State
   const [tone, setTone] = useState("Professional");
+  const [customTone, setCustomTone] = useState("");
   const [previewText, setPreviewText] = useState("");
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
@@ -182,7 +183,7 @@ export default function SocialMediaTool() {
       const form = new FormData();
       form.append("user_id", user?.id || "");
       form.append("caption", caption);
-      form.append("tone", tone);
+      form.append("tone", tone === "Custom" ? customTone : tone);
       form.append("preview", "true");
       form.append("use_ai", "yes");
 
@@ -768,7 +769,7 @@ export default function SocialMediaTool() {
     form.append("post_mode", postMode);
     form.append("use_ai", aiEnhance ? "yes" : "no");
     if (aiEnhance) {
-      form.append("tone", tone);
+      form.append("tone", tone === "Custom" ? customTone : tone);
     }
     // Explicitly for image flow
     form.append("type", "image");
@@ -821,7 +822,7 @@ export default function SocialMediaTool() {
     // AI enhance might not be implemented for video yet, but we'll send the flag just in case the workflow supports it later
     form.append("use_ai", aiEnhance ? "yes" : "no");
     if (aiEnhance) {
-      form.append("tone", tone);
+      form.append("tone", tone === "Custom" ? customTone : tone);
     }
     form.append("type", "video");
 
@@ -1831,6 +1832,25 @@ export default function SocialMediaTool() {
                         <option key={t} value={t}>{t}</option>
                       ))}
                     </select>
+
+                    <AnimatePresence>
+                      {tone === 'Custom' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <input
+                            placeholder="Describe your custom tone..."
+                            className="w-full bg-[#2C2C2E] border border-white/10 rounded-xl px-4 py-3 text-[#D6D7D8] focus:outline-none focus:border-[#E1C37A]/50 mt-2 text-sm placeholder:text-[#5B5C60]"
+                            value={customTone}
+                            onChange={(e) => setCustomTone(e.target.value)}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   <div className="space-y-2">
@@ -2567,6 +2587,25 @@ export default function SocialMediaTool() {
                         <option key={t} value={t}>{t}</option>
                       ))}
                     </select>
+
+                    <AnimatePresence>
+                      {tone === 'Custom' && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <input
+                            placeholder="Describe your custom tone..."
+                            className="w-full bg-[#2C2C2E] border border-white/10 rounded-xl px-4 py-3 text-[#D6D7D8] focus:outline-none focus:border-[#E1C37A]/50 mt-2 text-sm placeholder:text-[#5B5C60]"
+                            value={customTone}
+                            onChange={(e) => setCustomTone(e.target.value)}
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   <div className="space-y-2">
