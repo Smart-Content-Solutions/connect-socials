@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useUser } from '@clerk/clerk-react';
+import { useUser, useAuth } from '@clerk/clerk-react';
 import {
   Users,
   Shield,
@@ -63,6 +63,7 @@ const AVAILABLE_ENTITLEMENTS = [
 
 export default function UsersPage() {
   const { user: currentUser } = useUser();
+  const { getToken } = useAuth();
   const [users, setUsers] = useState<ClerkUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,7 +79,7 @@ export default function UsersPage() {
       setLoading(true);
       const response = await fetch('/api/admin-list-users', {
         headers: {
-          Authorization: `Bearer ${await currentUser?.getToken()}`,
+          Authorization: `Bearer ${await getToken()}`,
         },
       });
 
@@ -103,7 +104,7 @@ export default function UsersPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${await currentUser?.getToken()}`,
+          Authorization: `Bearer ${await getToken()}`,
         },
         body: JSON.stringify({
           userId,
@@ -136,7 +137,7 @@ export default function UsersPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${await currentUser?.getToken()}`,
+          Authorization: `Bearer ${await getToken()}`,
         },
         body: JSON.stringify({
           userId,

@@ -18,12 +18,16 @@ export function UpcomingCallsCard() {
           .limit(3);
 
         if (error) {
-          if (error.code !== '42P01') console.error("Error fetching calls:", error);
+          // Silently ignore if table doesn't exist (404 or PGRST116 error)
+          if (error.code === '42P01' || error.code === 'PGRST116') {
+            return;
+          }
+          console.error("Error fetching calls:", error);
           return;
         }
         if (data) setCalls(data);
       } catch (e) {
-        // ignore if table doesn't exist
+        // Silently ignore if table doesn't exist
       }
     }
     fetchCalls();

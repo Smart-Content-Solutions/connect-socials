@@ -46,7 +46,10 @@ export function StrategyCallsTable() {
         .order('preferred_time', { ascending: false });
 
       if (error) {
-        if (error.code !== '42P01') console.error("Error fetching calls:", error);
+        // Silently ignore if table doesn't exist (404 or PGRST116 error)
+        if (error.code !== '42P01' && error.code !== 'PGRST116') {
+          console.error("Error fetching calls:", error);
+        }
       } else if (data) {
         const mappedCalls: StrategyCall[] = data.map(dbCall => ({
           id: dbCall.id,
