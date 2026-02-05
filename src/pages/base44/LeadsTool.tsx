@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Card, CardContent } from "@/components/ui/card";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 import { Loader2, Phone, Users, TrendingUp } from "lucide-react";
 import {
   LineChart,
@@ -14,11 +14,6 @@ import {
   Pie,
   Cell
 } from "recharts";
-
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
 
 export default function LeadsTool() {
   const [leads, setLeads] = useState<any[]>([]);

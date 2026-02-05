@@ -7,8 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useUser, SignIn } from "@clerk/clerk-react";
 import SocialAutomationApp from "./components/apps/SocialAutomationApp";
 
-// ✅ ✅ ✅ ADD THIS IMPORT
-import { SubscriptionProvider } from "./components/subscription/useSubscription";
+
 
 // ✅ Layout
 import Layout from "./pages/base44/Layout";
@@ -105,378 +104,377 @@ const App = () => (
       <Toaster />
       <Sonner />
 
-      {/* ✅ ✅ ✅ THIS IS THE CRITICAL FIX */}
-      <SubscriptionProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* ✅ PUBLIC MARKETING */}
-            <Route
-              path="/"
-              element={
-                <Layout>
-                  <Home />
-                </Layout>
-              }
-            />
-            <Route
-              path="/home"
-              element={
-                <Layout>
-                  <Home />
-                </Layout>
-              }
-            />
-            <Route
-              path="/about"
-              element={
-                <Layout>
-                  <About />
-                </Layout>
-              }
-            />
-            <Route
-              path="/services"
-              element={
-                <Layout>
-                  <Services />
-                </Layout>
-              }
-            />
-            <Route
-              path="/packages"
-              element={
-                <Layout>
-                  <Packages />
-                </Layout>
-              }
-            />
-            <Route
-              path="/portfolio"
-              element={
-                <Layout>
-                  <Portfolio />
-                </Layout>
-              }
-            />
-            <Route
-              path="/contact"
-              element={
-                <Layout>
-                  <Contact />
-                </Layout>
-              }
-            />
-            <Route
-              path="/resources"
-              element={
-                <Layout>
-                  <Resources />
-                </Layout>
-              }
-            />
-            <Route
-              path="/blog"
-              element={
-                <Layout>
-                  <Blog />
-                </Layout>
-              }
-            />
-            <Route
-              path="/blog/:slug"
-              element={
-                <Layout>
-                  <BlogPost />
-                </Layout>
-              }
-            />
 
-            {/* ✅ PLATFORM ROUTES */}
-            <Route
-              path="/dashboard-preview"
-              element={
-                <Layout>
-                  <DashboardPreview />
-                </Layout>
-              }
-            />
-            <Route
-              path="/core-tools"
-              element={
-                <Layout>
-                  <CoreTools />
-                </Layout>
-              }
-            />
-            <Route
-              path="/corporate-tools"
-              element={
-                <Layout>
-                  <CorporateTools />
-                </Layout>
-              }
-            />
-            <Route
-              path="/pricing"
-              element={
-                <Layout>
-                  <Pricing />
-                </Layout>
-              }
-            />
-            <Route
-              path="/tool"
-              element={
-                <Layout>
-                  <Tool />
-                </Layout>
-              }
-            />
-            <Route
-              path="/subscription-success"
-              element={
-                <Layout>
-                  <SubscriptionSuccess />
-                </Layout>
-              }
-            />
-            <Route
-              path="/privacy"
-              element={
-                <Layout>
-                  <Privacy />
-                </Layout>
-              }
-            />
-            <Route
-              path="/terms"
-              element={
-                <Layout>
-                  <Terms />
-                </Layout>
-              }
-            />
+      <BrowserRouter>
+        <Routes>
+          {/* ✅ PUBLIC MARKETING */}
+          <Route
+            path="/"
+            element={
+              <Layout>
+                <Home />
+              </Layout>
+            }
+          />
+          <Route
+            path="/home"
+            element={
+              <Layout>
+                <Home />
+              </Layout>
+            }
+          />
+          <Route
+            path="/about"
+            element={
+              <Layout>
+                <About />
+              </Layout>
+            }
+          />
+          <Route
+            path="/services"
+            element={
+              <Layout>
+                <Services />
+              </Layout>
+            }
+          />
+          <Route
+            path="/packages"
+            element={
+              <Layout>
+                <Packages />
+              </Layout>
+            }
+          />
+          <Route
+            path="/portfolio"
+            element={
+              <Layout>
+                <Portfolio />
+              </Layout>
+            }
+          />
+          <Route
+            path="/contact"
+            element={
+              <Layout>
+                <Contact />
+              </Layout>
+            }
+          />
+          <Route
+            path="/resources"
+            element={
+              <Layout>
+                <Resources />
+              </Layout>
+            }
+          />
+          <Route
+            path="/blog"
+            element={
+              <Layout>
+                <Blog />
+              </Layout>
+            }
+          />
+          <Route
+            path="/blog/:slug"
+            element={
+              <Layout>
+                <BlogPost />
+              </Layout>
+            }
+          />
 
-            {/* ✅ NEW: Stripe success & cancel routes */}
-            <Route
-              path="/success"
-              element={
-                <Layout>
-                  <SuccessPage />
-                </Layout>
-              }
-            />
-            <Route
-              path="/cancel"
-              element={
-                <Layout>
-                  <CancelPage />
-                </Layout>
-              }
-            />
+          {/* ✅ PLATFORM ROUTES */}
+          <Route
+            path="/dashboard-preview"
+            element={
+              <Layout>
+                <DashboardPreview />
+              </Layout>
+            }
+          />
+          <Route
+            path="/core-tools"
+            element={
+              <Layout>
+                <CoreTools />
+              </Layout>
+            }
+          />
+          <Route
+            path="/corporate-tools"
+            element={
+              <Layout>
+                <CorporateTools />
+              </Layout>
+            }
+          />
+          <Route
+            path="/pricing"
+            element={
+              <Layout>
+                <Pricing />
+              </Layout>
+            }
+          />
+          <Route
+            path="/tool"
+            element={
+              <Layout>
+                <Tool />
+              </Layout>
+            }
+          />
+          <Route
+            path="/subscription-success"
+            element={
+              <Layout>
+                <SubscriptionSuccess />
+              </Layout>
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <Layout>
+                <Privacy />
+              </Layout>
+            }
+          />
+          <Route
+            path="/terms"
+            element={
+              <Layout>
+                <Terms />
+              </Layout>
+            }
+          />
 
-            {/* ✅ PLANS */}
-            <Route
-              path="/starter"
-              element={
-                <Layout>
-                  <StarterPlan />
-                </Layout>
-              }
-            />
-            <Route
-              path="/pro"
-              element={
-                <Layout>
-                  <ProPlan />
-                </Layout>
-              }
-            />
-            <Route
-              path="/checkout"
-              element={
-                <Layout>
-                  <StripeCheckout />
-                </Layout>
-              }
-            />
+          {/* ✅ NEW: Stripe success & cancel routes */}
+          <Route
+            path="/success"
+            element={
+              <Layout>
+                <SuccessPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/cancel"
+            element={
+              <Layout>
+                <CancelPage />
+              </Layout>
+            }
+          />
 
-            {/* ✅ AUTH */}
-            <Route path="/login/*" element={<Login />} />
+          {/* ✅ PLANS */}
+          <Route
+            path="/starter"
+            element={
+              <Layout>
+                <StarterPlan />
+              </Layout>
+            }
+          />
+          <Route
+            path="/pro"
+            element={
+              <Layout>
+                <ProPlan />
+              </Layout>
+            }
+          />
+          <Route
+            path="/checkout"
+            element={
+              <Layout>
+                <StripeCheckout />
+              </Layout>
+            }
+          />
 
-            <Route path="/sign-up/*" element={<SignupPage />} />
+          {/* ✅ AUTH */}
+          <Route path="/login/*" element={<Login />} />
 
-            {/* ✅ PROTECTED DASHBOARD */}
-            <Route
-              path="/social-posts"
-              element={
-                <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
-                    <SocialMediaTool />
-                  </RoleProtectedRoute>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/leads-calls"
-              element={
-                <ProtectedRoute>
-                  <LeadsTool />
-                </ProtectedRoute>
-              }
-            />
+          <Route path="/sign-up/*" element={<SignupPage />} />
 
-            {/* ✅ ADMIN ROUTES */}
-            <Route
-              path="/planner/*"
-              element={
-                <AdminRoute>
-                  <PlannerApp />
-                </AdminRoute>
-              }
-            />
+          {/* ✅ PROTECTED DASHBOARD */}
+          <Route
+            path="/social-posts"
+            element={
+              <ProtectedRoute>
+                <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
+                  <SocialMediaTool />
+                </RoleProtectedRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leads-calls"
+            element={
+              <ProtectedRoute>
+                <LeadsTool />
+              </ProtectedRoute>
+            }
+          />
 
+          {/* ✅ ADMIN ROUTES */}
+          <Route
+            path="/planner/*"
+            element={
+              <AdminRoute>
+                <PlannerApp />
+              </AdminRoute>
+            }
+          />
 
 
-            {/* ✅ ADMIN TICKET DETAIL (before catch-all admin route) */}
-            <Route
-              path="/admin/tickets/:id"
-              element={
-                <AdminRoute>
-                  <AdminLayout />
-                </AdminRoute>
-              }
-            />
 
-            <Route
-              path="/admin/*"
-              element={
-                <AdminRoute>
-                  <AdminLayout />
-                </AdminRoute>
-              }
-            />
+          {/* ✅ ADMIN TICKET DETAIL (before catch-all admin route) */}
+          <Route
+            path="/admin/tickets/:id"
+            element={
+              <AdminRoute>
+                <AdminLayout />
+              </AdminRoute>
+            }
+          />
 
-            <Route
-              path="/account"
-              element={
-                <ProtectedRoute>
+          <Route
+            path="/admin/*"
+            element={
+              <AdminRoute>
+                <AdminLayout />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/account"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Account />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ✅ SUPPORT TICKETS */}
+          <Route
+            path="/support"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <MyTickets />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/support/new"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <NewTicket />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/support/:id"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <TicketDetail />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ✅ FIXED TOOL APP ROUTE */}
+          <Route
+            path="/apps/social-automation"
+            element={
+              <ProtectedRoute>
+                <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
                   <Layout>
-                    <Account />
+                    <SocialAutomationApp />
                   </Layout>
-                </ProtectedRoute>
-              }
-            />
-
-            {/* ✅ SUPPORT TICKETS */}
-            <Route
-              path="/support"
-              element={
-                <ProtectedRoute>
+                </RoleProtectedRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/apps/wordpress-seo"
+            element={
+              <ProtectedRoute>
+                <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
                   <Layout>
-                    <MyTickets />
+                    <WordpressAutomationApp />
                   </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/support/new"
-              element={
-                <ProtectedRoute>
+                </RoleProtectedRoute>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/apps/ai-agent"
+            element={
+              <ProtectedRoute>
+                <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
                   <Layout>
-                    <NewTicket />
+                    <AIAgentTool />
                   </Layout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/support/:id"
-              element={
-                <ProtectedRoute>
-                  <Layout>
-                    <TicketDetail />
-                  </Layout>
-                </ProtectedRoute>
-              }
-            />
-
-            {/* ✅ FIXED TOOL APP ROUTE */}
-            <Route
-              path="/apps/social-automation"
-              element={
-                <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
-                    <Layout>
-                      <SocialAutomationApp />
-                    </Layout>
-                  </RoleProtectedRoute>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/apps/wordpress-seo"
-              element={
-                <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
-                    <Layout>
-                      <WordpressAutomationApp />
-                    </Layout>
-                  </RoleProtectedRoute>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/apps/ai-agent"
-              element={
-                <ProtectedRoute>
-                  <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
-                    <Layout>
-                      <AIAgentTool />
-                    </Layout>
-                  </RoleProtectedRoute>
-                </ProtectedRoute>
-              }
-            />
+                </RoleProtectedRoute>
+              </ProtectedRoute>
+            }
+          />
 
 
-            {/* ✅ OAUTH */}
-            <Route
-              path="/linkedin/callback"
-              element={
-                <ProtectedRoute>
-                  <LinkedInCallback />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/linkedin/create-post"
-              element={
-                <ProtectedRoute>
-                  <CreatePost />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/facebook/callback"
-              element={<FacebookCallback />}
-            />
-            <Route
-              path="/instagram/callback"
-              element={<InstagramCallback />}
-            />
-            <Route path="/tiktok/callback" element={<TikTokCallback />} />
+          {/* ✅ OAUTH */}
+          <Route
+            path="/linkedin/callback"
+            element={
+              <ProtectedRoute>
+                <LinkedInCallback />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/linkedin/create-post"
+            element={
+              <ProtectedRoute>
+                <CreatePost />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/facebook/callback"
+            element={<FacebookCallback />}
+          />
+          <Route
+            path="/instagram/callback"
+            element={<InstagramCallback />}
+          />
+          <Route path="/tiktok/callback" element={<TikTokCallback />} />
 
-            {/* ✅ 404 */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          {/* ✅ 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
 
-          {/* ✅ Global Feedback Prompt */}
-          <FeedbackPrompt />
+        {/* ✅ Global Feedback Prompt */}
+        <FeedbackPrompt />
 
-          {/* ✅ AI Support Agent */}
-          <SupportChat />
-        </BrowserRouter>
-      </SubscriptionProvider>
+        {/* ✅ AI Support Agent */}
+        <SupportChat />
+      </BrowserRouter>
+
     </TooltipProvider>
   </QueryClientProvider>
 );

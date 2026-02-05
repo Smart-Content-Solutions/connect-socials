@@ -8,4 +8,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error("Missing AI Agent Supabase environment variables");
 }
 
-export const aiAgentSupabase = createClient(supabaseUrl, supabaseAnonKey);
+export const aiAgentSupabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+        storage: localStorage,
+        persistSession: true,
+        autoRefreshToken: true,
+    }
+});
