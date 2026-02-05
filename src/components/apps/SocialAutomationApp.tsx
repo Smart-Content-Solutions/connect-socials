@@ -199,7 +199,7 @@ export default function SocialMediaTool() {
       // Use correct webhook based on active tool (Image or Video)
       const isVideo = activeTab === 'video';
       const webhookUrl = isVideo
-        ? "https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video"
+        ? "https://n8n.smartcontentsolutions.co.uk/webhook-test/social-media-video"
         : "https://n8n.smartcontentsolutions.co.uk/webhook/social-media";
 
       const res = await fetch(webhookUrl, {
@@ -948,10 +948,10 @@ export default function SocialMediaTool() {
     }
 
     // NEW ENDPOINT for video
-    console.log("SENDING VIDEO TO:", "https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video");
+    console.log("SENDING VIDEO TO:", "https://n8n.smartcontentsolutions.co.uk/webhook-test/social-media-video");
 
     try {
-      const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video", {
+      const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook-test/social-media-video", {
         method: "POST",
         body: form
       });
