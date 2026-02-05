@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useUser, SignIn, SignUp } from "@clerk/clerk-react";
+import { useUser, SignIn } from "@clerk/clerk-react";
 import SocialAutomationApp from "./components/apps/SocialAutomationApp";
 
 // ✅ ✅ ✅ ADD THIS IMPORT
@@ -53,6 +53,7 @@ import TikTokCallback from "./pages/auth/TiktokCallback";
 
 // ✅ Auth
 import Login from "./pages/base44/Login";
+import SignupPage from "./pages/base44/Signup";
 
 // ✅ Other
 import NotFound from "./pages/NotFound";
@@ -303,14 +304,7 @@ const App = () => (
             {/* ✅ AUTH */}
             <Route path="/login/*" element={<Login />} />
 
-            <Route
-              path="/sign-up/*"
-              element={
-                <div className="min-h-screen flex items-center justify-center bg-[#0F0F10]">
-                  <SignUp routing="path" path="/sign-up" />
-                </div>
-              }
-            />
+            <Route path="/sign-up/*" element={<SignupPage />} />
 
             {/* ✅ PROTECTED DASHBOARD */}
             <Route
