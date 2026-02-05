@@ -9,8 +9,8 @@ function getBearerToken(req: any): string | null {
 }
 
 async function requireAdmin(req: any) {
-    const secretKey = process.env.CLERK_SECRET_KEY;
-    if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY");
+    const secretKey = process.env.CLERK_SECRET_KEY || process.env.VITE_CLERK_SECRET_KEY;
+    if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY or VITE_CLERK_SECRET_KEY");
 
     const token = getBearerToken(req);
     if (!token)
@@ -60,8 +60,10 @@ export default async function handler(req: any, res: any) {
                 offset,
             });
 
-            allUsers = allUsers.concat(response.data);
-            hasMore = response.data.length === limit;
+            // Response can be either an array or paginated object
+            const users = Array.isArray(response) ? response : (response as any).data || [];
+            allUsers = allUsers.concat(users);
+            hasMore = users.length === limit;
             offset += limit;
 
             // Safety limit to prevent infinite loops

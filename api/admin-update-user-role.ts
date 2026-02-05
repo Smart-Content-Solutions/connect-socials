@@ -34,8 +34,8 @@ async function readJsonBody(req: any): Promise<any> {
 }
 
 async function requireAdmin(req: any) {
-  const secretKey = process.env.CLERK_SECRET_KEY;
-  if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY");
+  const secretKey = process.env.CLERK_SECRET_KEY || process.env.VITE_CLERK_SECRET_KEY;
+  if (!secretKey) throw new Error("Missing CLERK_SECRET_KEY or VITE_CLERK_SECRET_KEY");
 
   const token = getBearerToken(req);
   if (!token)
@@ -53,8 +53,9 @@ async function requireAdmin(req: any) {
 
   const user = await clerkClient.users.getUser(userId);
   const role = (user.publicMetadata as any)?.role;
+  const baseTier = (user.publicMetadata as any)?.base_tier;
 
-  if (role !== "admin") {
+  if (role !== "admin" && baseTier !== "admin") {
     return { ok: false as const, status: 403, error: "Admins only" };
   }
 

@@ -25,8 +25,9 @@ async function requireAdmin(req: any) {
 
   const user = await clerkClient.users.getUser(userId);
   const role = (user.publicMetadata as any)?.role;
+  const baseTier = (user.publicMetadata as any)?.base_tier;
 
-  if (role !== "admin") {
+  if (role !== "admin" && baseTier !== "admin") {
     return { ok: false as const, status: 403, error: "Admins only" };
   }
 
@@ -58,9 +59,10 @@ export default async function handler(req: any, res: any) {
     const staff = users
       .map((u: any) => {
         const role = (u.publicMetadata as any)?.role || "user";
+        const baseTier = (u.publicMetadata as any)?.base_tier || "user";
 
         // Only include admin or staff roles
-        if (role !== "admin" && role !== "staff") {
+        if (role !== "admin" && role !== "staff" && baseTier !== "admin" && baseTier !== "staff") {
           return null;
         }
 
