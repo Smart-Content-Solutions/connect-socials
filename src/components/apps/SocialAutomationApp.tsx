@@ -3126,24 +3126,18 @@ export default function SocialMediaTool() {
                       </div>
                     </label>
 
-                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${videoPostTypes.facebook.reel
-                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
-                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                      }`}>
+                    {/* Reel option disabled - API limitation */}
+                    <div className="flex items-center gap-3 p-4 rounded-xl border bg-[#3B3C3E]/30 border-white/5 opacity-50 cursor-not-allowed">
                       <input
                         type="checkbox"
-                        checked={videoPostTypes.facebook.reel}
-                        onChange={(e) => setVideoPostTypes(prev => ({
-                          ...prev,
-                          facebook: { ...prev.facebook, reel: e.target.checked }
-                        }))}
+                        disabled
                         className="w-4 h-4 accent-[#E1C37A]"
                       />
                       <div>
-                        <p className={`text-sm font-medium ${videoPostTypes.facebook.reel ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>Reel</p>
-                        <p className="text-xs text-[#5B5C60]">Short videos</p>
+                        <p className="text-sm font-medium text-[#5B5C60]">Reel</p>
+                        <p className="text-xs text-[#5B5C60]">Not supported</p>
                       </div>
-                    </label>
+                    </div>
 
                     {/* Story option disabled - API limitation */}
                     <div className="flex items-center gap-3 p-4 rounded-xl border bg-[#3B3C3E]/30 border-white/5 opacity-50 cursor-not-allowed">
@@ -3165,7 +3159,7 @@ export default function SocialMediaTool() {
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                       </svg>
-                      Facebook Video Stories are not currently supported due to API limitations. Use Feed or Reel instead.
+                      Facebook Reels & Stories are not currently supported due to API limitations. Use Feed posts instead.
                     </p>
                   </div>
                 </div>
