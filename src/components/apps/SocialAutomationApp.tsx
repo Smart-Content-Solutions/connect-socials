@@ -976,7 +976,7 @@ export default function SocialMediaTool() {
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
         // If it's a network error/timeout, it often means the server received the data but the connection dropped.
         // As per user request, we treat this as a likely success.
-        toast.info("Your automated post should be visible within a minute.");
+        // toast.info("Your automated post should be visible within a minute.");
         return; // Proceed as success
       }
       throw error;
