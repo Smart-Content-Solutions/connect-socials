@@ -77,6 +77,7 @@ export default function CreatePostContent(): JSX.Element {
   const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
   const [videoFiles, setVideoFiles] = useState<File[]>([]);
   const [instagramPostType, setInstagramPostType] = useState<"reel" | "feed" | "story">("reel");
+  const [postToBothFeedAndStory, setPostToBothFeedAndStory] = useState(false);
 
   const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -173,6 +174,15 @@ export default function CreatePostContent(): JSX.Element {
         reel: instagramPostType === "reel",
         story: instagramPostType === "story"
       }));
+    }
+
+    // Add dual posting flag for Instagram and Facebook
+    const hasInstagramOrFacebook = selectedPlatforms.some(p => p === "instagram" || p === "facebook");
+    if (hasInstagramOrFacebook && postToBothFeedAndStory) {
+      form.append("post_to_both_feed_and_story", "true");
+    } else if (instagramPostType === "story") {
+      // If only story is selected (not dual mode)
+      form.append("is_story", "true");
     }
 
     if (videoFiles.length > 0) {
@@ -275,10 +285,10 @@ export default function CreatePostContent(): JSX.Element {
                   disabled={!connected}
                   onClick={() => togglePlatform(p.id)}
                   className={`p-3 rounded-xl border transition ${!connected
-                      ? "opacity-50 cursor-not-allowed bg-gray-100"
-                      : selected
-                        ? "scale-105 bg-white shadow-md border-blue-500"
-                        : "bg-white hover:shadow-sm"
+                    ? "opacity-50 cursor-not-allowed bg-gray-100"
+                    : selected
+                      ? "scale-105 bg-white shadow-md border-blue-500"
+                      : "bg-white hover:shadow-sm"
                     }`}
                 >
                   <div className="flex items-center gap-3">
@@ -326,11 +336,28 @@ export default function CreatePostContent(): JSX.Element {
                       variant={instagramPostType === type ? "default" : "outline"}
                       onClick={() => setInstagramPostType(type)}
                       className="capitalize"
+                      disabled={postToBothFeedAndStory}
                     >
                       {type}s
                     </Button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {(selectedPlatforms.includes("instagram") || selectedPlatforms.includes("facebook")) && (
+              <div className="flex items-center justify-between py-3 px-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                <div className="flex-1">
+                  <Label className="text-base font-semibold text-gray-900">Post to Both Feed & Story</Label>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Automatically post to both your feed and story simultaneously
+                  </p>
+                </div>
+                <Switch
+                  checked={postToBothFeedAndStory}
+                  onCheckedChange={setPostToBothFeedAndStory}
+                  className="ml-4"
+                />
               </div>
             )}
 
