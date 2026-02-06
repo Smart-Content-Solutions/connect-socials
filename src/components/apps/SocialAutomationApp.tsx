@@ -199,7 +199,7 @@ export default function SocialMediaTool() {
       // Use correct webhook based on active tool (Image or Video)
       const isVideo = activeTab === 'video';
       const webhookUrl = isVideo
-        ? "https://n8n.smartcontentsolutions.co.uk/webhook-test/social-media-video"
+        ? "https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video"
         : "https://n8n.smartcontentsolutions.co.uk/webhook/social-media";
 
       const res = await fetch(webhookUrl, {
@@ -898,7 +898,7 @@ export default function SocialMediaTool() {
       }
     }
 
-    const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook-test/social-media", {
+    const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook/social-media", {
       method: "POST",
       body: form
     });
@@ -948,10 +948,10 @@ export default function SocialMediaTool() {
     }
 
     // NEW ENDPOINT for video
-    console.log("SENDING VIDEO TO:", "https://n8n.smartcontentsolutions.co.uk/webhook-test/social-media-video");
+    console.log("SENDING VIDEO TO:", "https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video");
 
     try {
-      const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook-test/social-media-video", {
+      const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video", {
         method: "POST",
         body: form
       });
@@ -1926,6 +1926,47 @@ export default function SocialMediaTool() {
                       <X className="w-4 h-4" />
                       Clear all images
                     </button>
+
+                    {/* Multi-image Platform Info Dialog */}
+                    <div className="mt-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 16v-4" />
+                            <path d="M12 8h.01" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-blue-400 mb-1">Multi-Image Posting Information</p>
+                          <p className="text-xs text-blue-300/80 mb-2">
+                            Multi-image posting is only supported on <b>Instagram</b>, <b>LinkedIn</b>, and <b>Facebook</b>.
+                          </p>
+                          <ul className="space-y-1 text-xs text-blue-300/70">
+                            <li className="flex items-center gap-2">
+                              <Instagram className="w-3 h-3 text-pink-500" />
+                              <span>Instagram: Will be posted as a carousel</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <Linkedin className="w-3 h-3 text-blue-500" />
+                              <span>LinkedIn: Supports multiple images</span>
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <Facebook className="w-3 h-3 text-[#1877F2]" />
+                              <span>Facebook: Supports multiple images</span>
+                            </li>
+                          </ul>
+                          {selectedPlatforms.includes('bluesky') && (
+                            <div className="mt-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
+                              <p className="text-xs text-red-400 flex items-center gap-2">
+                                <Cloud className="w-3 h-3" />
+                                <b>Bluesky does not support multi-image posting.</b> Only the first image will be posted.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ) : imagePreview ? (
                   <div className="relative">
@@ -1987,7 +2028,7 @@ export default function SocialMediaTool() {
                       onClick={() => setPostAsStory(!postAsStory)}
                       className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${postAsStory ? 'bg-[#E1C37A]' : 'bg-[#4B4C4E]'}`}
                     >
-                      <span className={`absolute top-1 w-5 h-5 rounded-full bg-white transition-transform duration-300 ${postAsStory ? 'translate-x-7' : 'translate-x-1'}`} />
+                      <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 ${postAsStory ? 'translate-x-7' : 'translate-x-0'}`} />
                     </button>
                   </div>
                   {postAsStory && (
@@ -2409,19 +2450,77 @@ export default function SocialMediaTool() {
 
                         </button>
 
-                        {selectedPlatforms.includes('instagram') && videoFiles.length > 1 && (
+                        {/* Multi-video Platform Info Dialog */}
 
-                          <div className="mt-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                        <div className="mt-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
 
-                            <p className="text-xs text-blue-400">
+                          <div className="flex items-start gap-3">
 
-                              Instagram carousel with {videoFiles.length} videos. Other platforms will receive only the first video.
+                            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
 
-                            </p>
+                              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+
+                                <circle cx="12" cy="12" r="10" />
+
+                                <path d="M12 16v-4" />
+
+                                <path d="M12 8h.01" />
+
+                              </svg>
+
+                            </div>
+
+                            <div className="flex-1">
+
+                              <p className="text-sm font-medium text-blue-400 mb-1">Multi-Video Posting Information</p>
+
+                              <p className="text-xs text-blue-300/80 mb-2">
+
+                                Multi-video posting is only supported on <b>Instagram</b>. Other platforms will receive only the first video.
+
+                              </p>
+
+                              <ul className="space-y-1 text-xs text-blue-300/70">
+
+                                <li className="flex items-center gap-2">
+
+                                  <Instagram className="w-3 h-3 text-pink-500" />
+
+                                  <span>Instagram: Will be posted as a carousel with {videoFiles.length} videos</span>
+
+                                </li>
+
+                                <li className="flex items-center gap-2 text-[#5B5C60]">
+
+                                  <Facebook className="w-3 h-3 text-[#1877F2]" />
+
+                                  <span>Facebook: Only first video will be posted</span>
+
+                                </li>
+
+                                <li className="flex items-center gap-2 text-[#5B5C60]">
+
+                                  <Linkedin className="w-3 h-3 text-blue-500" />
+
+                                  <span>LinkedIn: Only first video will be posted</span>
+
+                                </li>
+
+                                <li className="flex items-center gap-2 text-[#5B5C60]">
+
+                                  <Twitter className="w-3 h-3 text-gray-400" />
+
+                                  <span>X (Twitter): Only first video will be posted</span>
+
+                                </li>
+
+                              </ul>
+
+                            </div>
 
                           </div>
 
-                        )}
+                        </div>
 
                       </div>
 
@@ -3046,24 +3145,28 @@ export default function SocialMediaTool() {
                       </div>
                     </label>
 
-                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${videoPostTypes.facebook.story
-                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
-                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                      }`}>
+                    {/* Story option disabled - API limitation */}
+                    <div className="flex items-center gap-3 p-4 rounded-xl border bg-[#3B3C3E]/30 border-white/5 opacity-50 cursor-not-allowed">
                       <input
                         type="checkbox"
-                        checked={videoPostTypes.facebook.story}
-                        onChange={(e) => setVideoPostTypes(prev => ({
-                          ...prev,
-                          facebook: { ...prev.facebook, story: e.target.checked }
-                        }))}
+                        disabled
                         className="w-4 h-4 accent-[#E1C37A]"
                       />
                       <div>
-                        <p className={`text-sm font-medium ${videoPostTypes.facebook.story ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>Story</p>
-                        <p className="text-xs text-[#5B5C60]">24hr stories</p>
+                        <p className="text-sm font-medium text-[#5B5C60]">Story</p>
+                        <p className="text-xs text-[#5B5C60]">Not supported</p>
                       </div>
-                    </label>
+                    </div>
+                  </div>
+
+                  {/* Facebook Story limitation notice */}
+                  <div className="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                    <p className="text-xs text-amber-400 flex items-center gap-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      Facebook Video Stories are not currently supported due to API limitations. Use Feed or Reel instead.
+                    </p>
                   </div>
                 </div>
               )}

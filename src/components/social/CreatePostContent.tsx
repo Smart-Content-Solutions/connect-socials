@@ -191,7 +191,7 @@ export default function CreatePostContent(): JSX.Element {
       });
     }
 
-    const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook-test/social-media-video", {
+    const res = await fetch("https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video", {
       method: "POST",
       body: form
     });
