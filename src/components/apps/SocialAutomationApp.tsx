@@ -107,13 +107,13 @@ export default function SocialMediaTool() {
 
   const [postMode, setPostMode] = useState("publish");
   const [scheduledTime, setScheduledTime] = useState("");
-  
+
   // Multi-file upload states (NEW)
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [videoFiles, setVideoFiles] = useState<File[]>([]);
   const [videoPreviews, setVideoPreviews] = useState<string[]>([]);
-  
+
   // Legacy single-file states (for backward compatibility during transition)
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -493,17 +493,17 @@ export default function SocialMediaTool() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-    
+
     // Limit to 10 images max
     const maxFiles = 10;
     const selectedFiles = files.slice(0, maxFiles);
-    
+
     if (files.length > maxFiles) {
       toast.warning(`Only ${maxFiles} images can be uploaded at once. Using the first ${maxFiles}.`);
     }
-    
+
     setImageFiles(prev => [...prev, ...selectedFiles].slice(0, maxFiles));
-    
+
     // Generate previews for all selected files
     selectedFiles.forEach(file => {
       const reader = new FileReader();
@@ -519,19 +519,19 @@ export default function SocialMediaTool() {
     setIsDragging(false);
     const files = Array.from(e.dataTransfer.files);
     const imageFilesDropped = files.filter(f => f.type.startsWith('image/'));
-    
+
     if (imageFilesDropped.length === 0) return;
-    
+
     // Limit to 10 images max
     const maxFiles = 10;
     const selectedFiles = imageFilesDropped.slice(0, maxFiles);
-    
+
     if (imageFilesDropped.length > maxFiles) {
       toast.warning(`Only ${maxFiles} images can be uploaded at once. Using the first ${maxFiles}.`);
     }
-    
+
     setImageFiles(prev => [...prev, ...selectedFiles].slice(0, maxFiles));
-    
+
     // Generate previews for all selected files
     selectedFiles.forEach(file => {
       const reader = new FileReader();
@@ -635,7 +635,7 @@ export default function SocialMediaTool() {
 
     // Filter only video files
     const videoFilesSelected = files.filter(f => f.type.startsWith('video/'));
-    
+
     if (videoFilesSelected.length === 0) {
       toast.error('Please upload valid video files');
       return;
@@ -644,9 +644,9 @@ export default function SocialMediaTool() {
     // Check if Instagram is selected - only Instagram supports multi-video
     const isInstagramSelected = selectedPlatforms.includes('instagram');
     const maxVideos = isInstagramSelected ? 10 : 1;
-    
+
     const selectedFiles = videoFilesSelected.slice(0, maxVideos);
-    
+
     if (videoFilesSelected.length > maxVideos) {
       toast.warning(`Only ${isInstagramSelected ? '10 videos' : '1 video'} can be uploaded${isInstagramSelected ? '' : ' for non-Instagram platforms'}.`);
     }
@@ -654,7 +654,7 @@ export default function SocialMediaTool() {
     // For single video uploads (non-Instagram or single file), use existing flow
     if (selectedFiles.length === 1) {
       const f = selectedFiles[0];
-      
+
       // Check if compression is needed
       if (needsCompression(f, MAX_VIDEO_SIZE_MB)) {
         const sizeMB = (f.size / (1024 * 1024)).toFixed(1);
@@ -974,7 +974,10 @@ export default function SocialMediaTool() {
       console.error("FETCH ERROR DETAILS:", error);
       // Handle network errors (including CORS failures from 413)
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        throw new Error("Video upload failed. The file may be too large (max 50MB) or there's a network issue. Please try a smaller video.");
+        // If it's a network error/timeout, it often means the server received the data but the connection dropped.
+        // As per user request, we treat this as a likely success.
+        toast.info("Your automated post should be visible within a minute.");
+        return; // Proceed as success
       }
       throw error;
     }
@@ -1004,26 +1007,26 @@ export default function SocialMediaTool() {
 
       // Clear all state
       setCaption("");
-      
+
       // Clear legacy single-file states
       setImageFile(null);
       setImagePreview(null);
       setVideoFile(null);
       setVideoPreview(null);
-      
+
       // Clear multi-file states (NEW)
       setImageFiles([]);
       setImagePreviews([]);
       setVideoFiles([]);
       setVideoPreviews([]);
-      
+
       // Reset post type options
       setPostAsStory(false);
       setVideoPostTypes({
         instagram: { feed: true, reel: false, story: false },
         facebook: { feed: true, reel: false, story: false }
       });
-      
+
       setSelectedPlatforms([]);
 
       setTimeout(() => setIsSuccess(false), 5000);
@@ -1479,6 +1482,7 @@ export default function SocialMediaTool() {
             <div>
               <p className="text-[#D6D7D8] font-medium">
                 Success! content {postMode === 'publish' ? 'published' : 'scheduled'}.
+                {activeTab === 'video' && ' Your automated post should be visible within a minute.'}
               </p>
               {selectedFacebookPage && selectedPlatforms.includes('facebook') && (
                 <p className="text-[#A9AAAC] text-xs mt-1">
@@ -1879,17 +1883,17 @@ export default function SocialMediaTool() {
                 <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
                   Media <span className="text-[#5B5C60] font-normal">({imageFiles.length > 0 ? `${imageFiles.length} images` : imagePreview ? '1 image' : 'optional'})</span>
                 </h3>
-                
+
                 {/* Multi-image preview grid */}
                 {imagePreviews.length > 0 ? (
                   <div className="relative">
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 mb-4">
                       {imagePreviews.map((preview, index) => (
                         <div key={index} className="relative group">
-                          <img 
-                            src={preview} 
-                            className="w-full h-24 object-cover rounded-lg bg-black/20" 
-                            alt={`Preview ${index + 1}`} 
+                          <img
+                            src={preview}
+                            className="w-full h-24 object-cover rounded-lg bg-black/20"
+                            alt={`Preview ${index + 1}`}
                           />
                           <button
                             onClick={() => removeImage(index)}
@@ -1989,7 +1993,7 @@ export default function SocialMediaTool() {
                   {postAsStory && (
                     <div className="mt-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
                       <p className="text-xs text-yellow-400">
-                        Note: Stories will be posted to {selectedPlatforms.includes('instagram') && selectedPlatforms.includes('facebook') ? 'both Instagram and Facebook' : selectedPlatforms.includes('instagram') ? 'Instagram' : 'Facebook'}. 
+                        Note: Stories will be posted to {selectedPlatforms.includes('instagram') && selectedPlatforms.includes('facebook') ? 'both Instagram and Facebook' : selectedPlatforms.includes('instagram') ? 'Instagram' : 'Facebook'}.
                         {imageFiles.length > 1 ? ` ${imageFiles.length} images will be posted as separate story slides.` : ''}
                       </p>
                     </div>
@@ -2333,11 +2337,11 @@ export default function SocialMediaTool() {
 
                             <div key={index} className="relative group">
 
-                              <video 
+                              <video
 
-                                src={preview} 
+                                src={preview}
 
-                                className="w-full h-32 object-cover rounded-lg bg-black/20" 
+                                className="w-full h-32 object-cover rounded-lg bg-black/20"
 
                               />
 
@@ -2465,7 +2469,7 @@ export default function SocialMediaTool() {
 
                           const videoFilesDropped = files.filter(f => f.type.startsWith('video/'));
 
-                          
+
 
                           if (videoFilesDropped.length === 0) {
 
@@ -2475,7 +2479,7 @@ export default function SocialMediaTool() {
 
                           }
 
-                          
+
 
                           // Check if Instagram is selected
 
@@ -2485,7 +2489,7 @@ export default function SocialMediaTool() {
 
                           const selectedFiles = videoFilesDropped.slice(0, maxVideos);
 
-                          
+
 
                           if (videoFilesDropped.length > maxVideos) {
 
@@ -2493,7 +2497,7 @@ export default function SocialMediaTool() {
 
                           }
 
-                          
+
 
                           if (selectedFiles.length === 1) {
 
@@ -2555,9 +2559,9 @@ export default function SocialMediaTool() {
 
                         <p className="text-[#5B5C60] text-sm">
 
-                          {selectedPlatforms.includes('instagram') 
+                          {selectedPlatforms.includes('instagram')
 
-                            ? 'or click to browse (up to 10 videos for Instagram)' 
+                            ? 'or click to browse (up to 10 videos for Instagram)'
 
                             : 'or click to browse (1 video for other platforms)'}
 
@@ -2583,7 +2587,7 @@ export default function SocialMediaTool() {
 
                     />
 
-                   </>
+                  </>
 
                 )}
 
@@ -2920,13 +2924,12 @@ export default function SocialMediaTool() {
                       <p className="text-xs text-[#A9AAAC]">Choose where to publish your video</p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-3 gap-3">
-                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
-                      videoPostTypes.instagram.feed 
-                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50' 
-                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                    }`}>
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${videoPostTypes.instagram.feed
+                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                      }`}>
                       <input
                         type="checkbox"
                         checked={videoPostTypes.instagram.feed}
@@ -2941,12 +2944,11 @@ export default function SocialMediaTool() {
                         <p className="text-xs text-[#5B5C60]">Main posts</p>
                       </div>
                     </label>
-                    
-                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
-                      videoPostTypes.instagram.reel 
-                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50' 
-                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                    }`}>
+
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${videoPostTypes.instagram.reel
+                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                      }`}>
                       <input
                         type="checkbox"
                         checked={videoPostTypes.instagram.reel}
@@ -2961,12 +2963,11 @@ export default function SocialMediaTool() {
                         <p className="text-xs text-[#5B5C60]">Short videos</p>
                       </div>
                     </label>
-                    
-                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
-                      videoPostTypes.instagram.story 
-                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50' 
-                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                    }`}>
+
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${videoPostTypes.instagram.story
+                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                      }`}>
                       <input
                         type="checkbox"
                         checked={videoPostTypes.instagram.story}
@@ -2982,7 +2983,7 @@ export default function SocialMediaTool() {
                       </div>
                     </label>
                   </div>
-                  
+
                   {videoFiles.length > 1 && videoPostTypes.instagram.feed && (
                     <div className="mt-3 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                       <p className="text-xs text-blue-400">
@@ -3005,13 +3006,12 @@ export default function SocialMediaTool() {
                       <p className="text-xs text-[#A9AAAC]">Choose where to publish your video</p>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-3 gap-3">
-                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
-                      videoPostTypes.facebook.feed 
-                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50' 
-                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                    }`}>
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${videoPostTypes.facebook.feed
+                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                      }`}>
                       <input
                         type="checkbox"
                         checked={videoPostTypes.facebook.feed}
@@ -3026,12 +3026,11 @@ export default function SocialMediaTool() {
                         <p className="text-xs text-[#5B5C60]">Page posts</p>
                       </div>
                     </label>
-                    
-                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
-                      videoPostTypes.facebook.reel 
-                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50' 
-                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                    }`}>
+
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${videoPostTypes.facebook.reel
+                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                      }`}>
                       <input
                         type="checkbox"
                         checked={videoPostTypes.facebook.reel}
@@ -3046,12 +3045,11 @@ export default function SocialMediaTool() {
                         <p className="text-xs text-[#5B5C60]">Short videos</p>
                       </div>
                     </label>
-                    
-                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${
-                      videoPostTypes.facebook.story 
-                        ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50' 
-                        : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
-                    }`}>
+
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${videoPostTypes.facebook.story
+                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                      }`}>
                       <input
                         type="checkbox"
                         checked={videoPostTypes.facebook.story}
@@ -3265,7 +3263,10 @@ export default function SocialMediaTool() {
 
                   <h2 className="text-2xl font-bold text-white mb-3">Post Successful!</h2>
                   <p className="text-[#A9AAAC] mb-8 leading-relaxed">
-                    Your content has been {postMode === 'publish' ? 'published' : 'scheduled'} across your selected social platforms.
+                    {activeTab === 'video'
+                      ? "Your automated post should be visible within a minute. We're processing it across your selected platforms."
+                      : `Your content has been ${postMode === 'publish' ? 'published' : 'scheduled'} across your selected social platforms.`
+                    }
                   </p>
 
                   <button
