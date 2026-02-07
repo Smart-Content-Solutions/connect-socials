@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, ArrowRight, Loader2, Wand2, ChevronDown, Lightbulb, MessageCircleQuestion } from 'lucide-react';
+import { Sparkles, ArrowRight, Loader2, Wand2, Lightbulb, MessageCircleQuestion } from 'lucide-react';
 import { toast } from "sonner";
 import { useUser } from "@clerk/clerk-react";
 import GlassCard from './GlassCard';
@@ -14,14 +14,14 @@ interface EditorAIContentProps {
 }
 
 const AI_CAPABILITIES = [
-    { id: 'seo', label: 'Optimize SEO for Rank Math 80+ score', emoji: '🎯' },
+    { id: 'seo', label: 'Optimize SEO for Rank Math', emoji: '🎯' },
     { id: 'links', label: 'Add relevant internal links to related pages', emoji: '🔗' },
     { id: 'images', label: 'Place images strategically throughout the post', emoji: '🖼️' },
     { id: 'voice', label: 'Apply brand voice and tone consistently', emoji: '✨' },
     { id: 'structure', label: 'Improve content structure with proper headings', emoji: '📝' },
-    { id: 'meta', label: 'Update meta title and description for search', emoji: '📊' },
-    { id: 'tone', label: 'Make the tone more professional/energetic/casual', emoji: '🎭' },
-    { id: 'cta', label: 'Add a call-to-action at the end', emoji: '🚀' },
+    { id: 'meta', label: 'Update meta title and description', emoji: '📊' },
+    { id: 'focus-keyword', label: 'Optimize focus keyword placement', emoji: '🔑' },
+    { id: 'cta', label: 'Add compelling calls-to-action', emoji: '🚀' },
 ];
 
 export default function EditorAIContent({ sites }: EditorAIContentProps) {
@@ -38,14 +38,25 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
     const handleCapabilityClick = (capability: string) => {
         setUserInstruction(prev => {
             const trimmed = prev.trim();
-            if (trimmed === '') return capability;
-            return trimmed + ', ' + capability;
+            const newValue = trimmed === '' ? capability : trimmed + ' ' + capability;
+            return newValue;
         });
+        
+        // Focus the textarea after adding the capability
+        setTimeout(() => {
+            textareaRef.current?.focus();
+        }, 0);
     };
+
+    const infoBoxRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (textareaRef.current && !textareaRef.current.contains(event.target as Node)) {
+            const target = event.target as Node;
+            const isTextarea = textareaRef.current?.contains(target);
+            const isInfoBox = infoBoxRef.current?.contains(target);
+            
+            if (!isTextarea && !isInfoBox) {
                 setShowInfoBox(false);
             }
         };
@@ -223,6 +234,7 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
                         <AnimatePresence>
                             {showInfoBox && (
                                 <motion.div
+                                    ref={infoBoxRef}
                                     initial={{ opacity: 0, y: -10, height: 0 }}
                                     animate={{ opacity: 1, y: 0, height: 'auto' }}
                                     exit={{ opacity: 0, y: -10, height: 0 }}
