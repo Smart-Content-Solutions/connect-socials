@@ -198,6 +198,18 @@ export default function PricingCardsSection({
                     WordPress SEO Optimisation and Post
                   </span>
                 </div>
+                <div className="flex gap-3 items-start">
+                  <Check className="w-5 h-5 text-[#E1C37A] flex-shrink-0 mt-0.5" />
+                  <span className="text-base text-[#D6D7D8]">
+                    AI Agent
+                  </span>
+                </div>
+                <div className="flex gap-3 items-start">
+                  <Check className="w-5 h-5 text-[#E1C37A] flex-shrink-0 mt-0.5" />
+                  <span className="text-base text-[#D6D7D8]">
+                    Social Media Post Tool
+                  </span>
+                </div>
               </div>
             </div>
 
