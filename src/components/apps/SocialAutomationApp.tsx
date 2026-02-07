@@ -273,6 +273,10 @@ export default function SocialMediaTool() {
           setConnectedFacebookPages(pages);
           // Default select all on load
           setSelectedFacebookPageIds(pages.map((p: ConnectedAccount) => p.id));
+          // Also auto-select Facebook platform if accounts exist
+          if (pages.length > 0) {
+            setSelectedPlatforms(prev => [...new Set([...prev, 'facebook'])]);
+          }
         }
       } catch (e) {
         console.error("Failed to parse saved facebook pages", e);
@@ -292,6 +296,7 @@ export default function SocialMediaTool() {
           setConnectedFacebookPages(migratedPages);
           setSelectedFacebookPageIds([singlePage.id]);
           setSelectedFacebookPage(singlePage);
+          setSelectedPlatforms(prev => [...new Set([...prev, 'facebook'])]);
         } catch (e) {
           console.error("Failed to parse saved facebook page", e);
         }
@@ -307,6 +312,10 @@ export default function SocialMediaTool() {
           setConnectedInstagramPages(pages);
           // Default select all on load
           setSelectedInstagramPageIds(pages.map((p: ConnectedAccount) => p.id));
+          // Also auto-select Instagram platform if accounts exist
+          if (pages.length > 0) {
+            setSelectedPlatforms(prev => [...new Set([...prev, 'instagram'])]);
+          }
         }
       } catch (e) {
         console.error("Failed to parse saved instagram pages", e);
@@ -1965,21 +1974,37 @@ export default function SocialMediaTool() {
                 onToggle={(id) => {
                   // Toggle Facebook
                   if (connectedFacebookPages.some(p => p.id === id)) {
-                    setSelectedFacebookPageIds(prev => 
-                      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
-                    );
-                    // Also toggle platform selection
-                    if (!selectedPlatforms.includes('facebook')) {
+                    const isCurrentlySelected = selectedFacebookPageIds.includes(id);
+                    const newSelectedIds = isCurrentlySelected
+                      ? selectedFacebookPageIds.filter(pid => pid !== id)
+                      : [...selectedFacebookPageIds, id];
+                    
+                    setSelectedFacebookPageIds(newSelectedIds);
+                    
+                    // Update platform selection based on whether any accounts remain selected
+                    if (newSelectedIds.length === 0) {
+                      // Remove facebook from platforms if no accounts selected
+                      setSelectedPlatforms(prev => prev.filter(p => p !== 'facebook'));
+                    } else if (!selectedPlatforms.includes('facebook')) {
+                      // Add facebook to platforms if at least one account selected
                       setSelectedPlatforms(prev => [...prev, 'facebook']);
                     }
                   }
                   // Toggle Instagram
                   if (connectedInstagramPages.some(p => p.id === id)) {
-                    setSelectedInstagramPageIds(prev => 
-                      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
-                    );
-                    // Also toggle platform selection
-                    if (!selectedPlatforms.includes('instagram')) {
+                    const isCurrentlySelected = selectedInstagramPageIds.includes(id);
+                    const newSelectedIds = isCurrentlySelected
+                      ? selectedInstagramPageIds.filter(pid => pid !== id)
+                      : [...selectedInstagramPageIds, id];
+                    
+                    setSelectedInstagramPageIds(newSelectedIds);
+                    
+                    // Update platform selection based on whether any accounts remain selected
+                    if (newSelectedIds.length === 0) {
+                      // Remove instagram from platforms if no accounts selected
+                      setSelectedPlatforms(prev => prev.filter(p => p !== 'instagram'));
+                    } else if (!selectedPlatforms.includes('instagram')) {
+                      // Add instagram to platforms if at least one account selected
                       setSelectedPlatforms(prev => [...prev, 'instagram']);
                     }
                   }
@@ -2395,21 +2420,37 @@ export default function SocialMediaTool() {
                 onToggle={(id) => {
                   // Toggle Facebook
                   if (connectedFacebookPages.some(p => p.id === id)) {
-                    setSelectedFacebookPageIds(prev => 
-                      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
-                    );
-                    // Also toggle platform selection
-                    if (!selectedPlatforms.includes('facebook')) {
+                    const isCurrentlySelected = selectedFacebookPageIds.includes(id);
+                    const newSelectedIds = isCurrentlySelected
+                      ? selectedFacebookPageIds.filter(pid => pid !== id)
+                      : [...selectedFacebookPageIds, id];
+                    
+                    setSelectedFacebookPageIds(newSelectedIds);
+                    
+                    // Update platform selection based on whether any accounts remain selected
+                    if (newSelectedIds.length === 0) {
+                      // Remove facebook from platforms if no accounts selected
+                      setSelectedPlatforms(prev => prev.filter(p => p !== 'facebook'));
+                    } else if (!selectedPlatforms.includes('facebook')) {
+                      // Add facebook to platforms if at least one account selected
                       setSelectedPlatforms(prev => [...prev, 'facebook']);
                     }
                   }
                   // Toggle Instagram
                   if (connectedInstagramPages.some(p => p.id === id)) {
-                    setSelectedInstagramPageIds(prev => 
-                      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
-                    );
-                    // Also toggle platform selection
-                    if (!selectedPlatforms.includes('instagram')) {
+                    const isCurrentlySelected = selectedInstagramPageIds.includes(id);
+                    const newSelectedIds = isCurrentlySelected
+                      ? selectedInstagramPageIds.filter(pid => pid !== id)
+                      : [...selectedInstagramPageIds, id];
+                    
+                    setSelectedInstagramPageIds(newSelectedIds);
+                    
+                    // Update platform selection based on whether any accounts remain selected
+                    if (newSelectedIds.length === 0) {
+                      // Remove instagram from platforms if no accounts selected
+                      setSelectedPlatforms(prev => prev.filter(p => p !== 'instagram'));
+                    } else if (!selectedPlatforms.includes('instagram')) {
+                      // Add instagram to platforms if at least one account selected
                       setSelectedPlatforms(prev => [...prev, 'instagram']);
                     }
                   }
