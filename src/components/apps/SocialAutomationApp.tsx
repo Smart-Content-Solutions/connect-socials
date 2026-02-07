@@ -44,9 +44,9 @@ import {
   isFacebookConnected,
   getFacebookAuthData,
   getFacebookBusinesses,
-   getFacebookPages,
-   type FacebookPage
- } from "@/utils/facebookOAuth";
+  getFacebookPages,
+  type FacebookPage
+} from "@/utils/facebookOAuth";
 
 import {
   initiateInstagramAuth,
@@ -138,13 +138,13 @@ export default function SocialMediaTool() {
   const [isEditingBluesky, setIsEditingBluesky] = useState(false);
   const [showFacebookPagesModal, setShowFacebookPagesModal] = useState(false);
   const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
-  
+
   // Multi-account state (NEW)
   const [connectedFacebookPages, setConnectedFacebookPages] = useState<ConnectedAccount[]>([]);
   const [connectedInstagramPages, setConnectedInstagramPages] = useState<ConnectedAccount[]>([]);
   const [selectedFacebookPageIds, setSelectedFacebookPageIds] = useState<string[]>([]);
   const [selectedInstagramPageIds, setSelectedInstagramPageIds] = useState<string[]>([]);
-  
+
   // Legacy state (for backward compatibility during transition)
   const [selectedFacebookPage, setSelectedFacebookPage] = useState<FacebookPage | null>(null);
 
@@ -632,14 +632,13 @@ export default function SocialMediaTool() {
 
   // Post type options (NEW)
   const [postAsStory, setPostAsStory] = useState(false);
-   const [videoPostTypes, setVideoPostTypes] = useState({
-     instagram: { feed: true, reel: false, story: false },
-     facebook: { feed: true, reel: false, story: false }
-   });
+  const [videoPostTypes, setVideoPostTypes] = useState({
+    instagram: { feed: true, reel: false, story: false },
+    facebook: { feed: true, reel: false, story: false }
+  });
 
-  // Function to fetch ALL Facebook Pages (personal and business-managed)
   const fetchFacebookAllPages = async (token: string) => {
-    setIsLoading(true);
+    setLoading(true);
     try {
       const res = await fetch(
         `https://graph.facebook.com/v19.0/me/accounts?fields=name,access_token,picture,business&access_token=${token}`
@@ -660,67 +659,64 @@ export default function SocialMediaTool() {
       console.error("Error fetching all Facebook pages:", e);
       toast.error("Failed to load Facebook pages: " + e.message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-   const handleFacebookBusinessSelection = async () => {
-     const authData = getFacebookAuthData();
-     if (!authData?.access_token) {
-       // If not connected, connect first
-       window.location.reload(); // Simple reload to refresh state if needed, but normally we just wait
-       return;
-     }
+  const handleFacebookBusinessSelection = async () => {
+    const authData = getFacebookAuthData();
+    if (!authData?.access_token) {
+      // If not connected, connect first
+      window.location.reload(); // Simple reload to refresh state if needed, but normally we just wait
+      return;
+    }
 
-     // Fetch businesses first
-     try {
-       const businesses = await getFacebookBusinesses(authData.access_token);
-       if (businesses.length > 0) {
-         setFacebookBusinesses(businesses);
-         setShowBusinessModal(true);
-       } else {
-         // No businesses found, fallback to just pages
-         setShowFacebookPagesModal(true);
-         await fetchFacebookAllPages(authData.access_token); // Fetch all pages directly
-       }
-     } catch (e: any) {
-       console.error("Error fetching businesses", e);
-       toast.error("Failed to load Business Managers: " + e.message);
-       setShowFacebookPagesModal(true);
-       const authData = getFacebookAuthData(); // Re-get authData here
-       if (authData?.access_token) {
-         await fetchFacebookAllPages(authData.access_token); // Fetch all pages directly
-       }
-     }
-   };
+    // Fetch businesses first
+    try {
+      const businesses = await getFacebookBusinesses(authData.access_token);
+      if (businesses.length > 0) {
+        setFacebookBusinesses(businesses);
+        setShowBusinessModal(true);
+      } else {
+        // No businesses found, fallback to just pages
+        setShowFacebookPagesModal(true);
+        await fetchFacebookAllPages(authData.access_token); // Fetch all pages directly
+      }
+    } catch (e: any) {
+      console.error("Error fetching businesses", e);
+      toast.error("Failed to load Business Managers: " + e.message);
+      setShowFacebookPagesModal(true);
+      const authData = getFacebookAuthData(); // Re-get authData here
+      if (authData?.access_token) {
+        await fetchFacebookAllPages(authData.access_token); // Fetch all pages directly
+      }
+    }
+  };
 
-   const handleBusinessSelect = async (business: { id: string; name: string }) => {
-     setSelectedBusiness(business);
-     const authData = getFacebookAuthData();
-     if (!authData?.access_token) return;
+  const handleBusinessSelect = async (business: { id: string; name: string }) => {
+    setSelectedBusiness(business);
+    const authData = getFacebookAuthData();
+    if (!authData?.access_token) return;
 
-     try {
-       // Fetch ALL pages, then filter by selected business
-       await fetchFacebookAllPages(authData.access_token);
-       
-       // The fetchFacebookAllPages will set all pages. We then filter them.
-       setFacebookPages(prevPages => prevPages.filter(p => p.business?.id === business.id));
+    try {
+      // Fetch ALL pages to ensure we have the full list
+      await fetchFacebookAllPages(authData.access_token);
 
-       setShowBusinessModal(false);
-       setShowFacebookPagesModal(true);
-     } catch (e: any) {
-       console.error("Error fetching pages for business", e);
-       toast.error("Failed to load Pages for Business: " + e.message);
-       setShowFacebookPagesModal(true);
-     }
-   };
+      setShowBusinessModal(false);
+      setShowFacebookPagesModal(true);
+    } catch (e: any) {
+      console.error("Error fetching pages for business", e);
+      toast.error("Failed to load Pages for Business: " + e.message);
+      setShowFacebookPagesModal(true);
+    }
+  };
 
-   // Maximum video file size: 50MB (server limit)
-   const MAX_VIDEO_SIZE_MB = 50;
+  // Maximum video file size: 50MB (server limit)
+  const MAX_VIDEO_SIZE_MB = 50;
 
-   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-     const files = Array.from(e.target.files || []);
-     if (files.length === 0) return;
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
 
     // Filter only video files
@@ -1318,7 +1314,13 @@ export default function SocialMediaTool() {
                 <div className="text-center py-8 text-[#5B5C60]">
                   <p>No businesses found.</p>
                   <button
-                    onClick={() => { setShowBusinessModal(false); setShowFacebookPagesModal(true); }}
+                    onClick={async () => {
+                      setShowBusinessModal(false);
+                      setShowFacebookPagesModal(true);
+                      setSelectedBusiness(null); // Clear business selection for personal pages
+                      const authData = getFacebookAuthData();
+                      if (authData?.access_token) await fetchFacebookAllPages(authData.access_token);
+                    }}
                     className="mt-4 text-[#E1C37A] text-sm hover:underline"
                   >
                     Continue to Pages anyway
@@ -1342,7 +1344,7 @@ export default function SocialMediaTool() {
                       </div>
                     </button>
                   ))}
-                  
+
                   {/* Show Personal Pages Option */}
                   <div className="mt-6 pt-6 border-t border-white/10">
                     <div className="text-center">
@@ -1350,7 +1352,13 @@ export default function SocialMediaTool() {
                         Want to connect personal pages instead?
                       </p>
                       <button
-                        onClick={() => { setShowBusinessModal(false); setShowFacebookPagesModal(true); }}
+                        onClick={async () => {
+                          setShowBusinessModal(false);
+                          setShowFacebookPagesModal(true);
+                          setSelectedBusiness(null); // Clear business selection for personal pages
+                          const authData = getFacebookAuthData();
+                          if (authData?.access_token) await fetchFacebookAllPages(authData.access_token);
+                        }}
                         className="px-4 py-2 rounded-lg border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-colors text-sm"
                       >
                         Show Personal Pages
@@ -1387,42 +1395,50 @@ export default function SocialMediaTool() {
             </div>
 
             <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-              {facebookPages.length === 0 ? (
+              {facebookPages.filter(page => {
+                if (selectedBusiness) return page.business?.id === selectedBusiness.id;
+                return !page.business; // Personal pages have no business object
+              }).length === 0 ? (
                 <div className="text-center py-8 text-[#5B5C60]">
-                  <p>No pages found for this user.</p>
+                  <p>No {selectedBusiness ? 'business' : 'personal'} pages found for this user.</p>
                   <p className="text-xs mt-2">Make sure you granted the correct permissions.</p>
                 </div>
               ) : (
-                facebookPages.map(page => (
-                  <button
-                    key={page.id}
-                    onClick={() => {
-                      setSelectedFacebookPage(page);
-                      localStorage.setItem('facebook_selected_page', JSON.stringify(page));
-                      setShowFacebookPagesModal(false);
-                      setActiveTab('dashboard');
-                    }}
-                    className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-[#1877F2]/10 flex items-center justify-center text-[#1877F2] font-bold text-lg">
-                        {page.name.charAt(0).toUpperCase()}
+                facebookPages
+                  .filter(page => {
+                    if (selectedBusiness) return page.business?.id === selectedBusiness.id;
+                    return !page.business;
+                  })
+                  .map(page => (
+                    <button
+                      key={page.id}
+                      onClick={() => {
+                        setSelectedFacebookPage(page);
+                        localStorage.setItem('facebook_selected_page', JSON.stringify(page));
+                        setShowFacebookPagesModal(false);
+                        setActiveTab('dashboard');
+                      }}
+                      className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-[#1877F2]/10 flex items-center justify-center text-[#1877F2] font-bold text-lg">
+                          {page.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-[#D6D7D8] font-semibold group-hover:text-[#E1C37A] transition-colors">
+                            {page.name}
+                          </p>
+                          <p className="text-xs text-[#5B5C60] font-mono">ID: {page.id}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-[#D6D7D8] font-semibold group-hover:text-[#E1C37A] transition-colors">
-                          {page.name}
-                        </p>
-                        <p className="text-xs text-[#5B5C60] font-mono">ID: {page.id}</p>
-                      </div>
-                    </div>
 
-                    {selectedFacebookPage?.id === page.id && (
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
-                        <CheckCircle className="w-3 h-3 text-[#1A1A1C]" />
-                      </div>
-                    )}
-                  </button>
-                ))
+                      {selectedFacebookPage?.id === page.id && (
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
+                          <CheckCircle className="w-3 h-3 text-[#1A1A1C]" />
+                        </div>
+                      )}
+                    </button>
+                  ))
               )}
             </div>
 
@@ -1468,7 +1484,7 @@ export default function SocialMediaTool() {
                         name: instagramData?.username || "hsuswiowkskow",
                         access_token: instagramData?.access_token || "",
                       };
-                      
+
                       // Add to connected accounts
                       setConnectedInstagramPages(prev => {
                         const exists = prev.some(acc => acc.id === newAccount.id);
@@ -1477,7 +1493,7 @@ export default function SocialMediaTool() {
                         localStorage.setItem("instagram_connected_pages", JSON.stringify(updated));
                         return updated;
                       });
-                      
+
                       // Select it
                       setSelectedInstagramPageIds(prev => [...prev, newAccount.id]);
                       setSelectedInstagramPage("demo-page");
@@ -1528,7 +1544,7 @@ export default function SocialMediaTool() {
                         access_token: instagramData?.access_token || "",
                         instagram_business_account_id: page.instagram_business_account?.id,
                       };
-                      
+
                       // Add to connected accounts
                       setConnectedInstagramPages(prev => {
                         const exists = prev.some(acc => acc.id === newAccount.id);
@@ -1537,7 +1553,7 @@ export default function SocialMediaTool() {
                         localStorage.setItem("instagram_connected_pages", JSON.stringify(updated));
                         return updated;
                       });
-                      
+
                       // Select it
                       setSelectedInstagramPageIds(prev => [...prev, newAccount.id]);
                       setSelectedInstagramPage(page);
@@ -2019,9 +2035,9 @@ export default function SocialMediaTool() {
                     const newSelectedIds = isCurrentlySelected
                       ? selectedFacebookPageIds.filter(pid => pid !== id)
                       : [...selectedFacebookPageIds, id];
-                    
+
                     setSelectedFacebookPageIds(newSelectedIds);
-                    
+
                     // Update platform selection based on whether any accounts remain selected
                     if (newSelectedIds.length === 0) {
                       // Remove facebook from platforms if no accounts selected
@@ -2037,9 +2053,9 @@ export default function SocialMediaTool() {
                     const newSelectedIds = isCurrentlySelected
                       ? selectedInstagramPageIds.filter(pid => pid !== id)
                       : [...selectedInstagramPageIds, id];
-                    
+
                     setSelectedInstagramPageIds(newSelectedIds);
-                    
+
                     // Update platform selection based on whether any accounts remain selected
                     if (newSelectedIds.length === 0) {
                       // Remove instagram from platforms if no accounts selected
@@ -2072,11 +2088,11 @@ export default function SocialMediaTool() {
                   <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.filter(p => !['facebook', 'instagram'].includes(p)).length} selected)</span>
                 </h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                  {ALL_PLATFORMS.filter(p => 
-                    p.isConnected() && 
-                    p.id !== 'youtube' && 
-                    p.id !== 'tiktok' && 
-                    p.id !== 'facebook' && 
+                  {ALL_PLATFORMS.filter(p =>
+                    p.isConnected() &&
+                    p.id !== 'youtube' &&
+                    p.id !== 'tiktok' &&
+                    p.id !== 'facebook' &&
                     p.id !== 'instagram'
                   ).map((p) => {
                     const selected = isSelected(p.id);
@@ -2465,9 +2481,9 @@ export default function SocialMediaTool() {
                     const newSelectedIds = isCurrentlySelected
                       ? selectedFacebookPageIds.filter(pid => pid !== id)
                       : [...selectedFacebookPageIds, id];
-                    
+
                     setSelectedFacebookPageIds(newSelectedIds);
-                    
+
                     // Update platform selection based on whether any accounts remain selected
                     if (newSelectedIds.length === 0) {
                       // Remove facebook from platforms if no accounts selected
@@ -2483,9 +2499,9 @@ export default function SocialMediaTool() {
                     const newSelectedIds = isCurrentlySelected
                       ? selectedInstagramPageIds.filter(pid => pid !== id)
                       : [...selectedInstagramPageIds, id];
-                    
+
                     setSelectedInstagramPageIds(newSelectedIds);
-                    
+
                     // Update platform selection based on whether any accounts remain selected
                     if (newSelectedIds.length === 0) {
                       // Remove instagram from platforms if no accounts selected
@@ -2518,8 +2534,8 @@ export default function SocialMediaTool() {
                   <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.filter(p => !['facebook', 'instagram'].includes(p)).length} selected)</span>
                 </h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                  {ALL_PLATFORMS.filter(p => 
-                    p.isConnected() && 
+                  {ALL_PLATFORMS.filter(p =>
+                    p.isConnected() &&
                     ['tiktok', 'youtube', 'linkedin', 'x'].includes(p.id)
                   ).map((p) => {
                     const selected = isSelected(p.id);

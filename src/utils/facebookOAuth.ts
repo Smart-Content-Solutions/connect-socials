@@ -8,6 +8,11 @@ export interface FacebookPage {
   id: string;
   name: string;
   access_token?: string | null;
+  picture?: string;
+  business?: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface FacebookAuthData {
