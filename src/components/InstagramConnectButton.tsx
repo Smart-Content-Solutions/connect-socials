@@ -443,12 +443,28 @@ export function InstagramConnectButton() {
                 <Button variant="ghost" size="sm">Select</Button>
               </div>
             ))}
-            {businesses.length === 0 && (
+            {businesses.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No Business Managers found.
                 <Button variant="link" onClick={() => fetchPagesWithoutBusiness(authData!.access_token)}>
                   Check for Instagram accounts directly
                 </Button>
+              </div>
+            ) : (
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Want to connect personal Instagram accounts?
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => fetchPagesWithoutBusiness(authData!.access_token)}
+                    className="gap-2"
+                  >
+                    <Instagram className="w-4 h-4" />
+                    Show Linked Instagram Accounts
+                  </Button>
+                </div>
               </div>
             )}
           </div>
