@@ -76,6 +76,7 @@ import VideoCompressionModal from "../modals/VideoCompressionModal";
 
 import DashboardContent from "../social/DashboardContent";
 import InstagramDashboardContent from "../social/InstagramDashboardContent";
+import ConnectedAccountsSelector, { type ConnectedAccount } from "../ConnectedAccountsSelector";
 
 type Platform = {
   id: string;
@@ -137,6 +138,14 @@ export default function SocialMediaTool() {
   const [isEditingBluesky, setIsEditingBluesky] = useState(false);
   const [showFacebookPagesModal, setShowFacebookPagesModal] = useState(false);
   const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
+  
+  // Multi-account state (NEW)
+  const [connectedFacebookPages, setConnectedFacebookPages] = useState<ConnectedAccount[]>([]);
+  const [connectedInstagramPages, setConnectedInstagramPages] = useState<ConnectedAccount[]>([]);
+  const [selectedFacebookPageIds, setSelectedFacebookPageIds] = useState<string[]>([]);
+  const [selectedInstagramPageIds, setSelectedInstagramPageIds] = useState<string[]>([]);
+  
+  // Legacy state (for backward compatibility during transition)
   const [selectedFacebookPage, setSelectedFacebookPage] = useState<FacebookPage | null>(null);
 
   // Facebook Business Manager State for Meta Compliance
@@ -149,7 +158,7 @@ export default function SocialMediaTool() {
   // Instagram State
   const [instagramData, setInstagramData] = useState<InstagramAuthData | null>(null);
   const [showInstagramPagesModal, setShowInstagramPagesModal] = useState(false);
-  const [selectedInstagramPage, setSelectedInstagramPage] = useState<any>(null);
+  const [selectedInstagramPage, setSelectedInstagramPage] = useState<any>(null); // Legacy (for backward compatibility)
 
   // AI & Preview State
   const [tone, setTone] = useState("Professional");
@@ -253,21 +262,74 @@ export default function SocialMediaTool() {
     toast.success("Design updated with enhanced text!");
   };
 
-  // Load Facebook Pages on mount if connected
+  // Load connected accounts on mount
   useEffect(() => {
-    if (isFacebookConnected()) {
-      const data = getFacebookAuthData();
-      if (data?.pages) {
-        setFacebookPages(data.pages);
+    // Load Facebook accounts (new format with backward compatibility)
+    const savedFacebookPages = localStorage.getItem('facebook_connected_pages');
+    if (savedFacebookPages) {
+      try {
+        const pages = JSON.parse(savedFacebookPages);
+        if (Array.isArray(pages)) {
+          setConnectedFacebookPages(pages);
+          // Default select all on load
+          setSelectedFacebookPageIds(pages.map((p: ConnectedAccount) => p.id));
+        }
+      } catch (e) {
+        console.error("Failed to parse saved facebook pages", e);
       }
-
-      // Check if we have a saved page selection
+    } else {
+      // Backward compatibility: check for old format
       const savedPage = localStorage.getItem('facebook_selected_page');
       if (savedPage) {
         try {
-          setSelectedFacebookPage(JSON.parse(savedPage));
+          const singlePage = JSON.parse(savedPage);
+          const migratedPages: ConnectedAccount[] = [{
+            id: singlePage.id,
+            platform: 'facebook',
+            name: singlePage.name,
+            access_token: singlePage.access_token,
+          }];
+          setConnectedFacebookPages(migratedPages);
+          setSelectedFacebookPageIds([singlePage.id]);
+          setSelectedFacebookPage(singlePage);
         } catch (e) {
           console.error("Failed to parse saved facebook page", e);
+        }
+      }
+    }
+
+    // Load Instagram accounts (new format with backward compatibility)
+    const savedInstagramPages = localStorage.getItem('instagram_connected_pages');
+    if (savedInstagramPages) {
+      try {
+        const pages = JSON.parse(savedInstagramPages);
+        if (Array.isArray(pages)) {
+          setConnectedInstagramPages(pages);
+          // Default select all on load
+          setSelectedInstagramPageIds(pages.map((p: ConnectedAccount) => p.id));
+        }
+      } catch (e) {
+        console.error("Failed to parse saved instagram pages", e);
+      }
+    } else {
+      // Backward compatibility: check for old format
+      const savedPage = localStorage.getItem('instagram_selected_page');
+      if (savedPage) {
+        try {
+          const singlePage = JSON.parse(savedPage);
+          const igAuthData = getInstagramAuthData();
+          const migratedPages: ConnectedAccount[] = [{
+            id: singlePage.instagram_business_account?.id || singlePage.id,
+            platform: 'instagram',
+            name: singlePage.name,
+            access_token: igAuthData?.access_token || '',
+            instagram_business_account_id: singlePage.instagram_business_account?.id,
+          }];
+          setConnectedInstagramPages(migratedPages);
+          setSelectedInstagramPageIds([migratedPages[0].id]);
+          setSelectedInstagramPage(singlePage);
+        } catch (e) {
+          console.error("Failed to parse saved instagram page", e);
         }
       }
     }
@@ -275,11 +337,6 @@ export default function SocialMediaTool() {
     if (isInstagramConnected()) {
       const data = getInstagramAuthData();
       setInstagramData(data);
-      // Determine selected IG page (if any)
-      if (data?.pages && data.pages.length > 0) {
-        // Default to first if not set
-        setSelectedInstagramPage(data.pages[0]);
-      }
     }
   }, []);
 
@@ -864,6 +921,14 @@ export default function SocialMediaTool() {
     // Add is_story flag for Instagram/Facebook
     form.append("is_story", postAsStory ? "true" : "false");
 
+    // Add specific page_ids for multi-account posting (NEW)
+    if (selectedPlatforms.includes('facebook') && selectedFacebookPageIds.length > 0) {
+      selectedFacebookPageIds.forEach((id) => form.append("facebook_page_ids[]", id));
+    }
+    if (selectedPlatforms.includes('instagram') && selectedInstagramPageIds.length > 0) {
+      selectedInstagramPageIds.forEach((id) => form.append("instagram_page_ids[]", id));
+    }
+
     if (postMode === "schedule") {
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
       console.log("=== SCHEDULING DEBUG ===");
@@ -922,6 +987,14 @@ export default function SocialMediaTool() {
     // Add video post types for Instagram and Facebook
     form.append('instagram_post_types', JSON.stringify(videoPostTypes.instagram));
     form.append('facebook_post_types', JSON.stringify(videoPostTypes.facebook));
+
+    // Add specific page_ids for multi-account posting (NEW)
+    if (selectedPlatforms.includes('facebook') && selectedFacebookPageIds.length > 0) {
+      selectedFacebookPageIds.forEach((id) => form.append("facebook_page_ids[]", id));
+    }
+    if (selectedPlatforms.includes('instagram') && selectedInstagramPageIds.length > 0) {
+      selectedInstagramPageIds.forEach((id) => form.append("instagram_page_ids[]", id));
+    }
 
     if (postMode === "schedule") {
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -991,6 +1064,14 @@ export default function SocialMediaTool() {
 
     if (selectedPlatforms.length === 0)
       return setErrorMsg("Select at least one connected platform.");
+
+    // Validate that Facebook/Instagram accounts are selected if those platforms are chosen
+    if (selectedPlatforms.includes('facebook') && selectedFacebookPageIds.length === 0) {
+      return setErrorMsg("Please select at least one Facebook page to post to.");
+    }
+    if (selectedPlatforms.includes('instagram') && selectedInstagramPageIds.length === 0) {
+      return setErrorMsg("Please select at least one Instagram account to post to.");
+    }
 
     setLoading(true);
 
@@ -1839,13 +1920,61 @@ export default function SocialMediaTool() {
               className="w-full flex-shrink-0 p-6 md:p-8 space-y-6"
               style={{ scrollSnapAlign: 'start' }}
             >
+              {/* Connected Accounts Selector (NEW) */}
+              <ConnectedAccountsSelector
+                accounts={[...connectedFacebookPages, ...connectedInstagramPages]}
+                selectedIds={[...selectedFacebookPageIds, ...selectedInstagramPageIds]}
+                onToggle={(id) => {
+                  // Toggle Facebook
+                  if (connectedFacebookPages.some(p => p.id === id)) {
+                    setSelectedFacebookPageIds(prev => 
+                      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+                    );
+                    // Also toggle platform selection
+                    if (!selectedPlatforms.includes('facebook')) {
+                      setSelectedPlatforms(prev => [...prev, 'facebook']);
+                    }
+                  }
+                  // Toggle Instagram
+                  if (connectedInstagramPages.some(p => p.id === id)) {
+                    setSelectedInstagramPageIds(prev => 
+                      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+                    );
+                    // Also toggle platform selection
+                    if (!selectedPlatforms.includes('instagram')) {
+                      setSelectedPlatforms(prev => [...prev, 'instagram']);
+                    }
+                  }
+                }}
+                onSelectAll={() => {
+                  setSelectedFacebookPageIds(connectedFacebookPages.map(p => p.id));
+                  setSelectedInstagramPageIds(connectedInstagramPages.map(p => p.id));
+                  // Auto-select platforms
+                  const platforms = new Set(selectedPlatforms);
+                  if (connectedFacebookPages.length > 0) platforms.add('facebook');
+                  if (connectedInstagramPages.length > 0) platforms.add('instagram');
+                  setSelectedPlatforms(Array.from(platforms));
+                }}
+                onDeselectAll={() => {
+                  setSelectedFacebookPageIds([]);
+                  setSelectedInstagramPageIds([]);
+                }}
+              />
+
+              {/* Legacy Platform Selection - show for non-Facebook/Instagram platforms */}
               <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
                 <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
-                  Select Platforms
-                  <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.length} selected)</span>
+                  Other Platforms
+                  <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.filter(p => !['facebook', 'instagram'].includes(p)).length} selected)</span>
                 </h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                  {ALL_PLATFORMS.filter(p => p.isConnected() && p.id !== 'youtube' && p.id !== 'tiktok').map((p) => {
+                  {ALL_PLATFORMS.filter(p => 
+                    p.isConnected() && 
+                    p.id !== 'youtube' && 
+                    p.id !== 'tiktok' && 
+                    p.id !== 'facebook' && 
+                    p.id !== 'instagram'
+                  ).map((p) => {
                     const selected = isSelected(p.id);
                     const Icon = p.icon;
                     const color = platformColors[p.id];
@@ -1871,7 +2000,7 @@ export default function SocialMediaTool() {
                           <Icon className="w-5 h-5" style={{ color }} />
                         </div>
                         <p className={`text-xs font-medium ${selected ? 'text-[#E1C37A]' : 'text-[#A9AAAC]'}`}>
-                          {p.id === 'facebook' && selectedFacebookPage ? selectedFacebookPage.name : p.name}
+                          {p.name}
                         </p>
                       </button>
                     );
@@ -2188,6 +2317,8 @@ export default function SocialMediaTool() {
                     setImagePreviews([]);
                     setPostAsStory(false);
                     setSelectedPlatforms([]);
+                    setSelectedFacebookPageIds([]);
+                    setSelectedInstagramPageIds([]);
                   }}
                   className="px-6 py-3 rounded-full bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-all duration-300"
                 >
@@ -2219,21 +2350,66 @@ export default function SocialMediaTool() {
               className="w-full flex-shrink-0 p-6 md:p-8 space-y-6"
               style={{ scrollSnapAlign: 'start' }}
             >
+              {/* Connected Accounts Selector (NEW) */}
+              <ConnectedAccountsSelector
+                accounts={[...connectedFacebookPages, ...connectedInstagramPages]}
+                selectedIds={[...selectedFacebookPageIds, ...selectedInstagramPageIds]}
+                onToggle={(id) => {
+                  // Toggle Facebook
+                  if (connectedFacebookPages.some(p => p.id === id)) {
+                    setSelectedFacebookPageIds(prev => 
+                      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+                    );
+                    // Also toggle platform selection
+                    if (!selectedPlatforms.includes('facebook')) {
+                      setSelectedPlatforms(prev => [...prev, 'facebook']);
+                    }
+                  }
+                  // Toggle Instagram
+                  if (connectedInstagramPages.some(p => p.id === id)) {
+                    setSelectedInstagramPageIds(prev => 
+                      prev.includes(id) ? prev.filter(pid => pid !== id) : [...prev, id]
+                    );
+                    // Also toggle platform selection
+                    if (!selectedPlatforms.includes('instagram')) {
+                      setSelectedPlatforms(prev => [...prev, 'instagram']);
+                    }
+                  }
+                }}
+                onSelectAll={() => {
+                  setSelectedFacebookPageIds(connectedFacebookPages.map(p => p.id));
+                  setSelectedInstagramPageIds(connectedInstagramPages.map(p => p.id));
+                  // Auto-select platforms
+                  const platforms = new Set(selectedPlatforms);
+                  if (connectedFacebookPages.length > 0) platforms.add('facebook');
+                  if (connectedInstagramPages.length > 0) platforms.add('instagram');
+                  setSelectedPlatforms(Array.from(platforms));
+                }}
+                onDeselectAll={() => {
+                  setSelectedFacebookPageIds([]);
+                  setSelectedInstagramPageIds([]);
+                }}
+              />
+
+              {/* Legacy Platform Selection - show for non-Facebook/Instagram platforms */}
               <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
                 <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
-                  Select Platforms
-                  <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.length} selected)</span>
+                  Other Platforms
+                  <span className="text-[#5B5C60] font-normal ml-2">({selectedPlatforms.filter(p => !['facebook', 'instagram'].includes(p)).length} selected)</span>
                 </h3>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                  {ALL_PLATFORMS.filter(p => p.isConnected() && ['facebook', 'instagram', 'tiktok', 'youtube', 'linkedin', 'x'].includes(p.id)).map((p) => {
+                  {ALL_PLATFORMS.filter(p => 
+                    p.isConnected() && 
+                    ['tiktok', 'youtube', 'linkedin', 'x'].includes(p.id)
+                  ).map((p) => {
                     const selected = isSelected(p.id);
                     const Icon = p.icon;
                     const color = platformColors[p.id];
 
                     // Rename for video context
                     let displayName = p.name;
-                    if (p.id === 'facebook') displayName = 'Facebook Reels';
-                    if (p.id === 'instagram') displayName = 'Instagram Reels';
+                    if (p.id === 'youtube') displayName = 'YouTube Shorts';
+                    if (p.id === 'x') displayName = 'X Video';
 
                     return (
                       <button
@@ -2256,7 +2432,7 @@ export default function SocialMediaTool() {
                           <Icon className="w-5 h-5" style={{ color }} />
                         </div>
                         <p className={`text-xs font-medium ${selected ? 'text-[#E1C37A]' : 'text-[#A9AAAC]'}`}>
-                          {p.id === 'facebook' && selectedFacebookPage ? selectedFacebookPage.name : displayName}
+                          {displayName}
                         </p>
                       </button>
                     );
@@ -3314,6 +3490,8 @@ export default function SocialMediaTool() {
                       facebook: { feed: true, reel: false, story: false }
                     });
                     setSelectedPlatforms([]);
+                    setSelectedFacebookPageIds([]);
+                    setSelectedInstagramPageIds([]);
                   }}
                   className="px-6 py-3 rounded-full bg-transparent border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-all duration-300"
                 >

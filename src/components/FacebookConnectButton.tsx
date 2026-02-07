@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Facebook, CheckCircle2, LogOut, Building2, Flag } from "lucide-react";
+import { Facebook, CheckCircle2, LogOut, Building2, Flag, Plus, X } from "lucide-react";
 import {
   initiateFacebookAuth,
   getFacebookAuthData,
@@ -15,6 +15,7 @@ import {
 } from "@/utils/facebookOAuth";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import type { ConnectedAccount } from "./ConnectedAccountsSelector";
 
 interface Business {
   id: string;
@@ -25,7 +26,7 @@ export function FacebookConnectButton() {
   const [authData, setAuthData] = useState<FacebookAuthData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [viewState, setViewState] = useState<
-    "idle" | "select-business" | "select-page" | "connected"
+    "idle" | "select-business" | "select-page" | "connected" | "add-page"
   >("idle");
 
   const [businesses, setBusinesses] = useState<Business[]>([]);
@@ -33,19 +34,46 @@ export function FacebookConnectButton() {
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(
     null
   );
-  const [selectedPage, setSelectedPage] = useState<FacebookPage | null>(null);
+  const [connectedPages, setConnectedPages] = useState<ConnectedAccount[]>([]);
+  const [pageNickname, setPageNickname] = useState("");
+  const [pendingPage, setPendingPage] = useState<FacebookPage | null>(null);
 
   // Initialize state from storage
   useEffect(() => {
     const data = getFacebookAuthData();
     if (data) {
       setAuthData(data);
-      // Check if we have partially completed the flow or fully connected
+      // Check for new format first (array of pages)
+      const storedPages = localStorage.getItem("facebook_connected_pages");
+      if (storedPages) {
+        try {
+          const pages = JSON.parse(storedPages);
+          if (Array.isArray(pages) && pages.length > 0) {
+            setConnectedPages(pages);
+            setViewState("connected");
+            return;
+          }
+        } catch (e) {
+          console.error("Failed to parse stored pages", e);
+        }
+      }
+      
+      // Backward compatibility: check for old format (single page)
       const storedPage = localStorage.getItem("facebook_selected_page");
       if (storedPage) {
-        setViewState("connected");
         try {
-          setSelectedPage(JSON.parse(storedPage));
+          const singlePage = JSON.parse(storedPage);
+          // Migrate to new format
+          const migratedPages: ConnectedAccount[] = [{
+            id: singlePage.id,
+            platform: "facebook",
+            name: singlePage.name,
+            access_token: singlePage.access_token,
+          }];
+          localStorage.setItem("facebook_connected_pages", JSON.stringify(migratedPages));
+          localStorage.removeItem("facebook_selected_page"); // Clean up old key
+          setConnectedPages(migratedPages);
+          setViewState("connected");
         } catch (e) {
           console.error("Failed to parse stored page", e);
         }
@@ -146,15 +174,56 @@ export function FacebookConnectButton() {
   };
 
   const handleSelectPage = (page: FacebookPage) => {
-    setSelectedPage(page);
+    // Instead of immediately saving, prompt for nickname
+    setPendingPage(page);
+    setPageNickname("");
+    setViewState("add-page");
+  };
 
-    // Save selected page persistently
-    localStorage.setItem("facebook_selected_page", JSON.stringify(page));
+  const handleSavePageWithNickname = () => {
+    if (!pendingPage) return;
 
-    // Also update authData to include this page prominently if we want
-    // But for now, we just move to connected state
+    const newAccount: ConnectedAccount = {
+      id: pendingPage.id,
+      platform: "facebook",
+      name: pendingPage.name,
+      nickname: pageNickname.trim() || undefined,
+      access_token: pendingPage.access_token,
+    };
+
+    const updatedPages = [...connectedPages, newAccount];
+    setConnectedPages(updatedPages);
+    localStorage.setItem("facebook_connected_pages", JSON.stringify(updatedPages));
+
+    setPendingPage(null);
+    setPageNickname("");
     setViewState("connected");
-    toast.success(`Connected to ${page.name}`);
+    toast.success(`Connected to ${newAccount.nickname || newAccount.name}`);
+  };
+
+  const handleAddAnotherPage = () => {
+    // Reset to start the flow again
+    setSelectedBusiness(null);
+    setPendingPage(null);
+    setPageNickname("");
+    if (authData?.access_token) {
+      fetchBusinesses(authData.access_token);
+    }
+  };
+
+  const handleRemovePage = (pageId: string) => {
+    const updatedPages = connectedPages.filter((p) => p.id !== pageId);
+    setConnectedPages(updatedPages);
+    localStorage.setItem("facebook_connected_pages", JSON.stringify(updatedPages));
+    
+    if (updatedPages.length === 0) {
+      // If no pages left, go back to selection
+      setViewState("select-business");
+      if (authData?.access_token) {
+        fetchBusinesses(authData.access_token);
+      }
+    }
+    toast.success("Page removed");
   };
 
   const handleConnect = async () => {
@@ -176,16 +245,18 @@ export function FacebookConnectButton() {
 
   const handleDisconnect = () => {
     clearFacebookAuthData();
+    localStorage.removeItem("facebook_connected_pages");
+    localStorage.removeItem("facebook_selected_page"); // Clean up old key too
     setAuthData(null);
     setViewState("idle");
     setSelectedBusiness(null);
-    setSelectedPage(null);
+    setConnectedPages([]);
     toast.success("Facebook disconnected");
   };
 
   // --- RENDER HELPERS ---
 
-  if (viewState === "connected" && authData && selectedPage) {
+  if (viewState === "connected" && authData && connectedPages.length > 0) {
     return (
       <Card className="p-8 max-w-2xl mx-auto border-green-200 bg-green-50/20">
         <div className="flex items-center justify-between mb-6">
@@ -193,17 +264,19 @@ export function FacebookConnectButton() {
             <CheckCircle2 className="h-8 w-8 text-green-600" />
             <div>
               <h2 className="text-2xl font-bold">Facebook Connected</h2>
-              <p className="text-sm text-muted-foreground">Ready to post</p>
+              <p className="text-sm text-muted-foreground">
+                {connectedPages.length} page{connectedPages.length > 1 ? "s" : ""} connected
+              </p>
             </div>
           </div>
 
           <Button variant="outline" onClick={handleDisconnect} className="gap-2">
             <LogOut className="h-4 w-4" />
-            Disconnect
+            Disconnect All
           </Button>
         </div>
 
-        <div className="flex items-center gap-4 p-6 bg-white border rounded-lg shadow-sm">
+        <div className="flex items-center gap-4 p-6 bg-white border rounded-lg shadow-sm mb-6">
           <Avatar className="h-16 w-16">
             <AvatarImage src={authData.picture || undefined} />
             <AvatarFallback className="bg-blue-600 text-white text-xl">
@@ -213,19 +286,120 @@ export function FacebookConnectButton() {
 
           <div className="flex-1">
             <h3 className="text-lg font-semibold">{authData.name}</h3>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-              {selectedBusiness && (
+            {selectedBusiness && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
                 <span className="flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded">
                   <Building2 className="w-3 h-3" /> {selectedBusiness.name}
                 </span>
-              )}
-              <span className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-medium">
-                <Flag className="w-3 h-3" /> {selectedPage.name}
-              </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Connected Pages List */}
+        <div className="space-y-3">
+          <h4 className="text-sm font-medium text-muted-foreground">Connected Pages</h4>
+          {connectedPages.map((page) => (
+            <div
+              key={page.id}
+              className="flex items-center justify-between p-4 bg-white border rounded-lg"
+            >
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-100 p-2 rounded-full">
+                  <Flag className="w-5 h-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="font-medium">
+                    {page.nickname || page.name}
+                  </p>
+                  {page.nickname && (
+                    <p className="text-xs text-muted-foreground">{page.name}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">ID: {page.id}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => handleRemovePage(page.id)}
+                className="p-2 hover:bg-red-50 rounded-full transition-colors"
+                title="Remove page"
+              >
+                <X className="w-4 h-4 text-red-500" />
+              </button>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Page ID: {selectedPage.id}
-            </p>
+          ))}
+        </div>
+
+        {/* Add Another Page Button */}
+        <Button
+          onClick={handleAddAnotherPage}
+          variant="outline"
+          className="w-full mt-4 gap-2"
+        >
+          <Plus className="w-4 h-4" />
+          Add Another Page
+        </Button>
+      </Card>
+    );
+  }
+
+  // Add Page with Nickname View
+  if (viewState === "add-page" && pendingPage) {
+    return (
+      <Card className="p-8 max-w-2xl mx-auto">
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setViewState("select-page")}
+            className="mb-4 pl-0"
+          >
+            ← Back
+          </Button>
+          <h2 className="text-2xl font-bold mb-2">Add Page Nickname (Optional)</h2>
+          <p className="text-muted-foreground">
+            Give this page a nickname to easily identify it when posting (e.g., "My Business Page" or "Personal Page")
+          </p>
+        </div>
+
+        <div className="flex items-center gap-4 p-6 bg-blue-50 border border-blue-200 rounded-lg mb-6">
+          <div className="bg-blue-100 p-3 rounded-full">
+            <Flag className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <p className="font-semibold text-lg">{pendingPage.name}</p>
+            <p className="text-sm text-muted-foreground">Page ID: {pendingPage.id}</p>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Nickname <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={pageNickname}
+              onChange={(e) => setPageNickname(e.target.value)}
+              placeholder="e.g., My Business Page"
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              onClick={() => setViewState("select-page")}
+              variant="outline"
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSavePageWithNickname}
+              className="flex-1 bg-blue-600 text-white gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              {pageNickname.trim() ? `Save as "${pageNickname.trim()}"` : `Save as "${pendingPage.name}"`}
+            </Button>
           </div>
         </div>
       </Card>
