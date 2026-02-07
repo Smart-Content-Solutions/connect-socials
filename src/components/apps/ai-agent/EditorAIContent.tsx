@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles, ArrowRight, Loader2, Wand2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, ArrowRight, Loader2, Wand2, ChevronDown, Lightbulb, MessageCircleQuestion } from 'lucide-react';
 import { toast } from "sonner";
 import { useUser } from "@clerk/clerk-react";
 import GlassCard from './GlassCard';
@@ -13,6 +13,17 @@ interface EditorAIContentProps {
     sites: any[];
 }
 
+const AI_CAPABILITIES = [
+    { id: 'seo', label: 'Optimize SEO for Rank Math 80+ score', emoji: '🎯' },
+    { id: 'links', label: 'Add relevant internal links to related pages', emoji: '🔗' },
+    { id: 'images', label: 'Place images strategically throughout the post', emoji: '🖼️' },
+    { id: 'voice', label: 'Apply brand voice and tone consistently', emoji: '✨' },
+    { id: 'structure', label: 'Improve content structure with proper headings', emoji: '📝' },
+    { id: 'meta', label: 'Update meta title and description for search', emoji: '📊' },
+    { id: 'tone', label: 'Make the tone more professional/energetic/casual', emoji: '🎭' },
+    { id: 'cta', label: 'Add a call-to-action at the end', emoji: '🚀' },
+];
+
 export default function EditorAIContent({ sites }: EditorAIContentProps) {
     const { user } = useUser();
     const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +32,26 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
     const [userInstruction, setUserInstruction] = useState("");
     const [images, setImages] = useState<File[]>([]);
     const [report, setReport] = useState<any>(null);
+    const [showInfoBox, setShowInfoBox] = useState(false);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const handleCapabilityClick = (capability: string) => {
+        setUserInstruction(prev => {
+            const trimmed = prev.trim();
+            if (trimmed === '') return capability;
+            return trimmed + ', ' + capability;
+        });
+    };
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (textareaRef.current && !textareaRef.current.contains(event.target as Node)) {
+                setShowInfoBox(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const handleEnhance = async () => {
         if (!selectedSiteId || !selectedPostId) {
@@ -179,13 +210,50 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
                                 <span className="text-xs text-pink-400">Optional</span>
                             </label>
                             <textarea
+                                ref={textareaRef}
                                 value={userInstruction}
                                 onChange={(e) => setUserInstruction(e.target.value)}
+                                onFocus={() => setShowInfoBox(true)}
                                 placeholder="e.g. Focus on adding links to our 'Consulting' page and make the tone more energetic."
                                 rows={3}
                                 className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-pink-500/50 resize-none"
                             />
                         </div>
+
+                        <AnimatePresence>
+                            {showInfoBox && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10, height: 0 }}
+                                    animate={{ opacity: 1, y: 0, height: 'auto' }}
+                                    exit={{ opacity: 0, y: -10, height: 0 }}
+                                    transition={{ duration: 0.3, ease: 'easeOut' }}
+                                    className="overflow-hidden"
+                                >
+                                    <div className="bg-gradient-to-br from-[#3B3C3E]/60 to-[#3B3C3E]/30 backdrop-blur-xl rounded-xl border border-white/10 p-4 space-y-3">
+                                        <div className="flex items-center gap-2 text-pink-400">
+                                            <Lightbulb className="w-4 h-4" />
+                                            <span className="text-sm font-semibold">What can this AI do?</span>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                            {AI_CAPABILITIES.map((cap) => (
+                                                <button
+                                                    key={cap.id}
+                                                    onClick={() => handleCapabilityClick(cap.label)}
+                                                    className="flex items-center gap-2 text-left text-sm text-gray-300 hover:text-white hover:bg-white/5 px-3 py-2 rounded-lg transition-all duration-200 group"
+                                                >
+                                                    <span className="text-lg group-hover:scale-110 transition-transform">{cap.emoji}</span>
+                                                    <span className="flex-1">{cap.label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <div className="pt-2 border-t border-white/10 flex items-center gap-2 text-xs text-gray-500">
+                                            <MessageCircleQuestion className="w-3 h-3" />
+                                            <span>Stuck? Ask the chatbot for guidance!</span>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
 
                         {!report && (
                             <button
