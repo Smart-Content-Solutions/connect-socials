@@ -1301,22 +1301,39 @@ export default function SocialMediaTool() {
                   </button>
                 </div>
               ) : (
-                facebookBusinesses.map(business => (
-                  <button
-                    key={business.id}
-                    onClick={() => handleBusinessSelect(business)}
-                    className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <p className="text-[#D6D7D8] font-semibold group-hover:text-[#E1C37A] transition-colors">
-                          {business.name}
-                        </p>
-                        <p className="text-xs text-[#5B5C60] font-mono">ID: {business.id}</p>
+                <>
+                  {facebookBusinesses.map(business => (
+                    <button
+                      key={business.id}
+                      onClick={() => handleBusinessSelect(business)}
+                      className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div>
+                          <p className="text-[#D6D7D8] font-semibold group-hover:text-[#E1C37A] transition-colors">
+                            {business.name}
+                          </p>
+                          <p className="text-xs text-[#5B5C60] font-mono">ID: {business.id}</p>
+                        </div>
                       </div>
+                    </button>
+                  ))}
+                  
+                  {/* Show Personal Pages Option */}
+                  <div className="mt-6 pt-6 border-t border-white/10">
+                    <div className="text-center">
+                      <p className="text-sm text-[#5B5C60] mb-3">
+                        Want to connect personal pages instead?
+                      </p>
+                      <button
+                        onClick={() => { setShowBusinessModal(false); setShowFacebookPagesModal(true); }}
+                        className="px-4 py-2 rounded-lg border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/10 transition-colors text-sm"
+                      >
+                        Show Personal Pages
+                      </button>
                     </div>
-                  </button>
-                ))
+                  </div>
+                </>
               )}
             </div>
           </div>
