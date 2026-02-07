@@ -1400,45 +1400,104 @@ export default function SocialMediaTool() {
                 return !page.business; // Personal pages have no business object
               }).length === 0 ? (
                 <div className="text-center py-8 text-[#5B5C60]">
-                  <p>No {selectedBusiness ? 'business' : 'personal'} pages found for this user.</p>
+                  <p>No {selectedBusiness ? 'business portfolio' : 'personal'} pages found for this user.</p>
                   <p className="text-xs mt-2">Make sure you granted the correct permissions.</p>
                 </div>
               ) : (
-                facebookPages
-                  .filter(page => {
-                    if (selectedBusiness) return page.business?.id === selectedBusiness.id;
-                    return !page.business;
-                  })
-                  .map(page => (
-                    <button
-                      key={page.id}
-                      onClick={() => {
-                        setSelectedFacebookPage(page);
-                        localStorage.setItem('facebook_selected_page', JSON.stringify(page));
-                        setShowFacebookPagesModal(false);
-                        setActiveTab('dashboard');
-                      }}
-                      className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-[#1877F2]/10 flex items-center justify-center text-[#1877F2] font-bold text-lg">
-                          {page.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-[#D6D7D8] font-semibold group-hover:text-[#E1C37A] transition-colors">
-                            {page.name}
-                          </p>
-                          <p className="text-xs text-[#5B5C60] font-mono">ID: {page.id}</p>
-                        </div>
-                      </div>
+                <>
+                  <button
+                    onClick={() => {
+                      const visiblePages = facebookPages.filter(page => {
+                        if (selectedBusiness) return page.business?.id === selectedBusiness.id;
+                        return !page.business;
+                      });
+                      const authData = getFacebookAuthData();
 
-                      {selectedFacebookPage?.id === page.id && (
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
-                          <CheckCircle className="w-3 h-3 text-[#1A1A1C]" />
+                      setConnectedFacebookPages(prev => {
+                        const updated = [...prev];
+                        visiblePages.forEach(p => {
+                          if (!updated.some(acc => acc.id === p.id)) {
+                            updated.push({
+                              id: p.id,
+                              platform: 'facebook',
+                              name: p.name,
+                              access_token: p.access_token || authData?.access_token || '',
+                            });
+                          }
+                        });
+                        localStorage.setItem("facebook_connected_pages", JSON.stringify(updated));
+                        return updated;
+                      });
+
+                      setSelectedFacebookPageIds(prev => {
+                        const next = [...prev];
+                        visiblePages.forEach(p => {
+                          if (!next.includes(p.id)) next.push(p.id);
+                        });
+                        return next;
+                      });
+
+                      setShowFacebookPagesModal(false);
+                      toast.success(`Connected ${visiblePages.length} pages`);
+                    }}
+                    className="w-full mb-4 py-3 px-4 rounded-xl bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] font-semibold hover:bg-[#E1C37A]/20 transition-all flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                    Connect All Visible Pages ({facebookPages.filter(page => selectedBusiness ? page.business?.id === selectedBusiness.id : !page.business).length})
+                  </button>
+
+                  {facebookPages
+                    .filter(page => {
+                      if (selectedBusiness) return page.business?.id === selectedBusiness.id;
+                      return !page.business;
+                    })
+                    .map(page => (
+                      <button
+                        key={page.id}
+                        onClick={() => {
+                          const authData = getFacebookAuthData();
+                          const newAccount: ConnectedAccount = {
+                            id: page.id,
+                            platform: 'facebook',
+                            name: page.name,
+                            access_token: page.access_token || authData?.access_token || '',
+                          };
+
+                          setConnectedFacebookPages(prev => {
+                            const exists = prev.some(acc => acc.id === newAccount.id);
+                            if (exists) return prev;
+                            const updated = [...prev, newAccount];
+                            localStorage.setItem("facebook_connected_pages", JSON.stringify(updated));
+                            return updated;
+                          });
+
+                          setSelectedFacebookPageIds(prev => [...new Set([...prev, newAccount.id])]);
+                          setSelectedFacebookPage(page); // Keep for legacy compatibility
+                          setShowFacebookPagesModal(false);
+                          toast.success(`Connected ${page.name}`);
+                        }}
+                        className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-[#1877F2]/10 flex items-center justify-center text-[#1877F2] font-bold text-lg">
+                            {page.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-[#D6D7D8] font-semibold group-hover:text-[#E1C37A] transition-colors">
+                              {page.name}
+                            </p>
+                            <p className="text-xs text-[#5B5C60] font-mono">ID: {page.id}</p>
+                          </div>
                         </div>
-                      )}
-                    </button>
-                  ))
+
+                        {selectedFacebookPage?.id === page.id && (
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
+                            <CheckCircle className="w-3 h-3 text-[#1A1A1C]" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                </>
               )}
             </div>
 
@@ -1533,74 +1592,116 @@ export default function SocialMediaTool() {
                   </p>
                 </div>
               ) : (
-                instagramData.pages.map((page: any) => (
-                  <button
-                    key={page.id}
-                    onClick={() => {
-                      const newAccount: ConnectedAccount = {
-                        id: page.instagram_business_account?.id || page.id,
-                        platform: "instagram",
-                        name: page.name || instagramData?.username || "Instagram Account",
-                        access_token: instagramData?.access_token || "",
-                        instagram_business_account_id: page.instagram_business_account?.id,
-                      };
+                <>
+                  {instagramData.pages && instagramData.pages.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setConnectedInstagramPages(prev => {
+                          const updated = [...prev];
+                          instagramData.pages.forEach((page: any) => {
+                            const id = page.instagram_business_account?.id || page.id;
+                            if (!updated.some(acc => acc.id === id)) {
+                              updated.push({
+                                id: id,
+                                platform: "instagram",
+                                name: page.name || instagramData?.username || "Instagram Account",
+                                access_token: instagramData?.access_token || "",
+                                instagram_business_account_id: page.instagram_business_account?.id,
+                              });
+                            }
+                          });
+                          localStorage.setItem("instagram_connected_pages", JSON.stringify(updated));
+                          return updated;
+                        });
 
-                      // Add to connected accounts
-                      setConnectedInstagramPages(prev => {
-                        const exists = prev.some(acc => acc.id === newAccount.id);
-                        if (exists) return prev;
-                        const updated = [...prev, newAccount];
-                        localStorage.setItem("instagram_connected_pages", JSON.stringify(updated));
-                        return updated;
-                      });
+                        setSelectedInstagramPageIds(prev => {
+                          const next = [...prev];
+                          instagramData.pages.forEach((p: any) => {
+                            const id = p.instagram_business_account?.id || p.id;
+                            if (!next.includes(id)) next.push(id);
+                          });
+                          return next;
+                        });
 
-                      // Select it
-                      setSelectedInstagramPageIds(prev => [...prev, newAccount.id]);
-                      setSelectedInstagramPage(page);
-                      setShowInstagramPagesModal(false);
-                      toast.success("Instagram account selected");
-                    }}
-                    className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
-                  >
-                    <div className="flex items-center gap-4">
-                      {instagramData && (
-                        <div className="flex items-center gap-3 p-3 rounded-lg bg-black/20 mb-4">
-                          {(instagramData.picture || (instagramData as any).profilePicture) ? (
-                            <img
-                              src={instagramData.picture || (instagramData as any).profilePicture}
-                              alt={instagramData.username || "IG"}
-                              className="w-10 h-10 rounded-full border border-white/10"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-pink-500/80 flex items-center justify-center text-white font-bold text-lg">
-                              {instagramData.username?.charAt(0).toUpperCase() || "I"}
+                        setShowInstagramPagesModal(false);
+                        toast.success(`Connected ${instagramData.pages.length} Instagram accounts`);
+                      }}
+                      className="w-full mb-4 py-3 px-4 rounded-xl bg-[#E4405F]/10 border border-[#E4405F]/30 text-[#E4405F] font-semibold hover:bg-[#E4405F]/20 transition-all flex items-center justify-center gap-2"
+                    >
+                      <Instagram className="w-5 h-5" />
+                      Connect All Instagram Accounts ({instagramData.pages.length})
+                    </button>
+                  )}
+
+                  {instagramData.pages.map((page: any) => (
+                    <button
+                      key={page.id}
+                      onClick={() => {
+                        const newAccount: ConnectedAccount = {
+                          id: page.instagram_business_account?.id || page.id,
+                          platform: "instagram",
+                          name: page.name || instagramData?.username || "Instagram Account",
+                          access_token: instagramData?.access_token || "",
+                          instagram_business_account_id: page.instagram_business_account?.id,
+                        };
+
+                        // Add to connected accounts
+                        setConnectedInstagramPages(prev => {
+                          const exists = prev.some(acc => acc.id === newAccount.id);
+                          if (exists) return prev;
+                          const updated = [...prev, newAccount];
+                          localStorage.setItem("instagram_connected_pages", JSON.stringify(updated));
+                          return updated;
+                        });
+
+                        // Select it
+                        setSelectedInstagramPageIds(prev => [...prev, newAccount.id]);
+                        setSelectedInstagramPage(page);
+                        setShowInstagramPagesModal(false);
+                        toast.success("Instagram account selected");
+                      }}
+                      className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
+                    >
+                      <div className="flex items-center gap-4">
+                        {instagramData && (
+                          <div className="flex items-center gap-3 p-3 rounded-lg bg-black/20 mb-4">
+                            {(instagramData.picture || (instagramData as any).profilePicture) ? (
+                              <img
+                                src={instagramData.picture || (instagramData as any).profilePicture}
+                                alt={instagramData.username || "IG"}
+                                className="w-10 h-10 rounded-full border border-white/10"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-pink-500/80 flex items-center justify-center text-white font-bold text-lg">
+                                {instagramData.username?.charAt(0).toUpperCase() || "I"}
+                              </div>
+                            )}
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-white/90">
+                                {instagramData.username ? `@${instagramData.username}` : "Connected"}
+                              </span>
+                              <span className="text-[10px] text-zinc-400">
+                                {(instagramData as any).pageName || "Professional Account"}
+                              </span>
                             </div>
-                          )}
-                          <div className="flex flex-col">
-                            <span className="text-sm font-medium text-white/90">
-                              {instagramData.username ? `@${instagramData.username}` : "Connected"}
-                            </span>
-                            <span className="text-[10px] text-zinc-400">
-                              {(instagramData as any).pageName || "Professional Account"}
-                            </span>
                           </div>
+                        )}
+                        <div>
+                          <p className="text-[#D6D7D8] font-semibold group-hover:text-[#E1C37A] transition-colors">
+                            {instagramData.username || page.name}
+                          </p>
+                          <p className="text-xs text-[#5B5C60] font-mono">Page: {page.name}</p>
+                        </div>
+                      </div>
+
+                      {selectedInstagramPage?.id === page.id && (
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
+                          <CheckCircle className="w-3 h-3 text-[#1A1A1C]" />
                         </div>
                       )}
-                      <div>
-                        <p className="text-[#D6D7D8] font-semibold group-hover:text-[#E1C37A] transition-colors">
-                          {instagramData.username || page.name}
-                        </p>
-                        <p className="text-xs text-[#5B5C60] font-mono">Page: {page.name}</p>
-                      </div>
-                    </div>
-
-                    {selectedInstagramPage?.id === page.id && (
-                      <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
-                        <CheckCircle className="w-3 h-3 text-[#1A1A1C]" />
-                      </div>
-                    )}
-                  </button>
-                ))
+                    </button>
+                  ))}
+                </>
               )}
             </div>
             <div className="mt-6 pt-4 border-t border-white/5 text-center">
