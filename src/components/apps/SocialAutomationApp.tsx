@@ -44,9 +44,9 @@ import {
   isFacebookConnected,
   getFacebookAuthData,
   getFacebookBusinesses,
-  getFacebookPagesWithBusiness,
-  type FacebookPage
-} from "@/utils/facebookOAuth";
+   getFacebookPages,
+   type FacebookPage
+ } from "@/utils/facebookOAuth";
 
 import {
   initiateInstagramAuth,
@@ -632,72 +632,96 @@ export default function SocialMediaTool() {
 
   // Post type options (NEW)
   const [postAsStory, setPostAsStory] = useState(false);
-  const [videoPostTypes, setVideoPostTypes] = useState({
-    instagram: { feed: true, reel: false, story: false },
-    facebook: { feed: true, reel: false, story: false }
-  });
+   const [videoPostTypes, setVideoPostTypes] = useState({
+     instagram: { feed: true, reel: false, story: false },
+     facebook: { feed: true, reel: false, story: false }
+   });
 
-  const handleFacebookBusinessSelection = async () => {
-    const authData = getFacebookAuthData();
-    if (!authData?.access_token) {
-      // If not connected, connect first
-      window.location.reload(); // Simple reload to refresh state if needed, but normally we just wait
-      return;
-    }
-
-    // Fetch businesses first
+  // Function to fetch ALL Facebook Pages (personal and business-managed)
+  const fetchFacebookAllPages = async (token: string) => {
+    setIsLoading(true);
     try {
-      const businesses = await getFacebookBusinesses(authData.access_token);
-      if (businesses.length > 0) {
-        setFacebookBusinesses(businesses);
-        setShowBusinessModal(true);
-      } else {
-        // No businesses found, fallback to just pages
-        setShowFacebookPagesModal(true);
-      }
-    } catch (e) {
-      console.error("Error fetching businesses", e);
-      setShowFacebookPagesModal(true);
-    }
-  };
+      const res = await fetch(
+        `https://graph.facebook.com/v19.0/me/accounts?fields=name,access_token,picture,business&access_token=${token}`
+      );
+      const data = await res.json();
 
-  const handleBusinessSelect = async (business: { id: string; name: string }) => {
-    setSelectedBusiness(business);
-    const authData = getFacebookAuthData();
-    if (!authData?.access_token) return;
+      if (data.error) throw new Error(data.error.message);
 
-    try {
-      const pages = await getFacebookPagesWithBusiness(authData.access_token);
-
-      // Filter pages belonging to this business
-      // API returns business: { id, name } inside page object, or just id? We check both safely
-      const filteredPages = pages.filter((p: any) => p.business?.id === business.id);
-
-      // Map to FacebookPage type
-      const mappedPages: FacebookPage[] = filteredPages.map((p: any) => ({
+      const allPages: FacebookPage[] = (data.data || []).map((p: any) => ({
         id: p.id,
         name: p.name,
-        access_token: p.access_token
+        access_token: p.access_token,
+        picture: p.picture?.data?.url,
+        business: p.business, // Keep business info for filtering
       }));
-
-      // Use filtered pages if any, otherwise fallback to all (or empty if strict)
-      // For demo: strictly show only pages under that business
-      setFacebookPages(mappedPages);
-      setShowBusinessModal(false);
-      setShowFacebookPagesModal(true);
-    } catch (e) {
-      console.error("Error fetching pages for business", e);
-      // Fallback
-      setShowFacebookPagesModal(true);
+      setFacebookPages(allPages);
+    } catch (e: any) {
+      console.error("Error fetching all Facebook pages:", e);
+      toast.error("Failed to load Facebook pages: " + e.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Maximum video file size: 50MB (server limit)
-  const MAX_VIDEO_SIZE_MB = 50;
+   const handleFacebookBusinessSelection = async () => {
+     const authData = getFacebookAuthData();
+     if (!authData?.access_token) {
+       // If not connected, connect first
+       window.location.reload(); // Simple reload to refresh state if needed, but normally we just wait
+       return;
+     }
 
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
+     // Fetch businesses first
+     try {
+       const businesses = await getFacebookBusinesses(authData.access_token);
+       if (businesses.length > 0) {
+         setFacebookBusinesses(businesses);
+         setShowBusinessModal(true);
+       } else {
+         // No businesses found, fallback to just pages
+         setShowFacebookPagesModal(true);
+         await fetchFacebookAllPages(authData.access_token); // Fetch all pages directly
+       }
+     } catch (e: any) {
+       console.error("Error fetching businesses", e);
+       toast.error("Failed to load Business Managers: " + e.message);
+       setShowFacebookPagesModal(true);
+       const authData = getFacebookAuthData(); // Re-get authData here
+       if (authData?.access_token) {
+         await fetchFacebookAllPages(authData.access_token); // Fetch all pages directly
+       }
+     }
+   };
+
+   const handleBusinessSelect = async (business: { id: string; name: string }) => {
+     setSelectedBusiness(business);
+     const authData = getFacebookAuthData();
+     if (!authData?.access_token) return;
+
+     try {
+       // Fetch ALL pages, then filter by selected business
+       await fetchFacebookAllPages(authData.access_token);
+       
+       // The fetchFacebookAllPages will set all pages. We then filter them.
+       setFacebookPages(prevPages => prevPages.filter(p => p.business?.id === business.id));
+
+       setShowBusinessModal(false);
+       setShowFacebookPagesModal(true);
+     } catch (e: any) {
+       console.error("Error fetching pages for business", e);
+       toast.error("Failed to load Pages for Business: " + e.message);
+       setShowFacebookPagesModal(true);
+     }
+   };
+
+   // Maximum video file size: 50MB (server limit)
+   const MAX_VIDEO_SIZE_MB = 50;
+
+   const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+     const files = Array.from(e.target.files || []);
+     if (files.length === 0) return;
+
 
     // Filter only video files
     const videoFilesSelected = files.filter(f => f.type.startsWith('video/'));

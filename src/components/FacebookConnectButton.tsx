@@ -57,7 +57,7 @@ export function FacebookConnectButton() {
           console.error("Failed to parse stored pages", e);
         }
       }
-      
+
       // Backward compatibility: check for old format (single page)
       const storedPage = localStorage.getItem("facebook_selected_page");
       if (storedPage) {
@@ -90,9 +90,9 @@ export function FacebookConnectButton() {
     setIsLoading(true);
     try {
       // META REQUIREMENT: Show list of Businesses user manages
-      // GET /me/businesses
+      // GET /me/businesses - This returns actual Business Managers, not pages
       const res = await fetch(
-        `https://graph.facebook.com/v19.0/me/accounts?fields=id,name,access_token&access_token=${token}`
+        `https://graph.facebook.com/v19.0/me/businesses?fields=id,name&access_token=${token}`
       );
       const data = await res.json();
 
@@ -135,7 +135,8 @@ export function FacebookConnectButton() {
     } finally {
       setIsLoading(false);
     }
-  }
+  };
+
 
   const handleSelectBusiness = async (biz: Business) => {
     setSelectedBusiness(biz);
@@ -215,7 +216,7 @@ export function FacebookConnectButton() {
     const updatedPages = connectedPages.filter((p) => p.id !== pageId);
     setConnectedPages(updatedPages);
     localStorage.setItem("facebook_connected_pages", JSON.stringify(updatedPages));
-    
+
     if (updatedPages.length === 0) {
       // If no pages left, go back to selection
       setViewState("select-business");
@@ -423,6 +424,26 @@ export function FacebookConnectButton() {
           </div>
         ) : (
           <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+            <div
+              onClick={() => fetchPagesWithoutBusiness(authData!.access_token)}
+              className="flex items-center p-4 border border-blue-100 bg-blue-50/30 rounded-lg hover:bg-blue-50 hover:border-blue-200 cursor-pointer transition-all group"
+            >
+              <div className="bg-blue-100 p-3 rounded-full mr-4 group-hover:bg-blue-200 transition-colors">
+                <Flag className="w-6 h-6 text-blue-600 group-hover:text-blue-700" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-lg">Personal Pages</h3>
+                <p className="text-xs text-muted-foreground">Pages not managed by a Business Manager (e.g., Mappy)</p>
+              </div>
+              <Button variant="outline" size="sm">View</Button>
+            </div>
+
+            <div className="my-4 flex items-center gap-4">
+              <div className="h-px flex-1 bg-gray-200"></div>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Business Managers</span>
+              <div className="h-px flex-1 bg-gray-200"></div>
+            </div>
+
             {businesses.map((biz) => (
               <div
                 key={biz.id}
@@ -453,8 +474,8 @@ export function FacebookConnectButton() {
                   <p className="text-sm text-muted-foreground mb-3">
                     Want to connect personal pages instead?
                   </p>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => fetchPagesWithoutBusiness(authData!.access_token)}
                     className="gap-2"
                   >
