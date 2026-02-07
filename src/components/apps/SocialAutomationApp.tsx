@@ -1412,6 +1412,24 @@ export default function SocialMediaTool() {
                 <div className="space-y-3">
                   <button
                     onClick={() => {
+                      const newAccount: ConnectedAccount = {
+                        id: instagramData?.instagram_user_id || "demo-page",
+                        platform: "instagram",
+                        name: instagramData?.username || "hsuswiowkskow",
+                        access_token: instagramData?.access_token || "",
+                      };
+                      
+                      // Add to connected accounts
+                      setConnectedInstagramPages(prev => {
+                        const exists = prev.some(acc => acc.id === newAccount.id);
+                        if (exists) return prev;
+                        const updated = [...prev, newAccount];
+                        localStorage.setItem("instagram_connected_pages", JSON.stringify(updated));
+                        return updated;
+                      });
+                      
+                      // Select it
+                      setSelectedInstagramPageIds(prev => [...prev, newAccount.id]);
                       setSelectedInstagramPage("demo-page");
                       setShowInstagramPagesModal(false);
                       toast.success("Instagram account selected");
@@ -1453,8 +1471,28 @@ export default function SocialMediaTool() {
                   <button
                     key={page.id}
                     onClick={() => {
+                      const newAccount: ConnectedAccount = {
+                        id: page.instagram_business_account?.id || page.id,
+                        platform: "instagram",
+                        name: page.name || instagramData?.username || "Instagram Account",
+                        access_token: instagramData?.access_token || "",
+                        instagram_business_account_id: page.instagram_business_account?.id,
+                      };
+                      
+                      // Add to connected accounts
+                      setConnectedInstagramPages(prev => {
+                        const exists = prev.some(acc => acc.id === newAccount.id);
+                        if (exists) return prev;
+                        const updated = [...prev, newAccount];
+                        localStorage.setItem("instagram_connected_pages", JSON.stringify(updated));
+                        return updated;
+                      });
+                      
+                      // Select it
+                      setSelectedInstagramPageIds(prev => [...prev, newAccount.id]);
                       setSelectedInstagramPage(page);
                       setShowInstagramPagesModal(false);
+                      toast.success("Instagram account selected");
                     }}
                     className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 hover:border-[#E1C37A]/50 hover:bg-[#E1C37A]/5 transition-all group text-left"
                   >
