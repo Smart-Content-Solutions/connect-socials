@@ -145,6 +145,37 @@ export default function SocialMediaTool() {
   const [selectedFacebookPageIds, setSelectedFacebookPageIds] = useState<string[]>([]);
   const [selectedInstagramPageIds, setSelectedInstagramPageIds] = useState<string[]>([]);
 
+  // Sync platforms with selected account IDs
+  useEffect(() => {
+    setSelectedPlatforms(prev => {
+      const newPlatforms = [...prev];
+      
+      // Add or remove Facebook based on selectedFacebookPageIds
+      const hasFacebookAccounts = selectedFacebookPageIds.length > 0;
+      const hasFacebookInPlatforms = newPlatforms.includes('facebook');
+      
+      if (hasFacebookAccounts && !hasFacebookInPlatforms) {
+        newPlatforms.push('facebook');
+      } else if (!hasFacebookAccounts && hasFacebookInPlatforms) {
+        const index = newPlatforms.indexOf('facebook');
+        if (index > -1) newPlatforms.splice(index, 1);
+      }
+      
+      // Add or remove Instagram based on selectedInstagramPageIds
+      const hasInstagramAccounts = selectedInstagramPageIds.length > 0;
+      const hasInstagramInPlatforms = newPlatforms.includes('instagram');
+      
+      if (hasInstagramAccounts && !hasInstagramInPlatforms) {
+        newPlatforms.push('instagram');
+      } else if (!hasInstagramAccounts && hasInstagramInPlatforms) {
+        const index = newPlatforms.indexOf('instagram');
+        if (index > -1) newPlatforms.splice(index, 1);
+      }
+      
+      return newPlatforms;
+    });
+  }, [selectedFacebookPageIds, selectedInstagramPageIds]);
+
   // Legacy state (for backward compatibility during transition)
   const [selectedFacebookPage, setSelectedFacebookPage] = useState<FacebookPage | null>(null);
 
