@@ -2387,6 +2387,9 @@ export default function SocialMediaTool() {
                         Note: Stories will be posted to {selectedPlatforms.includes('instagram') && selectedPlatforms.includes('facebook') ? 'both Instagram and Facebook' : selectedPlatforms.includes('instagram') ? 'Instagram' : 'Facebook'}.
                         {imageFiles.length > 1 ? ` ${imageFiles.length} images will be posted as separate story slides.` : ''}
                       </p>
+                      <p className="text-xs text-yellow-400 mt-2 font-medium">
+                        ⚠️ Note: Stories will be posted to Facebook and Instagram but without captions due to platform limitations.
+                      </p>
                     </div>
                   )}
                 </div>
