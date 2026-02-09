@@ -149,29 +149,29 @@ export default function SocialMediaTool() {
   useEffect(() => {
     setSelectedPlatforms(prev => {
       const newPlatforms = [...prev];
-      
+
       // Add or remove Facebook based on selectedFacebookPageIds
       const hasFacebookAccounts = selectedFacebookPageIds.length > 0;
       const hasFacebookInPlatforms = newPlatforms.includes('facebook');
-      
+
       if (hasFacebookAccounts && !hasFacebookInPlatforms) {
         newPlatforms.push('facebook');
       } else if (!hasFacebookAccounts && hasFacebookInPlatforms) {
         const index = newPlatforms.indexOf('facebook');
         if (index > -1) newPlatforms.splice(index, 1);
       }
-      
+
       // Add or remove Instagram based on selectedInstagramPageIds
       const hasInstagramAccounts = selectedInstagramPageIds.length > 0;
       const hasInstagramInPlatforms = newPlatforms.includes('instagram');
-      
+
       if (hasInstagramAccounts && !hasInstagramInPlatforms) {
         newPlatforms.push('instagram');
       } else if (!hasInstagramAccounts && hasInstagramInPlatforms) {
         const index = newPlatforms.indexOf('instagram');
         if (index > -1) newPlatforms.splice(index, 1);
       }
-      
+
       return newPlatforms;
     });
   }, [selectedFacebookPageIds, selectedInstagramPageIds]);
@@ -2609,9 +2609,9 @@ export default function SocialMediaTool() {
               <ConnectedAccountsSelector
                 accounts={[...connectedFacebookPages, ...connectedInstagramPages]}
                 selectedIds={[...selectedFacebookPageIds, ...selectedInstagramPageIds]}
-                onToggle={(id) => {
+                onToggle={(id, platform) => {
                   // Toggle Facebook
-                  if (connectedFacebookPages.some(p => p.id === id)) {
+                  if (platform === 'facebook') {
                     const isCurrentlySelected = selectedFacebookPageIds.includes(id);
                     const newSelectedIds = isCurrentlySelected
                       ? selectedFacebookPageIds.filter(pid => pid !== id)
@@ -2629,7 +2629,7 @@ export default function SocialMediaTool() {
                     }
                   }
                   // Toggle Instagram
-                  if (connectedInstagramPages.some(p => p.id === id)) {
+                  if (platform === 'instagram') {
                     const isCurrentlySelected = selectedInstagramPageIds.includes(id);
                     const newSelectedIds = isCurrentlySelected
                       ? selectedInstagramPageIds.filter(pid => pid !== id)

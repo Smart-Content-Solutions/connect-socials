@@ -14,7 +14,7 @@ export interface ConnectedAccount {
 interface ConnectedAccountsSelectorProps {
   accounts: ConnectedAccount[];
   selectedIds: string[];
-  onToggle: (id: string) => void;
+  onToggle: (id: string, platform: "facebook" | "instagram") => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
 }
@@ -81,22 +81,20 @@ export function ConnectedAccountsSelector({
       <div className="flex items-center gap-2 mb-4">
         <button
           onClick={() => setActiveFilter("all")}
-          className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
-            activeFilter === "all"
-              ? "bg-[#E1C37A]/20 text-[#E1C37A]"
-              : "bg-[#3B3C3E]/50 text-[#A9AAAC] hover:text-[#D6D7D8]"
-          }`}
+          className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${activeFilter === "all"
+            ? "bg-[#E1C37A]/20 text-[#E1C37A]"
+            : "bg-[#3B3C3E]/50 text-[#A9AAAC] hover:text-[#D6D7D8]"
+            }`}
         >
           All ({accounts.length})
         </button>
         {facebookCount > 0 && (
           <button
             onClick={() => setActiveFilter("facebook")}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 ${
-              activeFilter === "facebook"
-                ? "bg-[#1877F2]/20 text-[#1877F2]"
-                : "bg-[#3B3C3E]/50 text-[#A9AAAC] hover:text-[#D6D7D8]"
-            }`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 ${activeFilter === "facebook"
+              ? "bg-[#1877F2]/20 text-[#1877F2]"
+              : "bg-[#3B3C3E]/50 text-[#A9AAAC] hover:text-[#D6D7D8]"
+              }`}
           >
             <Facebook className="w-3 h-3" />
             Facebook ({facebookCount})
@@ -105,11 +103,10 @@ export function ConnectedAccountsSelector({
         {instagramCount > 0 && (
           <button
             onClick={() => setActiveFilter("instagram")}
-            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 ${
-              activeFilter === "instagram"
-                ? "bg-[#E4405F]/20 text-[#E4405F]"
-                : "bg-[#3B3C3E]/50 text-[#A9AAAC] hover:text-[#D6D7D8]"
-            }`}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 ${activeFilter === "instagram"
+              ? "bg-[#E4405F]/20 text-[#E4405F]"
+              : "bg-[#3B3C3E]/50 text-[#A9AAAC] hover:text-[#D6D7D8]"
+              }`}
           >
             <Instagram className="w-3 h-3" />
             Instagram ({instagramCount})
@@ -127,12 +124,11 @@ export function ConnectedAccountsSelector({
           return (
             <button
               key={account.id}
-              onClick={() => onToggle(account.id)}
-              className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all duration-200 ${
-                isSelected
-                  ? "bg-[#E1C37A]/10 border-[#E1C37A]/30"
-                  : "bg-[#2C2C2E]/50 border-white/5 hover:border-white/10"
-              }`}
+              onClick={() => onToggle(account.id, account.platform)}
+              className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all duration-200 ${isSelected
+                ? "bg-[#E1C37A]/10 border-[#E1C37A]/30"
+                : "bg-[#2C2C2E]/50 border-white/5 hover:border-white/10"
+                }`}
             >
               <div className="flex items-center gap-3">
                 <div
