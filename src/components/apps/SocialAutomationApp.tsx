@@ -662,7 +662,7 @@ export default function SocialMediaTool() {
   const [pendingVideoFile, setPendingVideoFile] = useState<File | null>(null);
 
   // Post type options (NEW)
-  const [postAsStory, setPostAsStory] = useState(false);
+  const [imagePostTypes, setImagePostTypes] = useState({ feed: true, story: false });
   const [videoPostTypes, setVideoPostTypes] = useState({
     instagram: { feed: false, reel: false, story: false },
     facebook: { feed: false, reel: false, story: false }
@@ -979,7 +979,13 @@ export default function SocialMediaTool() {
     form.append("type", "image");
 
     // Add is_story flag for Instagram/Facebook
-    form.append("is_story", postAsStory ? "true" : "false");
+    if (imagePostTypes.feed && imagePostTypes.story) {
+      form.append("post_to_both_feed_and_story", "true");
+    } else if (imagePostTypes.story) {
+      form.append("is_story", "true");
+    } else {
+      form.append("is_story", "false");
+    }
 
     // Add specific page_ids for multi-account posting (NEW)
     if (selectedPlatforms.includes('facebook') && selectedFacebookPageIds.length > 0) {
@@ -1150,6 +1156,13 @@ export default function SocialMediaTool() {
       }
     }
 
+    // Validate that a post type is selected if in Image mode
+    if (activeTab === 'create' && (selectedPlatforms.includes('facebook') || selectedPlatforms.includes('instagram'))) {
+      if (!imagePostTypes.feed && !imagePostTypes.story) {
+        return setErrorMsg("Please select at least one post type (Feed or Story) for Facebook/Instagram.");
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -1179,7 +1192,7 @@ export default function SocialMediaTool() {
       setVideoPreviews([]);
 
       // Reset post type options
-      setPostAsStory(false);
+      setImagePostTypes({ feed: true, story: false });
       setVideoPostTypes({
         instagram: { feed: false, reel: false, story: false },
         facebook: { feed: false, reel: false, story: false }
@@ -2409,30 +2422,57 @@ export default function SocialMediaTool() {
                 />
               </div>
 
-              {/* Post as Story Toggle - Only show if Instagram or Facebook is selected */}
+              {/* Image Post Type Selection - Only show if Instagram or Facebook is selected */}
               {(selectedPlatforms.includes('instagram') || selectedPlatforms.includes('facebook')) && (
                 <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 to-purple-500 flex items-center justify-center">
-                        <Instagram className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold text-[#D6D7D8]">Post as Story</h3>
-                        <p className="text-xs text-[#A9AAAC]">Share to {selectedPlatforms.includes('instagram') && selectedPlatforms.includes('facebook') ? 'Instagram & Facebook' : selectedPlatforms.includes('instagram') ? 'Instagram' : 'Facebook'} Stories</p>
-                      </div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#E1C37A] to-[#B6934C] flex items-center justify-center">
+                      <ImageIcon className="w-5 h-5 text-[#1A1A1C]" />
                     </div>
-                    <button
-                      onClick={() => setPostAsStory(!postAsStory)}
-                      className={`relative w-14 h-7 rounded-full transition-colors duration-300 ${postAsStory ? 'bg-[#E1C37A]' : 'bg-[#4B4C4E]'}`}
-                    >
-                      <span className={`absolute top-1 left-1 w-5 h-5 rounded-full bg-white shadow-md transition-transform duration-300 ${postAsStory ? 'translate-x-7' : 'translate-x-0'}`} />
-                    </button>
+                    <div>
+                      <h3 className="text-sm font-semibold text-[#D6D7D8]">Image Post Type</h3>
+                      <p className="text-xs text-[#A9AAAC]">Choose where to publish your image</p>
+                    </div>
                   </div>
-                  {postAsStory && (
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${imagePostTypes.feed
+                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                      }`}>
+                      <input
+                        type="checkbox"
+                        checked={imagePostTypes.feed}
+                        onChange={(e) => setImagePostTypes(prev => ({ ...prev, feed: e.target.checked }))}
+                        className="w-4 h-4 accent-[#E1C37A]"
+                      />
+                      <div>
+                        <p className={`text-sm font-medium ${imagePostTypes.feed ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>Feed</p>
+                        <p className="text-xs text-[#5B5C60]">Main wall posts</p>
+                      </div>
+                    </label>
+
+                    <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all duration-300 ${imagePostTypes.story
+                      ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
+                      : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
+                      }`}>
+                      <input
+                        type="checkbox"
+                        checked={imagePostTypes.story}
+                        onChange={(e) => setImagePostTypes(prev => ({ ...prev, story: e.target.checked }))}
+                        className="w-4 h-4 accent-[#E1C37A]"
+                      />
+                      <div>
+                        <p className={`text-sm font-medium ${imagePostTypes.story ? 'text-[#E1C37A]' : 'text-[#D6D7D8]'}`}>Story</p>
+                        <p className="text-xs text-[#5B5C60]">24hr stories</p>
+                      </div>
+                    </label>
+                  </div>
+
+                  {imagePostTypes.story && (
                     <div className="mt-3 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
                       <p className="text-xs text-yellow-400">
-                        Note: Stories will be posted to {selectedPlatforms.includes('instagram') && selectedPlatforms.includes('facebook') ? 'both Instagram and Facebook' : selectedPlatforms.includes('instagram') ? 'Instagram' : 'Facebook'}.
+                        {imagePostTypes.feed ? 'Your image will be posted to both Feed and Story.' : 'Your image will be posted to Story only.'}
                         {imageFiles.length > 1 ? ` ${imageFiles.length} images will be posted as separate story slides.` : ''}
                       </p>
                       <p className="text-xs text-yellow-400 mt-2 font-medium">
@@ -2587,7 +2627,7 @@ export default function SocialMediaTool() {
                     setImagePreview(null);
                     setImageFiles([]);
                     setImagePreviews([]);
-                    setPostAsStory(false);
+                    setImagePostTypes({ feed: true, story: false });
                     setSelectedPlatforms([]);
                     setSelectedFacebookPageIds([]);
                     setSelectedInstagramPageIds([]);
