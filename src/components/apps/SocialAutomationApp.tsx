@@ -664,8 +664,8 @@ export default function SocialMediaTool() {
   // Post type options (NEW)
   const [postAsStory, setPostAsStory] = useState(false);
   const [videoPostTypes, setVideoPostTypes] = useState({
-    instagram: { feed: true, reel: false, story: false },
-    facebook: { feed: true, reel: false, story: false }
+    instagram: { feed: false, reel: false, story: false },
+    facebook: { feed: false, reel: false, story: false }
   });
 
   const fetchFacebookAllPages = async (token: string) => {
@@ -1133,6 +1133,23 @@ export default function SocialMediaTool() {
       return setErrorMsg("Please select at least one Instagram account to post to.");
     }
 
+
+    // Validate that a post type is selected if in Video mode
+    if (activeTab === 'video') {
+      if (selectedPlatforms.includes('instagram')) {
+        const hasInstaType = Object.values(videoPostTypes.instagram).some(v => v);
+        if (!hasInstaType) {
+          return setErrorMsg("Please select at least one Instagram post type (Feed, Reel, or Story).");
+        }
+      }
+      if (selectedPlatforms.includes('facebook')) {
+        const hasFbType = Object.values(videoPostTypes.facebook).some(v => v);
+        if (!hasFbType) {
+          return setErrorMsg("Please select at least one Facebook post type (Feed).");
+        }
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -1164,8 +1181,8 @@ export default function SocialMediaTool() {
       // Reset post type options
       setPostAsStory(false);
       setVideoPostTypes({
-        instagram: { feed: true, reel: false, story: false },
-        facebook: { feed: true, reel: false, story: false }
+        instagram: { feed: false, reel: false, story: false },
+        facebook: { feed: false, reel: false, story: false }
       });
 
       setSelectedPlatforms([]);
