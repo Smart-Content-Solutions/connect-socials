@@ -20,6 +20,24 @@ import { UpcomingCallsCard } from '@/components/admin/dashboard/UpcomingCallsCar
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
+// Debug: Check imports at module load time
+console.log('[DEBUG] AdminDashboard module: Checking imports...');
+console.log('[DEBUG] Users icon:', typeof Users);
+console.log('[DEBUG] UserPlus icon:', typeof UserPlus);
+console.log('[DEBUG] Clock icon:', typeof Clock);
+console.log('[DEBUG] Trophy icon:', typeof Trophy);
+console.log('[DEBUG] XCircle icon:', typeof XCircle);
+console.log('[DEBUG] Calendar icon:', typeof Calendar);
+console.log('[DEBUG] CalendarCheck icon:', typeof CalendarCheck);
+console.log('[DEBUG] CalendarClock icon:', typeof CalendarClock);
+console.log('[DEBUG] CheckCircle icon:', typeof CheckCircle);
+console.log('[DEBUG] Loader2 icon:', typeof Loader2);
+console.log('[DEBUG] StatCard:', typeof StatCard);
+console.log('[DEBUG] PipelineChart:', typeof PipelineChart);
+console.log('[DEBUG] ActivityFeed:', typeof ActivityFeed);
+console.log('[DEBUG] RecentLeadsTable:', typeof RecentLeadsTable);
+console.log('[DEBUG] UpcomingCallsCard:', typeof UpcomingCallsCard);
+
 interface DashboardStats {
   leads: {
     total: number;
@@ -178,6 +196,7 @@ export default function AdminDashboard() {
 
   if (loading) {
     console.log('[DEBUG] AdminDashboard: Rendering loading state');
+    console.log('[DEBUG] AdminDashboard: Loader2 defined?', typeof Loader2);
     return (
       <div className="flex bg-background items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
