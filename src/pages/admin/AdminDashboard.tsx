@@ -45,13 +45,16 @@ interface DashboardStats {
 export default function AdminDashboard() {
   console.log('[DEBUG] AdminDashboard: Component starting render');
   const [loading, setLoading] = useState(true);
+  console.log('[DEBUG] AdminDashboard: useState initialized');
   const [stats, setStats] = useState<DashboardStats>({
     leads: { total: 0, new: 0, inProgress: 0, won: 0, lost: 0 },
     calls: { today: 0, week: 0, pending: 0, completed: 0 },
     subscriptions: { total: 0, active: 0, trialing: 0, canceled: 0 },
   });
+  console.log('[DEBUG] AdminDashboard: stats state initialized');
 
   useEffect(() => {
+    console.log('[DEBUG] AdminDashboard: useEffect starting');
     async function fetchStats() {
       try {
         setLoading(true);
@@ -171,7 +174,10 @@ export default function AdminDashboard() {
     fetchStats();
   }, []);
 
+  console.log('[DEBUG] AdminDashboard: Before loading check, loading=', loading);
+
   if (loading) {
+    console.log('[DEBUG] AdminDashboard: Rendering loading state');
     return (
       <div className="flex bg-background items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -180,6 +186,14 @@ export default function AdminDashboard() {
   }
 
   console.log('[DEBUG] AdminDashboard: About to render content (not loading)');
+  
+  // Debug: Check if all imported components are defined
+  console.log('[DEBUG] AdminDashboard: StatCard defined?', typeof StatCard);
+  console.log('[DEBUG] AdminDashboard: PipelineChart defined?', typeof PipelineChart);
+  console.log('[DEBUG] AdminDashboard: ActivityFeed defined?', typeof ActivityFeed);
+  console.log('[DEBUG] AdminDashboard: RecentLeadsTable defined?', typeof RecentLeadsTable);
+  console.log('[DEBUG] AdminDashboard: UpcomingCallsCard defined?', typeof UpcomingCallsCard);
+  
   return (
     <div className="space-y-6">
       {/* Page Header */}
