@@ -30,6 +30,11 @@ const typeLabels: Record<string, string> = {
 
 export default function AdminTickets() {
   console.log('[DEBUG] AdminTickets: Component starting render');
+  console.log('[DEBUG] AdminTickets: TicketIcon=', typeof TicketIcon);
+  console.log('[DEBUG] AdminTickets: Search=', typeof Search);
+  console.log('[DEBUG] AdminTickets: Filter=', typeof Filter);
+  console.log('[DEBUG] AdminTickets: Input=', typeof Input);
+  console.log('[DEBUG] AdminTickets: Button=', typeof Button);
   const { getToken } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
@@ -127,11 +132,18 @@ export default function AdminTickets() {
     );
   });
 
+  // Safeguard components
+  const TicketComp = TicketIcon || (() => <span />);
+  const SearchComp = Search || (() => <span />);
+  const FilterComp = Filter || (() => <span />);
+  const InputComp = Input || (() => <input />);
+  const ButtonComp = Button || (() => <button />);
+
   return (
     <div className="p-6">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
-          <TicketIcon className="w-6 h-6 text-primary" />
+          <TicketComp className="w-6 h-6 text-primary" />
           <h1 className="text-2xl font-semibold">Tickets</h1>
         </div>
         <p className="text-muted-foreground">
@@ -142,18 +154,18 @@ export default function AdminTickets() {
       {/* Search and Filters */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
+          <SearchComp className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <InputComp
             placeholder="Search tickets by subject, description, or user..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10 bg-background"
           />
         </div>
-        <Button variant="outline" className="border-border/60">
-          <Filter className="w-4 h-4 mr-2" />
+        <ButtonComp variant="outline" className="border-border/60">
+          <FilterComp className="w-4 h-4 mr-2" />
           Filters
-        </Button>
+        </ButtonComp>
       </div>
 
       {loading && (
@@ -173,7 +185,7 @@ export default function AdminTickets() {
         <div className="rounded-xl border border-border/60 overflow-hidden">
           {filteredTickets.length === 0 ? (
             <div className="p-12 text-center">
-              <TicketIcon className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <TicketComp className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
               <h3 className="text-lg font-semibold mb-2">No tickets yet</h3>
               <p className="text-muted-foreground">
                 {searchQuery
@@ -229,17 +241,16 @@ export default function AdminTickets() {
                             handleStatusChange(ticket.id, e.target.value as TicketStatus)
                           }
                           disabled={isUpdating}
-                          className={`rounded-md border border-border/60 bg-background px-2 py-1 text-xs font-medium ${
-                            ticket.status === "open"
-                              ? "bg-blue-500/20 text-blue-400 border-blue-500/40"
-                              : ticket.status === "in_progress"
+                          className={`rounded-md border border-border/60 bg-background px-2 py-1 text-xs font-medium ${ticket.status === "open"
+                            ? "bg-blue-500/20 text-blue-400 border-blue-500/40"
+                            : ticket.status === "in_progress"
                               ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/40"
                               : ticket.status === "waiting_on_customer"
-                              ? "bg-purple-500/20 text-purple-400 border-purple-500/40"
-                              : ticket.status === "resolved"
-                              ? "bg-green-500/20 text-green-400 border-green-500/40"
-                              : "bg-gray-500/20 text-gray-400 border-gray-500/40"
-                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                ? "bg-purple-500/20 text-purple-400 border-purple-500/40"
+                                : ticket.status === "resolved"
+                                  ? "bg-green-500/20 text-green-400 border-green-500/40"
+                                  : "bg-gray-500/20 text-gray-400 border-gray-500/40"
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                           <option value="open">Open</option>
                           <option value="in_progress">In Progress</option>
@@ -253,15 +264,14 @@ export default function AdminTickets() {
                       </td>
                       <td className="p-3">
                         <span
-                          className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${
-                            ticket.priority === "urgent"
-                              ? "bg-red-500/20 text-red-400"
-                              : ticket.priority === "high"
+                          className={`inline-flex items-center px-2 py-1 rounded-md text-xs font-medium ${ticket.priority === "urgent"
+                            ? "bg-red-500/20 text-red-400"
+                            : ticket.priority === "high"
                               ? "bg-orange-500/20 text-orange-400"
                               : ticket.priority === "medium"
-                              ? "bg-yellow-500/20 text-yellow-400"
-                              : "bg-gray-500/20 text-gray-400"
-                          }`}
+                                ? "bg-yellow-500/20 text-yellow-400"
+                                : "bg-gray-500/20 text-gray-400"
+                            }`}
                         >
                           {priorityLabels[ticket.priority]}
                         </span>

@@ -46,13 +46,6 @@ const TIER_COLORS = {
   free: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
 };
 
-const TIER_ICONS = {
-  admin: Crown,
-  early_access: Star,
-  pro: Shield,
-  free: UserIcon,
-};
-
 const AVAILABLE_ENTITLEMENTS = [
   'social_automation',
   'wp_ai_agent',
@@ -68,6 +61,15 @@ export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterTier, setFilterTier] = useState<string>('all');
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+
+  // Safeguard imports
+  const CrownIcon = Crown || (() => <span />);
+  const StarIcon = Star || (() => <span />);
+  const ShieldIcon = Shield || (() => <span />);
+  const UserIconComp = UserIcon || (() => <span />);
+  const SearchIcon = Search || (() => <span />);
+  const FilterIcon = Filter || (() => <span />);
+  const UsersIcon = Users || (() => <span />);
 
   useEffect(() => {
     fetchUsers();
@@ -208,7 +210,11 @@ export default function UsersPage() {
               (u.publicMetadata?.base_tier || u.publicMetadata?.role || 'free') ===
               tier
           ).length;
-          const Icon = TIER_ICONS[tier as keyof typeof TIER_ICONS];
+
+          let Icon = UserIconComp;
+          if (tier === 'admin') Icon = CrownIcon;
+          if (tier === 'early_access') Icon = StarIcon;
+          if (tier === 'pro') Icon = ShieldIcon;
 
           return (
             <Card key={tier} className="bg-gray-900/50 border-gray-800">
@@ -231,7 +237,7 @@ export default function UsersPage() {
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
                 placeholder="Search by email or name..."
                 value={searchQuery}
@@ -241,7 +247,7 @@ export default function UsersPage() {
             </div>
             <Select value={filterTier} onValueChange={setFilterTier}>
               <SelectTrigger className="w-full md:w-[200px] bg-gray-800 border-gray-700">
-                <Filter className="w-4 h-4 mr-2" />
+                <FilterIcon className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Filter by tier" />
               </SelectTrigger>
               <SelectContent>
@@ -260,7 +266,7 @@ export default function UsersPage() {
       <Card className="bg-gray-900/50 border-gray-800">
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
-            <Users className="w-5 h-5" />
+            <UsersIcon className="w-5 h-5" />
             Users ({filteredUsers.length})
           </CardTitle>
         </CardHeader>
@@ -272,7 +278,12 @@ export default function UsersPage() {
                 user.publicMetadata?.role ||
                 'free';
               const entitlements = user.publicMetadata?.entitlements || [];
-              const Icon = TIER_ICONS[tier as keyof typeof TIER_ICONS];
+
+              let Icon = UserIconComp;
+              if (tier === 'admin') Icon = CrownIcon;
+              if (tier === 'early_access') Icon = StarIcon;
+              if (tier === 'pro') Icon = ShieldIcon;
+
               const isUpdating = updatingUserId === user.id;
 
               return (
@@ -381,7 +392,7 @@ export default function UsersPage() {
 
             {filteredUsers.length === 0 && (
               <div className="text-center py-12">
-                <Users className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                <UsersIcon className="w-12 h-12 text-gray-600 mx-auto mb-3" />
                 <p className="text-gray-400">No users found</p>
               </div>
             )}
