@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Ticket, Plus, Calendar, Loader2 } from "lucide-react";
+import { Ticket as TicketIcon, Plus, Calendar, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
@@ -94,7 +94,7 @@ export default function MyTickets() {
               transition={{ duration: 0.6 }}
             >
               <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 rounded-full bg-[#E1C37A]/10 border border-[#E1C37A]/20">
-                <Ticket className="w-5 h-5 text-[#E1C37A]" />
+                <TicketIcon className="w-5 h-5 text-[#E1C37A]" />
                 <span className="text-sm font-medium text-[#E1C37A]">Support</span>
               </div>
               <h1 className="text-4xl md:text-5xl font-bold mb-4">My Tickets</h1>
@@ -135,7 +135,7 @@ export default function MyTickets() {
 
             {!loading && !error && tickets.length === 0 && (
               <div className="text-center py-16">
-                <Ticket className="w-16 h-16 mx-auto mb-6 text-[#E1C37A] opacity-50" />
+                <TicketIcon className="w-16 h-16 mx-auto mb-6 text-[#E1C37A] opacity-50" />
                 <h2 className="text-2xl font-semibold mb-4">No tickets yet</h2>
                 <p className="text-[#A9AAAC] mb-8 max-w-md mx-auto">
                   You haven't created any support tickets yet. Click the button above to open a new ticket.
