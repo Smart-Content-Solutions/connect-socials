@@ -39,13 +39,13 @@ export function AdminLayout() {
     if (location.pathname.startsWith('/admin/tickets/')) { // ✅ ADD: Check detail page first
       return 'tickets';
     }
-    if (location.pathname === '/admin/subscribers') { // ✅ NEW
+    if (location.pathname === '/admin/subscribers') { 
       return 'subscribers';
     }
-    if (location.pathname === '/admin/users') { // ✅ ADD
+    if (location.pathname === '/admin/users') { 
       return 'users';
     }
-    if (location.pathname === '/admin/tickets') { // ✅ ADD
+    if (location.pathname === '/admin/tickets') { 
       return 'tickets';
     }
     if (location.pathname === '/admin/feedback') { // ✅ ADD
