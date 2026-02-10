@@ -9,7 +9,7 @@ import LeadsPage from '@/pages/admin/LeadsPage';
 import SettingsPage from '@/pages/admin/SettingsPage';
 import LeadDetailPage from '@/pages/admin/LeadDetailPage';
 import StrategyCallDetailPage from '@/pages/admin/StrategyCallDetailPage';
-import SubscribersPage from "@/pages/admin/SubscribersPage";
+import SubscribersPage from "@/pages/admin/subscriberspage";
 import UsersPage from '@/pages/admin/UsersPage'; // ✅ ADD
 import AdminTicketsPage from '@/pages/admin/AdminTickets'; // ✅ ADD
 import AdminTicketDetail from '@/pages/admin/AdminTicketDetail'; // ✅ ADD
