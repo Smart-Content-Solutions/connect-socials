@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Ticket as TicketIcon, Plus, Calendar, Loader2 } from "lucide-react";
+import { Ticket as TicketIcon, Plus, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useAuth } from "@clerk/clerk-react";
@@ -123,7 +123,7 @@ export default function MyTickets() {
           >
             {loading && (
               <div className="text-center py-12">
-                <Loader2 className="w-8 h-8 mx-auto mb-4 animate-spin text-[#E1C37A]" />
+                <div className="w-8 h-8 mx-auto mb-4 border-4 border-[#E1C37A] border-t-transparent rounded-full animate-spin" />
                 <p className="text-[#A9AAAC]">Loading tickets...</p>
               </div>
             )}

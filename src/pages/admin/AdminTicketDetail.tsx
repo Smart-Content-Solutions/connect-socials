@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Ticket, ArrowLeft, Send, Loader2, Calendar, User, Shield, Mail, Package, UserCheck } from "lucide-react";
+import { Ticket, ArrowLeft, Send, Calendar, User, Shield, Mail, Package, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useParams, useNavigate } from "react-router-dom";
@@ -299,7 +299,7 @@ export default function AdminTicketDetail() {
     return (
       <div className="p-6">
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       </div>
     );
@@ -367,7 +367,7 @@ export default function AdminTicketDetail() {
                   <option value="closed">Closed</option>
                 </select>
                 {updatingStatus && (
-                  <Loader2 className="w-4 h-4 ml-2 inline animate-spin text-muted-foreground" />
+                  <div className="w-4 h-4 ml-2 inline border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
                 )}
               </div>
             </div>
@@ -437,7 +437,7 @@ export default function AdminTicketDetail() {
               <label className="text-sm text-muted-foreground mb-2 block">Assign To</label>
               {loadingStaff ? (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
                   Loading staff...
                 </div>
               ) : (
@@ -457,7 +457,7 @@ export default function AdminTicketDetail() {
               )}
               {updatingAssignment && (
                 <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <div className="w-3 h-3 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
                   Updating assignment...
                 </div>
               )}
@@ -546,7 +546,7 @@ export default function AdminTicketDetail() {
             >
               {submittingComment ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <div className="w-4 h-4 mr-2 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
                   Posting...
                 </>
               ) : (

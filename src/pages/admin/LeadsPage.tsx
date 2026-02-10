@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, Filter, X, ChevronDown, Users, Calendar, Loader2 } from 'lucide-react';
+import { Search, Filter, X, ChevronDown, Users, Calendar } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { staffMembers, getStaffById, sourceLabels, statusLabels, LeadStatus, LeadSource } from '@/data/mockData';
@@ -292,7 +292,7 @@ export default function LeadsPage() {
           >
             {loading ? (
               <div className="flex items-center justify-center p-12">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
               <div className="overflow-x-auto">

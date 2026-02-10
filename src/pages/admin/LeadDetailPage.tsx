@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link, useLocation } from 'react-router-dom';
 import {
   ArrowLeft, Mail, Phone, Building2, Calendar, Globe,
   MessageSquare, Clock, User, Tag, ChevronDown, Save,
-  UserPlus, RefreshCw, UserCheck, PhoneCall, Loader2
+  UserPlus, RefreshCw, UserCheck, PhoneCall
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -117,7 +117,7 @@ export default function LeadDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }

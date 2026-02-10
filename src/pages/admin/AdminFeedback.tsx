@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { MessageCircle, Loader2, Star, Edit2, X, Check } from "lucide-react";
+import { MessageCircle, Star, Edit2, X, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -303,7 +303,7 @@ export default function AdminFeedback() {
 
       {loading && (
         <div className="text-center py-12 text-muted-foreground flex items-center justify-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <div className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
           Loading feedback...
         </div>
       )}
@@ -383,7 +383,7 @@ export default function AdminFeedback() {
                           <option value="actioned">Actioned</option>
                         </select>
                         {isUpdating && (
-                          <Loader2 className="w-3 h-3 ml-2 inline animate-spin text-muted-foreground" />
+                          <div className="w-3 h-3 ml-2 inline border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
                         )}
                       </td>
                       <td className="p-3 max-w-xs">

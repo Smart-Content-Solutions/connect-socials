@@ -10,7 +10,6 @@ import {
     Filter,
     Plus,
     Minus,
-    Loader2,
     Crown,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -180,7 +179,7 @@ export default function AdminUserManagement() {
     if (loading) {
         return (
             <div className="flex bg-background items-center justify-center min-h-[60vh]">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
             </div>
         );
     }

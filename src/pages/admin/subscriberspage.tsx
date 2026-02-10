@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Loader2, UserCircle2, Mail, Calendar, AlertCircle } from "lucide-react";
+import { UserCircle2, Mail, Calendar, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -161,7 +161,7 @@ export default function SubscribersPage() {
       >
         {loading ? (
           <div className="flex items-center justify-center p-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : subscriptions.length === 0 ? (
           <div className="p-12 text-center">
