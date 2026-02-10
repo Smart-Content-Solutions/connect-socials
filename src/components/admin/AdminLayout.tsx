@@ -12,8 +12,8 @@ import StrategyCallDetailPage from '@/pages/admin/StrategyCallDetailPage';
 import SubscribersPage from "@/pages/admin/subscriberspage";
 import UsersPage from '@/pages/admin/UsersPage'; 
 import AdminTicketsPage from '@/pages/admin/AdminTickets'; 
-import AdminTicketDetail from '@/pages/admin/AdminTicketDetail'; // ✅ ADD
-import AdminFeedbackPage from '@/pages/admin/AdminFeedback'; // ✅ ADD
+import AdminTicketDetail from '@/pages/admin/AdminTicketDetail'; 
+import AdminFeedbackPage from '@/pages/admin/AdminFeedback';
 import '@/styles/admin.css';
 
 type Section = 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'feedback' | 'settings'; // ✅ ADD 'feedback'
