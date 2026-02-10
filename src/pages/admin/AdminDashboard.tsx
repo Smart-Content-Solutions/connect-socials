@@ -10,7 +10,6 @@ import {
   CalendarCheck,
   CalendarClock,
   CheckCircle,
-  Loader2,
 } from 'lucide-react';
 import { StatCard } from '@/components/admin/dashboard/StatCard';
 import { PipelineChart } from '@/components/admin/dashboard/PipelineChart';
@@ -31,7 +30,7 @@ console.log('[DEBUG] Calendar icon:', typeof Calendar);
 console.log('[DEBUG] CalendarCheck icon:', typeof CalendarCheck);
 console.log('[DEBUG] CalendarClock icon:', typeof CalendarClock);
 console.log('[DEBUG] CheckCircle icon:', typeof CheckCircle);
-console.log('[DEBUG] Loader2 icon:', typeof Loader2);
+
 console.log('[DEBUG] StatCard:', typeof StatCard);
 console.log('[DEBUG] PipelineChart:', typeof PipelineChart);
 console.log('[DEBUG] ActivityFeed:', typeof ActivityFeed);
@@ -196,10 +195,9 @@ export default function AdminDashboard() {
 
   if (loading) {
     console.log('[DEBUG] AdminDashboard: Rendering loading state');
-    console.log('[DEBUG] AdminDashboard: Loader2 defined?', typeof Loader2);
     return (
       <div className="flex bg-background items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
