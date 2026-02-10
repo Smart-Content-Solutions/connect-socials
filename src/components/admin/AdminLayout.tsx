@@ -24,8 +24,10 @@ const sectionOrder: Section[] = ['dashboard', 'leads', 'subscribers', 'users', '
 const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 export function AdminLayout() {
+  console.log('[DEBUG] AdminLayout: Starting render');
   const navigate = useNavigate();
   const location = useLocation();
+  console.log('[DEBUG] AdminLayout: Hooks initialized, pathname:', location.pathname);
 
   // Determine initial section from URL
   const getInitialSection = (): Section => {
@@ -127,29 +129,40 @@ export function AdminLayout() {
 
   // Render content for a specific section (handles detail routes)
   const renderSectionContent = useCallback((section: Section) => {
+    console.log('[DEBUG] AdminLayout.renderSectionContent: Rendering section:', section);
     switch (section) {
       case 'dashboard':
+        console.log('[DEBUG] AdminLayout: About to render Dashboard');
         return <Dashboard />;
       case 'leads':
         if (location.pathname.startsWith('/admin/leads/')) {
+          console.log('[DEBUG] AdminLayout: About to render LeadDetailPage');
           return <LeadDetailPage />;
         }
         if (location.pathname.startsWith('/admin/strategy-calls/')) {
+          console.log('[DEBUG] AdminLayout: About to render StrategyCallDetailPage');
           return <StrategyCallDetailPage />;
         }
+        console.log('[DEBUG] AdminLayout: About to render LeadsPage');
         return <LeadsPage />;
       case 'subscribers':
+        console.log('[DEBUG] AdminLayout: About to render SubscribersPage');
         return <SubscribersPage />;
       case 'users':
+        console.log('[DEBUG] AdminLayout: About to render UsersPage');
         return <UsersPage />;
       case 'tickets':
         if (location.pathname.startsWith('/admin/tickets/') && location.pathname !== '/admin/tickets') {
+          console.log('[DEBUG] AdminLayout: About to render AdminTicketDetail');
           return <AdminTicketDetail />;
         }
+        console.log('[DEBUG] AdminLayout: About to render AdminTicketsPage');
         return <AdminTicketsPage />;
       case 'feedback':
+        console.log('[DEBUG] AdminLayout: About to render AdminFeedbackPage');
         return <AdminFeedbackPage />;
       case 'settings':
+        console.log('[DEBUG] AdminLayout: About to render SettingsPage');
         return <SettingsPage />;
       default:
         return <Dashboard />;

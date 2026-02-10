@@ -24,6 +24,7 @@ const getStatusLabel = (status: string) => {
 };
 
 export function RecentLeadsTable() {
+  console.log('[DEBUG] RecentLeadsTable: Component starting render');
   const navigate = useNavigate();
   const [leads, setLeads] = useState<any[]>([]);
 

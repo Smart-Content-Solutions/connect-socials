@@ -32,6 +32,7 @@ const iconVariants = {
 };
 
 export function StatCard({ title, value, icon: Icon, trend, variant = 'default', delay = 0 }: StatCardProps) {
+    console.log('[DEBUG] StatCard: Rendering', title);
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}

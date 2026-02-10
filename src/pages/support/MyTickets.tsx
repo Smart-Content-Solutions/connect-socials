@@ -36,6 +36,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function MyTickets() {
+  console.log('[DEBUG] MyTickets: Component starting render');
   const { getToken } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);

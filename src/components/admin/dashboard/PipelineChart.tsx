@@ -30,6 +30,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export function PipelineChart() {
+  console.log('[DEBUG] PipelineChart: Component starting render');
   const [data, setData] = useState<PipelineStage[]>([]);
   const [loading, setLoading] = useState(true);
 

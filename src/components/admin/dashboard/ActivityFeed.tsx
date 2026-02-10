@@ -25,6 +25,7 @@ const getColorForType = (type: string) => {
 };
 
 export function ActivityFeed() {
+  console.log('[DEBUG] ActivityFeed: Component starting render');
   const [activities, setActivities] = useState<any[]>([]);
 
   useEffect(() => {

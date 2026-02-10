@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 
 export function UpcomingCallsCard() {
+  console.log('[DEBUG] UpcomingCallsCard: Component starting render');
   const [calls, setCalls] = useState<any[]>([]);
 
   useEffect(() => {

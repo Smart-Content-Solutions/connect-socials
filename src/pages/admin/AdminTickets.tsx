@@ -29,6 +29,7 @@ const typeLabels: Record<string, string> = {
 };
 
 export default function AdminTickets() {
+  console.log('[DEBUG] AdminTickets: Component starting render');
   const { getToken } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);

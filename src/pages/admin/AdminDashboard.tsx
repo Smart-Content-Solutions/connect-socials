@@ -43,6 +43,7 @@ interface DashboardStats {
 }
 
 export default function AdminDashboard() {
+  console.log('[DEBUG] AdminDashboard: Component starting render');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     leads: { total: 0, new: 0, inProgress: 0, won: 0, lost: 0 },
@@ -178,6 +179,7 @@ export default function AdminDashboard() {
     );
   }
 
+  console.log('[DEBUG] AdminDashboard: About to render content (not loading)');
   return (
     <div className="space-y-6">
       {/* Page Header */}
