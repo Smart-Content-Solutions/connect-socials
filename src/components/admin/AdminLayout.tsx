@@ -20,11 +20,10 @@ type Section = 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'fe
 
 const sectionOrder: Section[] = ['dashboard', 'leads', 'subscribers', 'users', 'tickets', 'feedback', 'settings']; // ✅ include feedback
 
-// Easing function matching WordPress tool
 const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
 export function AdminLayout() {
-  console.log('[DEBUG] AdminLayout: Starting render');
+  // console.log('[DEBUG] AdminLayout: Starting render');
   const navigate = useNavigate();
   const location = useLocation();
   console.log('[DEBUG] AdminLayout: Hooks initialized, pathname:', location.pathname);
