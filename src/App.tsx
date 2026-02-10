@@ -337,6 +337,7 @@ const App = () => (
 
 
           {/* ✅ ADMIN TICKET DETAIL (before catch-all admin route) */}
+          {/* 
           <Route
             path="/admin/tickets/:id"
             element={
@@ -354,6 +355,7 @@ const App = () => (
               </AdminRoute>
             }
           />
+          */}
 
           <Route
             path="/account"
