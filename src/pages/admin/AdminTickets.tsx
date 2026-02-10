@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Ticket, Search, Filter, Loader2 } from "lucide-react";
+import { Ticket as TicketIcon, Search, Filter, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@clerk/clerk-react";
@@ -130,7 +130,7 @@ export default function AdminTickets() {
     <div className="p-6">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
-          <Ticket className="w-6 h-6 text-primary" />
+          <TicketIcon className="w-6 h-6 text-primary" />
           <h1 className="text-2xl font-semibold">Tickets</h1>
         </div>
         <p className="text-muted-foreground">
@@ -172,7 +172,7 @@ export default function AdminTickets() {
         <div className="rounded-xl border border-border/60 overflow-hidden">
           {filteredTickets.length === 0 ? (
             <div className="p-12 text-center">
-              <Ticket className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+              <TicketIcon className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
               <h3 className="text-lg font-semibold mb-2">No tickets yet</h3>
               <p className="text-muted-foreground">
                 {searchQuery
