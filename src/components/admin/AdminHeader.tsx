@@ -40,8 +40,6 @@ export function AdminHeader({ sidebarCollapsed }: AdminHeaderProps) {
           />
         </div>
       </div>
-
-      {/* Right: Actions */}
       <div className="flex items-center gap-4">
         {/* Notifications */}
         <button className="relative p-2 rounded-lg hover:bg-white/5 transition-colors">
