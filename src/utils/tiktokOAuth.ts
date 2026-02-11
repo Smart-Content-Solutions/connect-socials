@@ -11,6 +11,7 @@ export interface TikTokAuthData {
 }
 
 export const TIKTOK_AUTH_STORAGE_KEY = "tiktok_auth_data";
+export const TIKTOK_CONNECTED_ACCOUNTS_KEY = "tiktok_connected_accounts";
 const OAUTH_STATE_KEY = "tiktok_oauth_state";
 const OAUTH_INITIATOR_USER_KEY = "tiktok_oauth_user_id";
 
@@ -30,6 +31,18 @@ function generateState(length = 32) {
 
 export function saveTikTokAuthData(data: TikTokAuthData): void {
   localStorage.setItem(TIKTOK_AUTH_STORAGE_KEY, JSON.stringify(data));
+
+  // Also add to the list of connected accounts
+  const connected = getConnectedTikTokAccounts();
+  const exists = connected.findIndex(acc => acc.open_id === data.open_id);
+
+  if (exists > -1) {
+    connected[exists] = data;
+  } else {
+    connected.push(data);
+  }
+
+  localStorage.setItem(TIKTOK_CONNECTED_ACCOUNTS_KEY, JSON.stringify(connected));
 }
 
 export function getTikTokAuthData(): TikTokAuthData | null {
@@ -37,8 +50,30 @@ export function getTikTokAuthData(): TikTokAuthData | null {
   return stored ? JSON.parse(stored) : null;
 }
 
+export function getConnectedTikTokAccounts(): TikTokAuthData[] {
+  const stored = localStorage.getItem(TIKTOK_CONNECTED_ACCOUNTS_KEY);
+  return stored ? JSON.parse(stored) : [];
+}
+
 export function clearTikTokAuthData(): void {
   localStorage.removeItem(TIKTOK_AUTH_STORAGE_KEY);
+  localStorage.removeItem(TIKTOK_CONNECTED_ACCOUNTS_KEY);
+}
+
+export function removeTikTokAccount(openId: string): void {
+  const connected = getConnectedTikTokAccounts();
+  const updated = connected.filter(acc => acc.open_id !== openId);
+  localStorage.setItem(TIKTOK_CONNECTED_ACCOUNTS_KEY, JSON.stringify(updated));
+
+  // If we removed the currently active one, clear it or pick another
+  const current = getTikTokAuthData();
+  if (current?.open_id === openId) {
+    if (updated.length > 0) {
+      localStorage.setItem(TIKTOK_AUTH_STORAGE_KEY, JSON.stringify(updated[0]));
+    } else {
+      localStorage.removeItem(TIKTOK_AUTH_STORAGE_KEY);
+    }
+  }
 }
 
 // STEP 1 → Start OAuth
@@ -106,5 +141,5 @@ export async function completeTikTokAuth(query: { code?: string; state?: string 
 }
 
 export function isTikTokConnected(): boolean {
-  return !!localStorage.getItem(TIKTOK_AUTH_STORAGE_KEY);
+  return getConnectedTikTokAccounts().length > 0;
 }

@@ -1,10 +1,10 @@
 // src/components/ConnectedAccountsSelector.tsx
 import { useState, useMemo } from "react";
-import { Facebook, Instagram, Check, Square, SquareCheck, X } from "lucide-react";
+import { Facebook, Instagram, Check, Square, SquareCheck, X, Music } from "lucide-react";
 
 export interface ConnectedAccount {
   id: string;
-  platform: "facebook" | "instagram";
+  platform: "facebook" | "instagram" | "tiktok";
   name: string;
   nickname?: string;
   access_token: string;
@@ -14,7 +14,7 @@ export interface ConnectedAccount {
 interface ConnectedAccountsSelectorProps {
   accounts: ConnectedAccount[];
   selectedIds: string[];
-  onToggle: (id: string, platform: "facebook" | "instagram") => void;
+  onToggle: (id: string, platform: "facebook" | "instagram" | "tiktok") => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
 }
@@ -26,7 +26,7 @@ export function ConnectedAccountsSelector({
   onSelectAll,
   onDeselectAll,
 }: ConnectedAccountsSelectorProps) {
-  const [activeFilter, setActiveFilter] = useState<"all" | "facebook" | "instagram">("all");
+  const [activeFilter, setActiveFilter] = useState<"all" | "facebook" | "instagram" | "tiktok">("all");
 
   const filteredAccounts = useMemo(() => {
     if (activeFilter === "all") return accounts;
@@ -35,13 +35,14 @@ export function ConnectedAccountsSelector({
 
   const facebookCount = accounts.filter((a) => a.platform === "facebook").length;
   const instagramCount = accounts.filter((a) => a.platform === "instagram").length;
+  const tiktokCount = accounts.filter((a) => a.platform === "tiktok").length;
   const selectedCount = selectedIds.length;
 
   if (accounts.length === 0) {
     return (
       <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
         <p className="text-[#A9AAAC] text-sm text-center">
-          No connected accounts found. Connect Facebook or Instagram accounts first.
+          No connected accounts found. Connect Facebook, Instagram, or TikTok accounts first.
         </p>
       </div>
     );
@@ -112,14 +113,26 @@ export function ConnectedAccountsSelector({
             Instagram ({instagramCount})
           </button>
         )}
+        {tiktokCount > 0 && (
+          <button
+            onClick={() => setActiveFilter("tiktok")}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 ${activeFilter === "tiktok"
+              ? "bg-[#E1C37A]/20 text-[#E1C37A]"
+              : "bg-[#3B3C3E]/50 text-[#A9AAAC] hover:text-[#D6D7D8]"
+              }`}
+          >
+            <Music className="w-3 h-3" />
+            TikTok ({tiktokCount})
+          </button>
+        )}
       </div>
 
       {/* Accounts Toggle List */}
       <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
         {filteredAccounts.map((account) => {
           const isSelected = selectedIds.includes(account.id);
-          const Icon = account.platform === "facebook" ? Facebook : Instagram;
-          const color = account.platform === "facebook" ? "#1877F2" : "#E4405F";
+          const Icon = account.platform === "facebook" ? Facebook : account.platform === "instagram" ? Instagram : Music;
+          const color = account.platform === "facebook" ? "#1877F2" : account.platform === "instagram" ? "#E4405F" : "#E1C37A";
 
           return (
             <button
