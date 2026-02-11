@@ -211,6 +211,11 @@ export default function SocialMediaTool() {
   const [aiJobStatus, setAiJobStatus] = useState<'idle' | 'pending' | 'processing' | 'completed' | 'failed'>('idle');
   const [aiJobError, setAiJobError] = useState<string | null>(null);
 
+  // Text-to-Video specific state
+  const [textToVideoPrompt, setTextToVideoPrompt] = useState('');
+  const [textToVideoNegativePrompt, setTextToVideoNegativePrompt] = useState('');
+  const [textToVideoDuration, setTextToVideoDuration] = useState<5 | 10>(5);
+
   const TONE_OPTIONS = [
     "Professional",
     "Friendly",
@@ -918,6 +923,110 @@ export default function SocialMediaTool() {
       }
     } catch (error: any) {
       console.error('AI video generation error:', error);
+      setAiJobStatus('failed');
+      setAiJobError(error.message);
+      toast.error(`Failed to generate video: ${error.message}`);
+      setIsGeneratingAiVideo(false);
+    }
+  };
+
+  const handleGenerateTextToVideo = async () => {
+    if (!textToVideoPrompt.trim()) {
+      toast.error('Please enter a motion description');
+      return;
+    }
+
+    setIsGeneratingAiVideo(true);
+    setAiJobStatus('pending');
+    setAiJobError(null);
+
+    try {
+      toast.info('Starting AI video generation... This may take 2-3 minutes.');
+
+      const response = await fetch('https://n8n.smartcontentsolutions.co.uk/webhook/ai-text-video-generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: user!.id,
+          prompt: textToVideoPrompt,
+          negative_prompt: textToVideoNegativePrompt,
+          duration: textToVideoDuration,
+          aspect_ratio: '9:16'
+        })
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Server error: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.job_id) {
+        const jobId = result.job_id;
+        toast.info('Job started! Processing in background...');
+        setAiJobStatus('processing');
+
+        // Poll Supabase for status update
+        const checkStatus = async () => {
+          const { data, error } = await supabase
+            .from('ai_video_jobs')
+            .select('*')
+            .eq('higgsfield_job_id', jobId)
+            .single();
+
+          if (error) {
+            console.error("Polling error:", error);
+            return false;
+          }
+
+          if (data.status === 'completed' && data.output_url) {
+            setAiGeneratedVideoUrl(data.output_url);
+            setAiJobStatus('completed');
+            setShowAiVideoPreviewModal(true);
+            toast.success('AI video generated successfully!');
+            return true;
+          }
+
+          if (data.status === 'failed') {
+            throw new Error(data.error_message || 'Video generation failed');
+          }
+
+          return false;
+        };
+
+        const pollInterval = 5000;
+        const maxAttempts = 60; // 5 minutes
+        let attempts = 0;
+
+        const pollTimer = setInterval(async () => {
+          attempts++;
+          try {
+            const isFinished = await checkStatus();
+            if (isFinished || attempts >= maxAttempts) {
+              clearInterval(pollTimer);
+              setIsGeneratingAiVideo(false);
+              if (attempts >= maxAttempts) {
+                toast.error('Timed out waiting for video. Check "Task History" later.');
+                setAiJobStatus('failed');
+              }
+            }
+          } catch (err: any) {
+            clearInterval(pollTimer);
+            setIsGeneratingAiVideo(false);
+            setAiJobStatus('failed');
+            setAiJobError(err.message);
+            toast.error(`Failed: ${err.message}`);
+          }
+        }, pollInterval);
+
+      } else {
+        throw new Error(result.error || 'Failed to start video job');
+      }
+    } catch (error: any) {
+      console.error('AI text-to-video generation error:', error);
       setAiJobStatus('failed');
       setAiJobError(error.message);
       toast.error(`Failed to generate video: ${error.message}`);
@@ -3240,7 +3349,7 @@ export default function SocialMediaTool() {
 
                         Text → Video
 
-                        <span className="ml-2 text-[10px] px-2 py-0.5 rounded-full bg-[#5B5C60]/30 text-[#A9AAAC]">Soon</span>
+
 
                       </button>
 
@@ -3487,25 +3596,93 @@ export default function SocialMediaTool() {
                     {/* Text → Video Tab (Coming Soon) */}
 
                     {aiVideoTab === 'text' && (
-
-                      <div className="text-center py-12">
-
-                        <div className="w-16 h-16 rounded-full bg-[#E1C37A]/10 flex items-center justify-center mx-auto mb-4">
-
-                          <Sparkles className="w-8 h-8 text-[#E1C37A]" />
-
+                      <div className="space-y-4">
+                        {/* Text Prompt */}
+                        <div>
+                          <label className="text-sm font-semibold text-[#D6D7D8] mb-3 block">
+                            Video Description <span className="text-red-400">*</span>
+                          </label>
+                          <textarea
+                            value={textToVideoPrompt}
+                            onChange={(e) => setTextToVideoPrompt(e.target.value)}
+                            rows={3}
+                            placeholder="Describe the video you want to create (e.g., 'A futuristic city with flying cars at sunset')"
+                            className="w-full rounded-xl bg-[#2C2C2E] border border-white/10 p-3 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none text-sm"
+                          />
                         </div>
 
-                        <h4 className="text-lg font-semibold text-[#D6D7D8] mb-2">Coming Soon</h4>
+                        {/* Negative Prompt */}
+                        <div>
+                          <label className="text-sm font-semibold text-[#D6D7D8] mb-3 block">
+                            Negative Prompt <span className="text-[#5B5C60] font-normal">(optional)</span>
+                          </label>
+                          <textarea
+                            value={textToVideoNegativePrompt}
+                            onChange={(e) => setTextToVideoNegativePrompt(e.target.value)}
+                            rows={2}
+                            placeholder="Describe what to avoid (e.g., 'blurry, distorted, low quality')"
+                            className="w-full rounded-xl bg-[#2C2C2E] border border-white/10 p-3 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none text-sm"
+                          />
+                        </div>
 
-                        <p className="text-[#A9AAAC] text-sm max-w-md mx-auto">
+                        {/* Duration Selector */}
+                        <div>
+                          <label className="text-sm font-semibold text-[#D6D7D8] mb-3 block">Duration</label>
+                          <div className="grid grid-cols-2 gap-3">
+                            {[5, 10].map((duration) => (
+                              <button
+                                key={duration}
+                                onClick={() => setTextToVideoDuration(duration as 5 | 10)}
+                                className={`p-3 rounded-xl border transition-all duration-300 ${textToVideoDuration === duration
+                                  ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50 text-[#E1C37A]'
+                                  : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20 text-[#A9AAAC]'
+                                  }`}
+                              >
+                                <p className="font-semibold text-lg">{duration}s</p>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
 
-                          Text-to-video generation will be available in Phase 2. For now, use Image → Video to create stunning shorts!
+                        {/* Generate Button */}
+                        <button
+                          onClick={handleGenerateTextToVideo}
+                          disabled={!textToVideoPrompt.trim() || isGeneratingAiVideo}
+                          className="w-full py-4 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isGeneratingAiVideo ? (
+                            <>
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                              Generating Video...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="w-5 h-5" />
+                              Generate Video
+                            </>
+                          )}
+                        </button>
 
-                        </p>
-
+                        {/* Status Messages */}
+                        {aiJobStatus === 'pending' && (
+                          <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm">
+                            <Loader2 className="w-4 h-4 inline-block animate-spin mr-2" />
+                            Initializing AI video generation...
+                          </div>
+                        )}
+                        {aiJobStatus === 'processing' && (
+                          <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/20 text-yellow-400 text-sm">
+                            <Loader2 className="w-4 h-4 inline-block animate-spin mr-2" />
+                            Processing your video... This may take a minute.
+                          </div>
+                        )}
+                        {aiJobStatus === 'failed' && aiJobError && (
+                          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+                            <X className="w-4 h-4 inline-block mr-2" />
+                            {aiJobError}
+                          </div>
+                        )}
                       </div>
-
                     )}
 
                   </>

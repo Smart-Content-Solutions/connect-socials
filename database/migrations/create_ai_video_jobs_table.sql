@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS ai_video_jobs (
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
     prompt TEXT,
     source_image_url TEXT,
+    generation_type TEXT DEFAULT 'image' CHECK (generation_type IN ('image', 'text')),
     output_url TEXT,
     duration INTEGER NOT NULL DEFAULT 5 CHECK (duration IN (5, 10, 15)),
     aspect_ratio TEXT DEFAULT '9:16',
@@ -29,7 +30,7 @@ COMMENT ON TABLE ai_video_jobs IS 'Logs all AI video generation jobs from Higgsf
 COMMENT ON COLUMN ai_video_jobs.user_id IS 'Clerk user ID who requested the video';
 COMMENT ON COLUMN ai_video_jobs.status IS 'Current status of the job: pending, processing, completed, or failed';
 COMMENT ON COLUMN ai_video_jobs.prompt IS 'Motion description provided by the user';
-COMMENT ON COLUMN ai_video_jobs.source_image_url IS 'URL of the source image in Supabase storage';
+COMMENT ON COLUMN ai_video_jobs.source_image_url IS 'URL of the source image in Supabase storage (null for text-to-video)';
 COMMENT ON COLUMN ai_video_jobs.output_url IS 'URL of the generated video in Supabase storage';
 COMMENT ON COLUMN ai_video_jobs.duration IS 'Video duration in seconds (5, 10, or 15)';
 COMMENT ON COLUMN ai_video_jobs.aspect_ratio IS 'Video aspect ratio (default 9:16 for shorts)';
