@@ -137,6 +137,7 @@ export default function SocialMediaTool() {
   const [blueskyError, setBlueskyError] = useState("");
   const [isEditingBluesky, setIsEditingBluesky] = useState(false);
   const [showFacebookPagesModal, setShowFacebookPagesModal] = useState(false);
+  const [showTikTokAccountsModal, setShowTikTokAccountsModal] = useState(false);
   const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
 
   // Multi-account state (NEW)
@@ -439,6 +440,73 @@ export default function SocialMediaTool() {
       const data = getInstagramAuthData();
       setInstagramData(data);
     }
+  }, []);
+
+  // Auto-refresh accounts from localStorage when window is focused
+  useEffect(() => {
+    const refreshAccounts = () => {
+      // Refresh TikTok
+      const savedTikTokAccounts = localStorage.getItem('tiktok_connected_accounts');
+      if (savedTikTokAccounts) {
+        try {
+          const accounts = JSON.parse(savedTikTokAccounts);
+          if (Array.isArray(accounts)) {
+            const formattedAccounts: ConnectedAccount[] = accounts.map((a: any) => ({
+              id: a.open_id || a.id,
+              platform: 'tiktok',
+              name: a.display_name || 'TikTok Account',
+              access_token: a.access_token,
+            }));
+
+            // Only update if changed to avoid unnecessary re-renders
+            setConnectedTikTokAccounts(prev => {
+              if (JSON.stringify(prev) !== JSON.stringify(formattedAccounts)) {
+                return formattedAccounts;
+              }
+              return prev;
+            });
+          }
+        } catch (e) {
+          console.error("Failed to refresh tiktok accounts", e);
+        }
+      }
+
+      // Refresh Facebook
+      const savedFacebookPages = localStorage.getItem('facebook_connected_pages');
+      if (savedFacebookPages) {
+        try {
+          const pages = JSON.parse(savedFacebookPages);
+          if (Array.isArray(pages)) {
+            setConnectedFacebookPages(prev => {
+              if (JSON.stringify(prev) !== JSON.stringify(pages)) return pages;
+              return prev;
+            });
+          }
+        } catch (e) { }
+      }
+
+      // Refresh Instagram
+      const savedInstagramPages = localStorage.getItem('instagram_connected_pages');
+      if (savedInstagramPages) {
+        try {
+          const pages = JSON.parse(savedInstagramPages);
+          if (Array.isArray(pages)) {
+            setConnectedInstagramPages(prev => {
+              if (JSON.stringify(prev) !== JSON.stringify(pages)) return pages;
+              return prev;
+            });
+          }
+        } catch (e) { }
+      }
+    };
+
+    window.addEventListener('focus', refreshAccounts);
+    // Also listen for storage events from other tabs
+    window.addEventListener('storage', refreshAccounts);
+    return () => {
+      window.removeEventListener('focus', refreshAccounts);
+      window.removeEventListener('storage', refreshAccounts);
+    };
   }, []);
 
 
@@ -1943,6 +2011,98 @@ export default function SocialMediaTool() {
               <p className="text-xs text-[#5B5C60]">
                 Using <code>instagram_business_basic</code> via linked Page.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TikTok Accounts Modal */}
+      {showTikTokAccountsModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[#3B3C3E] rounded-2xl p-8 max-w-lg w-full border border-white/10 shadow-2xl">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-black/20 flex items-center justify-center">
+                  <Music className="w-6 h-6 text-[#E1C37A]" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-[#D6D7D8]">Manage TikTok Accounts</h2>
+                  <p className="text-xs text-[#A9AAAC]">Remove accounts or connect more</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowTikTokAccountsModal(false)}
+                className="w-8 h-8 rounded-lg bg-[#3B3C3E] hover:bg-[#4B4C4E] flex items-center justify-center transition-colors"
+              >
+                <X className="w-5 h-5 text-[#A9AAAC]" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+              {connectedTikTokAccounts.length === 0 ? (
+                <div className="text-center py-8 text-[#5B5C60]">
+                  <p>No TikTok accounts connected.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-[#5B5C60] uppercase tracking-wider">Connected Accounts</p>
+                    <span className="text-[10px] bg-[#E1C37A]/10 text-[#E1C37A] px-2 py-0.5 rounded-full">
+                      {connectedTikTokAccounts.length} Connected
+                    </span>
+                  </div>
+                  {connectedTikTokAccounts.map(account => (
+                    <div
+                      key={account.id}
+                      className="w-full flex items-center justify-between p-4 rounded-xl bg-[#2C2C2E] border border-white/5 group"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-black/40 flex items-center justify-center text-[#E1C37A] font-bold border border-white/5">
+                          {account.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-[#D6D7D8] font-semibold">{account.name}</p>
+                          <p className="text-xs text-[#5B5C60] font-mono">ID: {account.id.substring(0, 12)}...</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          if (confirm(`Are you sure you want to disconnect ${account.name}?`)) {
+                            removeTikTokAccount(account.id);
+                            const updated = connectedTikTokAccounts.filter(a => a.id !== account.id);
+                            setConnectedTikTokAccounts(updated);
+                            setSelectedTikTokAccountIds(prev => prev.filter(id => id !== account.id));
+                            if (updated.length === 0) {
+                              setSelectedPlatforms(prev => prev.filter(p => p !== 'tiktok'));
+                            }
+                            toast.success(`${account.name} disconnected`);
+                          }
+                        }}
+                        className="p-2 rounded-lg hover:bg-red-500/10 text-[#5B5C60] hover:text-red-400 transition-colors"
+                        title="Disconnect this account"
+                      >
+                        <Unlink className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              <div className="mt-6 pt-6 border-t border-white/10">
+                <button
+                  onClick={() => {
+                    initiateTikTokAuth();
+                    toast.info("Opening TikTok login...");
+                  }}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all flex items-center justify-center gap-2"
+                >
+                  <LinkIcon className="w-5 h-5" />
+                  Connect Another TikTok Account
+                </button>
+                <p className="text-[10px] text-center text-[#5B5C60] mt-4 italic">
+                  Note: You may need to log out of TikTok in the popup if you want to connect a different account.
+                </p>
+              </div>
             </div>
           </div>
         </div>
