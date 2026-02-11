@@ -29,7 +29,8 @@ import {
   MapPin,
   MessageCircle,
   FileText,
-  AtSign
+  AtSign,
+  Users
 } from "lucide-react";
 
 import {
@@ -2472,6 +2473,26 @@ export default function SocialMediaTool() {
                                     if (confirm("Disconnect Instagram?")) {
                                       p.disconnect?.();
                                       setInstagramData(null);
+                                    }
+                                  }}
+                                  className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
+                                >
+                                  Disconnect
+                                </button>
+                              </>
+                            ) : connected && p.id === 'tiktok' ? (
+                              <>
+                                <button
+                                  onClick={() => setShowTikTokAccountsModal(true)}
+                                  className="w-full py-2 px-4 rounded-full text-xs font-medium transition-all duration-300 flex items-center justify-center gap-2 bg-[#E1C37A]/10 border border-[#E1C37A]/30 text-[#E1C37A] hover:bg-[#E1C37A]/20"
+                                >
+                                  <Users className="w-4 h-4" />
+                                  Manage Accounts
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm("Disconnect TikTok?")) {
+                                      p.disconnect?.();
                                     }
                                   }}
                                   className="w-full py-1 text-xs text-[#5B5C60] hover:text-red-400 transition-colors"
