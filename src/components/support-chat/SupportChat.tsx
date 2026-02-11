@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, X, Send, Sparkles, Loader2, Minimize2 } from 'lucide-react';
+import { MessageCircle, X, Send, Sparkles, Loader2, Minimize2, Mic, MicOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -31,8 +31,71 @@ export default function SupportChat() {
     ]);
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const recognitionRef = useRef<any>(null);
+
+    // Initialize speech recognition
+    useEffect(() => {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            recognitionRef.current = new SpeechRecognition();
+            recognitionRef.current.continuous = true;
+            recognitionRef.current.interimResults = true;
+            recognitionRef.current.lang = 'en-US';
+
+            recognitionRef.current.onresult = (event: any) => {
+                let finalTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    }
+                }
+                if (finalTranscript) {
+                    setInputValue(prev => {
+                        const spacer = prev.trim() ? ' ' : '';
+                        return prev.trim() + spacer + finalTranscript.trim();
+                    });
+                }
+            };
+
+            recognitionRef.current.onerror = (event: any) => {
+                console.error('Speech recognition error:', event.error);
+                setIsRecording(false);
+                if (event.error === 'not-allowed') {
+                    toast.error('Microphone access denied. Please enable permissions.');
+                } else {
+                    toast.error('Voice recognition failed.');
+                }
+            };
+
+            recognitionRef.current.onend = () => {
+                setIsRecording(false);
+            };
+        }
+    }, []);
+
+    const toggleRecording = () => {
+        if (!recognitionRef.current) {
+            toast.error("Speech recognition is not supported in this browser.");
+            return;
+        }
+
+        if (isRecording) {
+            recognitionRef.current.stop();
+            setIsRecording(false);
+        } else {
+            try {
+                recognitionRef.current.start();
+                setIsRecording(true);
+                toast.info("Listening... Speak now.");
+            } catch (err) {
+                console.error("Failed to start recognition:", err);
+                setIsRecording(false);
+            }
+        }
+    };
 
     // Auto-scroll to bottom of chat
     useEffect(() => {
@@ -205,17 +268,32 @@ export default function SupportChat() {
                                     value={inputValue}
                                     onChange={(e) => setInputValue(e.target.value)}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="Ask a question..."
+                                    placeholder={isRecording ? "Listening..." : "Ask a question..."}
                                     disabled={isTyping}
-                                    className="w-full bg-[#1A1A1C] border border-white/10 text-[#D6D7D8] rounded-xl pl-4 pr-12 py-3 text-sm focus:outline-none focus:border-[#E1C37A]/50 focus:ring-1 focus:ring-[#E1C37A]/20 transition-all disabled:opacity-50"
+                                    className="w-full bg-[#1A1A1C] border border-white/10 text-[#D6D7D8] rounded-xl pl-4 pr-20 py-3 text-sm focus:outline-none focus:border-[#E1C37A]/50 focus:ring-1 focus:ring-[#E1C37A]/20 transition-all disabled:opacity-50"
                                 />
-                                <button
-                                    onClick={handleSendMessage}
-                                    disabled={!inputValue.trim() || isTyping}
-                                    className="absolute right-2 p-1.5 rounded-lg bg-[#E1C37A] text-[#1A1A1C] hover:bg-[#B6934C] disabled:opacity-50 disabled:bg-[#3B3C3E] disabled:text-[#5B5C60] transition-colors"
-                                >
-                                    {isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                                </button>
+                                <div className="absolute right-2 flex items-center gap-1">
+                                    <button
+                                        onClick={toggleRecording}
+                                        disabled={isTyping}
+                                        className={cn(
+                                            "p-1.5 rounded-lg transition-all duration-300",
+                                            isRecording
+                                                ? "bg-red-500/20 text-red-500 animate-pulse"
+                                                : "text-[#A9AAAC] hover:text-[#E1C37A] hover:bg-white/5"
+                                        )}
+                                        title={isRecording ? "Stop Recording" : "Start Voice Input"}
+                                    >
+                                        {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                                    </button>
+                                    <button
+                                        onClick={handleSendMessage}
+                                        disabled={!inputValue.trim() || isTyping}
+                                        className="p-1.5 rounded-lg bg-[#E1C37A] text-[#1A1A1C] hover:bg-[#B6934C] disabled:opacity-50 disabled:bg-[#3B3C3E] disabled:text-[#5B5C60] transition-colors"
+                                    >
+                                        {isTyping ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                    </button>
+                                </div>
                             </div>
                             <div className="text-center mt-2">
                                 <p className="text-[10px] text-[#5B5C60]">
