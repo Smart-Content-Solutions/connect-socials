@@ -1,15 +1,15 @@
 import { motion } from 'framer-motion';
-import { LayoutDashboard, Users, Settings, CreditCard, Ticket, MessageCircle, LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Settings, CreditCard, Ticket, MessageCircle, Shield, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRef, useLayoutEffect, useState } from 'react';
 
 interface SegmentedNavProps {
-  activeSection: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'feedback' | 'settings';
-  onSectionChange: (section: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'feedback' | 'settings') => void;
+  activeSection: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'roles' | 'tickets' | 'feedback' | 'settings';
+  onSectionChange: (section: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'roles' | 'tickets' | 'feedback' | 'settings') => void;
 }
 
 interface NavItem {
-  id: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'feedback' | 'settings';
+  id: 'dashboard' | 'leads' | 'subscribers' | 'users' | 'roles' | 'tickets' | 'feedback' | 'settings';
   label: string;
   icon: LucideIcon;
 }
@@ -19,6 +19,7 @@ const navItems: NavItem[] = [
   { id: 'leads', label: 'Leads', icon: Users },
   { id: 'subscribers', label: 'Subscribers', icon: CreditCard },
   { id: 'users', label: 'Users', icon: Users },
+  { id: 'roles', label: 'Roles', icon: Shield },
   { id: 'tickets', label: 'Tickets', icon: Ticket },
   { id: 'feedback', label: 'Feedback', icon: MessageCircle },
   { id: 'settings', label: 'Staff & Settings', icon: Settings },
@@ -34,12 +35,12 @@ export function SegmentedNav({ activeSection, onSectionChange }: SegmentedNavPro
     const measureIndicator = () => {
       const container = containerRef.current;
       const activeEl = itemRefs.current[activeIndex];
-      
+
       if (!container || !activeEl || activeIndex < 0) return;
-      
+
       const containerRect = container.getBoundingClientRect();
       const activeRect = activeEl.getBoundingClientRect();
-      
+
       setIndicatorStyle({
         left: activeRect.left - containerRect.left,
         width: activeRect.width,
@@ -50,7 +51,7 @@ export function SegmentedNav({ activeSection, onSectionChange }: SegmentedNavPro
     requestAnimationFrame(() => {
       measureIndicator();
     });
-    
+
     window.addEventListener('resize', measureIndicator);
     return () => window.removeEventListener('resize', measureIndicator);
   }, [activeIndex]);

@@ -1,9 +1,19 @@
+/**
+ * Tool Grid with Highlight - PRODUCTION READY
+ * 
+ * Features:
+ * - Uses live role config from SubscriptionContext
+ * - Proper loading state while config loads
+ * - Uses userHasToolAccess for accurate permission checking
+ */
+
 import React, { useState, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Lock, ArrowRight, Check, Shield } from "lucide-react";
+import { Lock, ArrowRight, Check, Shield, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useSubscription } from "../subscription/useSubscription";
 import { hasEntitlement as hasEntitlementLib, hasAccessToFeature, FEATURE_ENTITLEMENTS } from "@/lib/entitlements";
+import { userHasToolAccess, getDefaultRoleConfig } from "@/lib/roleConfig";
 
 interface ToolItem {
   id: string | number;
@@ -35,31 +45,47 @@ function ToolCard({
   onMouseLeave,
   currentPath,
 }: ToolCardProps) {
-  const { hasAccessToTool, user } = useSubscription();
+  const { hasAccessToTool, user, roleConfig, isConfigLoading } = useSubscription();
 
   // ✅ CLERK-SAFE ADMIN CHECK
   const baseTier = (user?.base_tier || user?.publicMetadata?.base_tier) as string;
   const entitlements = (user?.entitlements || user?.publicMetadata?.entitlements || []) as string[];
   const isAdmin = baseTier === "admin";
 
-  // Check access using entitlements system
+  // Check access using centralized role config
   const hasAccess = React.useMemo(() => {
     // Admin always has access
     if (isAdmin) return true;
 
-    // Check if tool requires specific entitlement
+    // If config is still loading, use defaults
+    const config = roleConfig || getDefaultRoleConfig();
+
+    // Use centralized roleConfig tool access check
+    // This checks both main roles (base_tier) and add-on roles (entitlements)
+    const toolId = typeof tool.id === 'string' ? tool.id : String(tool.id);
+    
+    const hasToolAccess = userHasToolAccess(
+      baseTier || "free", 
+      entitlements, 
+      toolId,
+      config
+    );
+    
+    if (hasToolAccess) return true;
+
+    // Check if tool requires specific entitlement (legacy support)
     if (tool.requiredEntitlement) {
       return hasEntitlementLib(entitlements, baseTier || "free", tool.requiredEntitlement);
     }
 
-    // Check if tool requires specific feature
+    // Check if tool requires specific feature (legacy support)
     if (tool.requiredFeature) {
       return hasAccessToFeature(entitlements, baseTier || "free", tool.requiredFeature);
     }
 
-    // Fallback to plan-based check
-    return hasAccessToTool(tool.planRequired);
-  }, [baseTier, entitlements, tool, isAdmin, hasAccessToTool]);
+    // Fallback to plan-based check via context
+    return hasAccessToTool(toolId);
+  }, [baseTier, entitlements, tool, isAdmin, hasAccessToTool, roleConfig]);
 
   const Icon = tool.icon;
 
@@ -154,14 +180,17 @@ interface ToolGridWithHighlightProps {
   tools: ToolItem[];
   tier?: string;
   onUnlockClick?: (tool: ToolItem) => void;
+  isLoading?: boolean;
 }
 
 export default function ToolGridWithHighlight({
   tools,
   tier = "Core",
   onUnlockClick,
+  isLoading = false,
 }: ToolGridWithHighlightProps) {
   const location = useLocation();
+  const { isConfigLoading } = useSubscription();
   const [highlightStyle, setHighlightStyle] = useState<React.CSSProperties>({
     opacity: 0,
   });
@@ -191,6 +220,20 @@ export default function ToolGridWithHighlight({
   const clearHover = () => {
     setHighlightStyle((prev) => ({ ...prev, opacity: 0 }));
   };
+
+  // Show loading state if either the grid or config is loading
+  if (isLoading || isConfigLoading) {
+    return (
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div
+            key={i}
+            className="glass-card rounded-2xl p-6 h-48 animate-pulse bg-gray-800/50"
+          />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full" ref={gridRef}>

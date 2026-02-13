@@ -29,16 +29,10 @@ export default function LockedToolCard({
 
   const isAdmin = user?.base_tier === "admin";
   const isEarlyAccess = user?.base_tier === "early_access";
+  const isPro = user?.base_tier === "pro";
 
-  // ✅ Special case: early_access users can access Social Media, WordPress, and AI Agent tools
-  const isAllowedForEarlyAccess = [
-    "social-automation",
-    "wordpress-seo",
-    "ai-agent"
-  ].includes(slug || "") || title.toLowerCase().includes("social") || title.toLowerCase().includes("wordpress") || title.toLowerCase().includes("ai agent");
-
-  const hasEarlyAccessToThisTool = isEarlyAccess && isAllowedForEarlyAccess;
-  const hasAccess = isAdmin || hasEarlyAccessToThisTool || hasAccessToTool(planRequired);
+  // hasAccessToTool now correctly handles early_access/pro via entitlements
+  const hasAccess = isAdmin || isEarlyAccess || isPro || hasAccessToTool(planRequired);
 
   const CardWrapper: React.ElementType = slug ? Link : "div";
   const cardProps = slug ? { to: `/tool?slug=${slug}` } : {};

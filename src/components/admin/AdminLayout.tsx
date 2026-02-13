@@ -10,15 +10,16 @@ import SettingsPage from '@/pages/admin/SettingsPage';
 import LeadDetailPage from '@/pages/admin/LeadDetailPage';
 import StrategyCallDetailPage from '@/pages/admin/StrategyCallDetailPage';
 import SubscribersPage from "@/pages/admin/subscriberspage";
-import UsersPage from '@/pages/admin/UsersPage'; 
-import AdminTicketsPage from '@/pages/admin/AdminTickets'; 
-import AdminTicketDetail from '@/pages/admin/AdminTicketDetail'; 
+import UsersPage from '@/pages/admin/UsersPage';
+import RoleSettingsPage from '@/pages/admin/RoleSettingsPage';
+import AdminTicketsPage from '@/pages/admin/AdminTickets';
+import AdminTicketDetail from '@/pages/admin/AdminTicketDetail';
 import AdminFeedbackPage from '@/pages/admin/AdminFeedback';
 import '@/styles/admin.css';
 
-type Section = 'dashboard' | 'leads' | 'subscribers' | 'users' | 'tickets' | 'feedback' | 'settings'; // ✅ ADD 'feedback'
+type Section = 'dashboard' | 'leads' | 'subscribers' | 'users' | 'roles' | 'tickets' | 'feedback' | 'settings';
 
-const sectionOrder: Section[] = ['dashboard', 'leads', 'subscribers', 'users', 'tickets', 'feedback', 'settings']; // ✅ include feedback
+const sectionOrder: Section[] = ['dashboard', 'leads', 'subscribers', 'users', 'roles', 'tickets', 'feedback', 'settings'];
 
 const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
@@ -36,19 +37,22 @@ export function AdminLayout() {
     if (location.pathname.startsWith('/admin/strategy-calls/')) {
       return 'leads';
     }
-    if (location.pathname.startsWith('/admin/tickets/')) { // ✅ ADD: Check detail page first
+    if (location.pathname.startsWith('/admin/tickets/')) {
       return 'tickets';
     }
-    if (location.pathname === '/admin/subscribers') { 
+    if (location.pathname === '/admin/subscribers') {
       return 'subscribers';
     }
-    if (location.pathname === '/admin/users') { 
+    if (location.pathname === '/admin/users') {
       return 'users';
     }
-    if (location.pathname === '/admin/tickets') { 
+    if (location.pathname === '/admin/roles') {
+      return 'roles';
+    }
+    if (location.pathname === '/admin/tickets') {
       return 'tickets';
     }
-    if (location.pathname === '/admin/feedback') { // ✅ ADD
+    if (location.pathname === '/admin/feedback') {
       return 'feedback';
     }
     if (location.pathname === '/admin/settings') {
@@ -117,10 +121,11 @@ export function AdminLayout() {
       // Update URL for bookmarking/refresh support
       if (newSection === 'dashboard') navigate('/admin');
       else if (newSection === 'leads') navigate('/admin/leads');
-      else if (newSection === 'subscribers') navigate('/admin/subscribers'); // ✅ NEW
-      else if (newSection === 'users') navigate('/admin/users'); // ✅ ADD
-      else if (newSection === 'tickets') navigate('/admin/tickets'); // ✅ ADD
-      else if (newSection === 'feedback') navigate('/admin/feedback'); // ✅ ADD
+      else if (newSection === 'subscribers') navigate('/admin/subscribers');
+      else if (newSection === 'users') navigate('/admin/users');
+      else if (newSection === 'roles') navigate('/admin/roles');
+      else if (newSection === 'tickets') navigate('/admin/tickets');
+      else if (newSection === 'feedback') navigate('/admin/feedback');
       else if (newSection === 'settings') navigate('/admin/settings');
     },
     [navigate]
@@ -150,6 +155,9 @@ export function AdminLayout() {
       case 'users':
         console.log('[DEBUG] AdminLayout: About to render UsersPage');
         return <UsersPage />;
+      case 'roles':
+        console.log('[DEBUG] AdminLayout: About to render RoleSettingsPage');
+        return <RoleSettingsPage />;
       case 'tickets':
         if (location.pathname.startsWith('/admin/tickets/') && location.pathname !== '/admin/tickets') {
           console.log('[DEBUG] AdminLayout: About to render AdminTicketDetail');
