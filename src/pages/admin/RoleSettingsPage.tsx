@@ -83,8 +83,11 @@ export default function RoleSettingsPage() {
         if (!config) return;
         
         try {
-            // Save to Supabase directly
-            await saveRoleConfig(config);
+            // Get the auth token from Clerk
+            const token = await getToken();
+            
+            // Save via API endpoint (uses service role to bypass RLS)
+            await saveRoleConfig(config, token || undefined);
 
             setHasUnsavedChanges(false);
             toast.success('Role configuration saved!');

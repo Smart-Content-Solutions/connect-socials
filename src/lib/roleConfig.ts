@@ -356,30 +356,37 @@ export function getDefaultRoleConfig(): RoleConfig {
 }
 
 /**
- * Saves role configuration to Supabase
+ * Saves role configuration via API endpoint (uses service role to bypass RLS)
+ * Requires admin privileges via Clerk authentication
+ * 
+ * @param config - The role configuration to save
+ * @param authToken - Optional Clerk JWT token (obtained from useAuth().getToken())
  */
-export async function saveRoleConfig(config: RoleConfig): Promise<void> {
+export async function saveRoleConfig(config: RoleConfig, authToken?: string): Promise<void> {
   // Validate before saving
   if (!validateRoleConfig(config)) {
     throw new Error("Cannot save invalid role config");
   }
 
-  const { error } = await supabase
-    .from("app_settings")
-    .upsert(
-      {
-        key: CONFIG_KEY,
-        value: config,
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: "key",
-      }
-    );
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
 
-  if (error) {
-    console.error("Failed to save role config:", error);
-    throw new Error(`Failed to save role config: ${error.message}`);
+  // Add authorization header if token is provided
+  if (authToken) {
+    headers["Authorization"] = `Bearer ${authToken}`;
+  }
+
+  const response = await fetch("/api/admin-role-config", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(config),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: "Unknown error" }));
+    console.error("Failed to save role config:", errorData);
+    throw new Error(`Failed to save role config: ${errorData.error || response.statusText}`);
   }
 }
 
