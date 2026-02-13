@@ -12,17 +12,27 @@ import { createClient } from "@supabase/supabase-js";
 import { verifyToken } from "@clerk/backend";
 import { clerkClient } from "@clerk/clerk-sdk-node";
 
-// Initialize Supabase client
+// Initialize Supabase client with service role key (bypasses RLS)
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
+// Log for debugging (remove in production)
+console.log("[admin-role-config] Supabase URL exists:", !!supabaseUrl);
+console.log("[admin-role-config] Service key exists:", !!supabaseServiceKey);
+
 if (!supabaseUrl || !supabaseServiceKey) {
-  console.error("Missing Supabase credentials");
+  console.error("Missing Supabase credentials - ensure SUPABASE_SERVICE_ROLE_KEY is set in Vercel environment variables");
 }
 
 const supabase = createClient(
   supabaseUrl || "",
-  supabaseServiceKey || ""
+  supabaseServiceKey || "",
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
 );
 
 const CONFIG_KEY = "role_config";
