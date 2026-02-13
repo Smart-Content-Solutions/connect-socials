@@ -235,6 +235,8 @@ export default async function handler(req: any, res: any) {
 
     try {
       // Save to Supabase
+      // Note: We don't include updated_by because the column expects a UUID,
+      // but Clerk user IDs are strings like "user_xxx" which are not UUIDs
       const { error } = await supabase
         .from("app_settings")
         .upsert(
@@ -242,7 +244,7 @@ export default async function handler(req: any, res: any) {
             key: CONFIG_KEY,
             value: body,
             updated_at: new Date().toISOString(),
-            updated_by: auth.userId,
+            // updated_by: auth.userId, // Removed - Clerk IDs are not UUIDs
           },
           {
             onConflict: "key",
