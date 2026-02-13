@@ -18,7 +18,6 @@
 
 import { supabase } from "./supabase";
 
-// ─── All available tools in the system ───────────────────────────────
 export interface ToolDefinition {
   id: string;
   name: string;
