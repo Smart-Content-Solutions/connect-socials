@@ -70,6 +70,7 @@ export default function RoleSettingsPage() {
 
     // Get selected role
     const selectedRole = useMemo(() => {
+        if (!config) return null;
         if (selectedRoleType === 'main') {
             return config.mainRoles.find(r => r.id === selectedRoleId) || null;
         }
