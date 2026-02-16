@@ -118,9 +118,13 @@ export async function initiateYouTubeAuth(): Promise<void> {
 
 // STEP 2 → Complete OAuth callback
 export async function completeYouTubeAuth(query: { code?: string; state?: string }) {
+  console.log("YouTube OAuth: Starting callback with", { code: query.code, state: query.state });
+  
   if (!N8N_URL) throw new Error("N8N webhook URL missing (VITE_N8N_WEBHOOK_URL)");
 
   const storedState = localStorage.getItem(OAUTH_STATE_KEY);
+  console.log("YouTube OAuth: Stored state:", storedState, "Query state:", query.state);
+  
   if (query.state !== storedState) {
     throw new Error("Invalid OAuth state. Please try again.");
   }
@@ -132,18 +136,27 @@ export async function completeYouTubeAuth(query: { code?: string; state?: string
     redirect_uri: REDIRECT_URI
   };
 
+  console.log("YouTube OAuth: Sending to n8n:", `${N8N_URL}/oauth-youtube`);
+  console.log("YouTube OAuth: Request body:", body);
+
   const res = await fetch(`${N8N_URL}/oauth-youtube`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
 
+  console.log("YouTube OAuth: Response status:", res.status);
+  console.log("YouTube OAuth: Response headers:", Object.fromEntries(res.headers.entries()));
+
   if (!res.ok) {
-    console.error("youtube oauth error:", await res.text());
-    throw new Error("YouTube OAuth callback failed.");
+    const errorText = await res.text();
+    console.error("YouTube OAuth error response:", errorText);
+    throw new Error(`YouTube OAuth callback failed: ${res.status} - ${errorText}`);
   }
 
   const json = await res.json();
+  console.log("YouTube OAuth: Success response:", json);
+  
   // Expecting the n8n workflow to return key "youtube_auth_data"
   const data = json.youtube_auth_data as YouTubeAuthData | undefined;
 

@@ -18,6 +18,10 @@ export default function YoutubeCallback() {
             const state = searchParams.get("state");
             const error = searchParams.get("error");
 
+            console.log("YoutubeCallback: code:", code);
+            console.log("YoutubeCallback: state:", state);
+            console.log("YoutubeCallback: error:", error);
+
             if (error) {
                 setStatus("error");
                 setErrorMsg(`Authorization failed: ${error}`);
@@ -31,7 +35,9 @@ export default function YoutubeCallback() {
             }
 
             try {
+                console.log("YoutubeCallback: Calling completeYouTubeAuth...");
                 await completeYouTubeAuth({ code, state });
+                console.log("YoutubeCallback: completeYouTubeAuth succeeded!");
                 if (mounted) {
                     setStatus("success");
                     // Automatically redirect after a short delay
@@ -39,6 +45,7 @@ export default function YoutubeCallback() {
                 }
             } catch (err: any) {
                 console.error("YouTube OAuth Error:", err);
+                console.error("YouTube OAuth Error stack:", err.stack);
                 if (mounted) {
                     setStatus("error");
                     setErrorMsg(err.message || "Something went wrong connecting your YouTube channel.");
