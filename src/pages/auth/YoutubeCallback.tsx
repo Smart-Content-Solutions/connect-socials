@@ -41,7 +41,7 @@ export default function YoutubeCallback() {
                 if (mounted) {
                     setStatus("success");
                     // Automatically redirect after a short delay
-                    setTimeout(() => navigate("/tools/social-media"), 2000);
+                    setTimeout(() => navigate("/apps/social-automation"), 2000);
                 }
             } catch (err: any) {
                 console.error("YouTube OAuth Error:", err);
