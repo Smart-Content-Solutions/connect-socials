@@ -92,7 +92,7 @@ export default function YoutubeCallback() {
                             {errorMsg}
                         </p>
                         <Link
-                            to="/tools/social-media"
+                            to="/apps/social-automation"
                             className="mt-4 px-6 py-2 bg-[#FF0000]/10 border border-[#FF0000]/20 text-[#FF0000] rounded-lg hover:bg-[#FF0000]/20 transition-colors"
                         >
                             Return to Tools
