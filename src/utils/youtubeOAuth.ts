@@ -136,10 +136,10 @@ export async function completeYouTubeAuth(query: { code?: string; state?: string
     redirect_uri: REDIRECT_URI
   };
 
-  console.log("YouTube OAuth: Sending to n8n:", `${N8N_URL}/oauth-youtube`);
+  console.log("YouTube OAuth: Sending to n8n:", `${N8N_URL}oauth-youtube`);
   console.log("YouTube OAuth: Request body:", body);
 
-  const res = await fetch(`${N8N_URL}/oauth-youtube`, {
+  const res = await fetch(`${N8N_URL}oauth-youtube`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
