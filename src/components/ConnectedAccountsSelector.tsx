@@ -1,20 +1,22 @@
 // src/components/ConnectedAccountsSelector.tsx
 import { useState, useMemo } from "react";
-import { Facebook, Instagram, Check, Square, SquareCheck, X, Music } from "lucide-react";
+import { Facebook, Instagram, Check, Music, Youtube } from "lucide-react";
 
 export interface ConnectedAccount {
   id: string;
-  platform: "facebook" | "instagram" | "tiktok";
+  platform: "facebook" | "instagram" | "tiktok" | "youtube";
   name: string;
   nickname?: string;
   access_token: string;
   instagram_business_account_id?: string;
+  // YouTube specific
+  channel_thumbnail?: string;
 }
 
 interface ConnectedAccountsSelectorProps {
   accounts: ConnectedAccount[];
   selectedIds: string[];
-  onToggle: (id: string, platform: "facebook" | "instagram" | "tiktok") => void;
+  onToggle: (id: string, platform: "facebook" | "instagram" | "tiktok" | "youtube") => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
 }
@@ -26,7 +28,7 @@ export function ConnectedAccountsSelector({
   onSelectAll,
   onDeselectAll,
 }: ConnectedAccountsSelectorProps) {
-  const [activeFilter, setActiveFilter] = useState<"all" | "facebook" | "instagram" | "tiktok">("all");
+  const [activeFilter, setActiveFilter] = useState<"all" | "facebook" | "instagram" | "tiktok" | "youtube">("all");
 
   const filteredAccounts = useMemo(() => {
     if (activeFilter === "all") return accounts;
@@ -36,13 +38,14 @@ export function ConnectedAccountsSelector({
   const facebookCount = accounts.filter((a) => a.platform === "facebook").length;
   const instagramCount = accounts.filter((a) => a.platform === "instagram").length;
   const tiktokCount = accounts.filter((a) => a.platform === "tiktok").length;
+  const youtubeCount = accounts.filter((a) => a.platform === "youtube").length;
   const selectedCount = selectedIds.length;
 
   if (accounts.length === 0) {
     return (
       <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
         <p className="text-[#A9AAAC] text-sm text-center">
-          No connected accounts found. Connect Facebook, Instagram, or TikTok accounts first.
+          No connected accounts found. Connect social accounts first.
         </p>
       </div>
     );
@@ -79,7 +82,7 @@ export function ConnectedAccountsSelector({
       </div>
 
       {/* Platform Filter Tabs */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
         <button
           onClick={() => setActiveFilter("all")}
           className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${activeFilter === "all"
@@ -125,14 +128,45 @@ export function ConnectedAccountsSelector({
             TikTok ({tiktokCount})
           </button>
         )}
+        {youtubeCount > 0 && (
+          <button
+            onClick={() => setActiveFilter("youtube")}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 ${activeFilter === "youtube"
+              ? "bg-[#FF0000]/20 text-[#FF0000]"
+              : "bg-[#3B3C3E]/50 text-[#A9AAAC] hover:text-[#D6D7D8]"
+              }`}
+          >
+            <Youtube className="w-3 h-3" />
+            YouTube ({youtubeCount})
+          </button>
+        )}
       </div>
 
       {/* Accounts Toggle List */}
       <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
         {filteredAccounts.map((account) => {
           const isSelected = selectedIds.includes(account.id);
-          const Icon = account.platform === "facebook" ? Facebook : account.platform === "instagram" ? Instagram : Music;
-          const color = account.platform === "facebook" ? "#1877F2" : account.platform === "instagram" ? "#E4405F" : "#E1C37A";
+
+          let Icon = Facebook;
+          let color = "#1877F2";
+          let label = "Page";
+
+          if (account.platform === "instagram") {
+            Icon = Instagram;
+            color = "#E4405F";
+            label = "Account";
+          } else if (account.platform === "tiktok") {
+            Icon = Music;
+            color = "#000000"; // TikTok is black, but we might want white/gold for dark mode visibility
+            label = "Account";
+          } else if (account.platform === "youtube") {
+            Icon = Youtube;
+            color = "#FF0000";
+            label = "Channel";
+          }
+
+          // Override for TikTok icon color in dark mode context to be visible or gold
+          const iconColor = account.platform === "tiktok" ? "#D6D7D8" : color;
 
           return (
             <button
@@ -145,10 +179,18 @@ export function ConnectedAccountsSelector({
             >
               <div className="flex items-center gap-3">
                 <div
-                  className="w-10 h-10 rounded-lg flex items-center justify-center"
+                  className="w-10 h-10 rounded-lg flex items-center justify-center relative overflow-hidden"
                   style={{ backgroundColor: `${color}20` }}
                 >
-                  <Icon className="w-5 h-5" style={{ color }} />
+                  {account.channel_thumbnail ? (
+                    <img
+                      src={account.channel_thumbnail}
+                      alt={account.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Icon className="w-5 h-5 pointer-events-none" style={{ color: iconColor }} />
+                  )}
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-medium text-[#D6D7D8]">
@@ -168,7 +210,7 @@ export function ConnectedAccountsSelector({
                     color: color,
                   }}
                 >
-                  {account.platform === "facebook" ? "Page" : "Account"}
+                  {label}
                 </span>
                 {isSelected ? (
                   <div className="w-6 h-6 rounded-full bg-[#E1C37A] flex items-center justify-center">

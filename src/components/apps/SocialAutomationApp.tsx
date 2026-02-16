@@ -63,6 +63,12 @@ import {
   removeTikTokAccount
 } from "@/utils/tiktokOAuth";
 
+import {
+  initiateYouTubeAuth,
+  clearYouTubeAuthData,
+  isYouTubeConnected,
+} from "@/utils/youtubeOAuth";
+
 import { needsCompression } from "@/utils/videoCompressor";
 
 import {
@@ -148,6 +154,8 @@ export default function SocialMediaTool() {
   const [selectedInstagramPageIds, setSelectedInstagramPageIds] = useState<string[]>([]);
   const [connectedTikTokAccounts, setConnectedTikTokAccounts] = useState<ConnectedAccount[]>([]);
   const [selectedTikTokAccountIds, setSelectedTikTokAccountIds] = useState<string[]>([]);
+  const [connectedYouTubeChannels, setConnectedYouTubeChannels] = useState<ConnectedAccount[]>([]);
+  const [selectedYouTubeChannelIds, setSelectedYouTubeChannelIds] = useState<string[]>([]);
 
   // Sync platforms with selected account IDs
   useEffect(() => {
@@ -187,9 +195,20 @@ export default function SocialMediaTool() {
         if (index > -1) newPlatforms.splice(index, 1);
       }
 
+      // Add or remove YouTube based on selectedYouTubeChannelIds
+      const hasYouTubeChannels = selectedYouTubeChannelIds.length > 0;
+      const hasYouTubeInPlatforms = newPlatforms.includes('youtube');
+
+      if (hasYouTubeChannels && !hasYouTubeInPlatforms) {
+        newPlatforms.push('youtube');
+      } else if (!hasYouTubeChannels && hasYouTubeInPlatforms) {
+        const index = newPlatforms.indexOf('youtube');
+        if (index > -1) newPlatforms.splice(index, 1);
+      }
+
       return newPlatforms;
     });
-  }, [selectedFacebookPageIds, selectedInstagramPageIds]);
+  }, [selectedFacebookPageIds, selectedInstagramPageIds, selectedTikTokAccountIds, selectedYouTubeChannelIds]);
 
   // Legacy state (for backward compatibility during transition)
   const [selectedFacebookPage, setSelectedFacebookPage] = useState<FacebookPage | null>(null);
@@ -437,6 +456,32 @@ export default function SocialMediaTool() {
       }
     }
 
+    // Load YouTube channels
+    const savedYouTubeChannels = localStorage.getItem('youtube_connected_accounts');
+    if (savedYouTubeChannels) {
+      try {
+        const channels = JSON.parse(savedYouTubeChannels);
+        if (Array.isArray(channels)) {
+          const formatted = channels.map((c: any) => ({
+            id: c.channel_id,
+            platform: 'youtube' as const,
+            name: c.channel_title,
+            channel_thumbnail: c.channel_thumbnail,
+            access_token: c.access_token
+          }));
+
+          setConnectedYouTubeChannels(formatted);
+          setSelectedYouTubeChannelIds(formatted.map((c: any) => c.id));
+
+          if (formatted.length > 0) {
+            setSelectedPlatforms(prev => [...new Set([...prev, 'youtube'])]);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to parse saved youtube channels", e);
+      }
+    }
+
     if (isInstagramConnected()) {
       const data = getInstagramAuthData();
       setInstagramData(data);
@@ -494,6 +539,28 @@ export default function SocialMediaTool() {
           if (Array.isArray(pages)) {
             setConnectedInstagramPages(prev => {
               if (JSON.stringify(prev) !== JSON.stringify(pages)) return pages;
+              return prev;
+            });
+          }
+        } catch (e) { }
+      }
+
+      // Refresh YouTube
+      const savedYouTubeChannels = localStorage.getItem('youtube_connected_accounts');
+      if (savedYouTubeChannels) {
+        try {
+          const channels = JSON.parse(savedYouTubeChannels);
+          if (Array.isArray(channels)) {
+            const formatted = channels.map((c: any) => ({
+              id: c.channel_id,
+              platform: 'youtube' as const,
+              name: c.channel_title,
+              channel_thumbnail: c.channel_thumbnail,
+              access_token: c.access_token
+            }));
+
+            setConnectedYouTubeChannels(prev => {
+              if (JSON.stringify(prev) !== JSON.stringify(formatted)) return formatted;
               return prev;
             });
           }
@@ -660,7 +727,9 @@ export default function SocialMediaTool() {
       id: "youtube",
       name: "YouTube",
       icon: Youtube,
-      isConnected: () => false
+      connect: initiateYouTubeAuth,
+      disconnect: clearYouTubeAuthData,
+      isConnected: isYouTubeConnected
     },
     {
       id: "google_business",
@@ -1301,6 +1370,9 @@ export default function SocialMediaTool() {
     if (selectedPlatforms.includes('tiktok') && selectedTikTokAccountIds.length > 0) {
       selectedTikTokAccountIds.forEach((id) => form.append("tiktok_account_ids[]", id));
     }
+    if (selectedPlatforms.includes('youtube') && selectedYouTubeChannelIds.length > 0) {
+      selectedYouTubeChannelIds.forEach((id) => form.append("youtube_channel_ids[]", id));
+    }
 
     if (postMode === "schedule") {
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -1380,6 +1452,9 @@ export default function SocialMediaTool() {
     }
     if (selectedPlatforms.includes('tiktok') && selectedTikTokAccountIds.length === 0) {
       return setErrorMsg("Please select at least one TikTok account to post to.");
+    }
+    if (selectedPlatforms.includes('youtube') && selectedYouTubeChannelIds.length === 0) {
+      return setErrorMsg("Please select at least one YouTube channel to post to.");
     }
 
 
@@ -3038,8 +3113,8 @@ export default function SocialMediaTool() {
             >
               {/* Connected Accounts Selector (NEW) */}
               <ConnectedAccountsSelector
-                accounts={[...connectedFacebookPages, ...connectedInstagramPages, ...connectedTikTokAccounts]}
-                selectedIds={[...selectedFacebookPageIds, ...selectedInstagramPageIds, ...selectedTikTokAccountIds]}
+                accounts={[...connectedFacebookPages, ...connectedInstagramPages, ...connectedTikTokAccounts, ...connectedYouTubeChannels]}
+                selectedIds={[...selectedFacebookPageIds, ...selectedInstagramPageIds, ...selectedTikTokAccountIds, ...selectedYouTubeChannelIds]}
                 onToggle={(id, platform) => {
                   // Toggle Facebook
                   if (platform === 'facebook') {
@@ -3093,22 +3168,41 @@ export default function SocialMediaTool() {
                       setSelectedPlatforms(prev => [...prev, 'tiktok']);
                     }
                   }
+                  // Toggle YouTube
+                  if (platform === 'youtube') {
+                    const isCurrentlySelected = selectedYouTubeChannelIds.includes(id);
+                    const newSelectedIds = isCurrentlySelected
+                      ? selectedYouTubeChannelIds.filter(pid => pid !== id)
+                      : [...selectedYouTubeChannelIds, id];
+
+                    setSelectedYouTubeChannelIds(newSelectedIds);
+
+                    // Update platform selection
+                    if (newSelectedIds.length === 0) {
+                      setSelectedPlatforms(prev => prev.filter(p => p !== 'youtube'));
+                    } else if (!selectedPlatforms.includes('youtube')) {
+                      setSelectedPlatforms(prev => [...prev, 'youtube']);
+                    }
+                  }
                 }}
                 onSelectAll={() => {
                   setSelectedFacebookPageIds(connectedFacebookPages.map(p => p.id));
                   setSelectedInstagramPageIds(connectedInstagramPages.map(p => p.id));
                   setSelectedTikTokAccountIds(connectedTikTokAccounts.map(p => p.id));
+                  setSelectedYouTubeChannelIds(connectedYouTubeChannels.map(p => p.id));
                   // Auto-select platforms
                   const platforms = new Set(selectedPlatforms);
                   if (connectedFacebookPages.length > 0) platforms.add('facebook');
                   if (connectedInstagramPages.length > 0) platforms.add('instagram');
                   if (connectedTikTokAccounts.length > 0) platforms.add('tiktok');
+                  if (connectedYouTubeChannels.length > 0) platforms.add('youtube');
                   setSelectedPlatforms(Array.from(platforms));
                 }}
                 onDeselectAll={() => {
                   setSelectedFacebookPageIds([]);
                   setSelectedInstagramPageIds([]);
                   setSelectedTikTokAccountIds([]);
+                  setSelectedYouTubeChannelIds([]);
                 }}
               />
 
@@ -3121,7 +3215,7 @@ export default function SocialMediaTool() {
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                   {ALL_PLATFORMS.filter(p =>
                     p.isConnected() &&
-                    ['youtube', 'linkedin', 'x'].includes(p.id)
+                    ['linkedin', 'x'].includes(p.id)
                   ).map((p) => {
                     const selected = isSelected(p.id);
                     const Icon = p.icon;

@@ -49,6 +49,7 @@ import CreatePost from "./pages/linkedin/create-post";
 import FacebookCallback from "./pages/auth/FacebookCallback";
 import InstagramCallback from "./pages/auth/InstagramCallback";
 import TikTokCallback from "./pages/auth/TiktokCallback";
+import YoutubeCallback from "./pages/auth/YoutubeCallback";
 
 // ✅ Auth
 import Login from "./pages/base44/Login";
@@ -337,7 +338,7 @@ const App = () => (
 
 
           {/* ✅ ADMIN TICKET DETAIL (before catch-all admin route) */}
-          
+
           <Route
             path="/admin/tickets/:id"
             element={
@@ -355,7 +356,7 @@ const App = () => (
               </AdminRoute>
             }
           />
-         
+
 
           <Route
             path="/account"
@@ -465,6 +466,7 @@ const App = () => (
             element={<InstagramCallback />}
           />
           <Route path="/tiktok/callback" element={<TikTokCallback />} />
+          <Route path="/youtube/callback" element={<YoutubeCallback />} />
 
           {/* ✅ 404 */}
           <Route path="*" element={<NotFound />} />
