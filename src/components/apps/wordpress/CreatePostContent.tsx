@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Loader2, Send, AlertCircle, CheckCircle, Globe, Info, Mic, MicOff, X, Image as ImageIcon } from 'lucide-react';
 import GlassCard from './GlassCard';
@@ -86,6 +86,11 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
         return hasDraftContent(getDraftData());
     }, [getDraftData]);
 
+    // Compute if there are unsaved changes (reactive)
+    const hasUnsavedChanges = useMemo(() => {
+        return hasDraftContent(getDraftData());
+    }, [getDraftData]);
+
     // Initialize draft hook
     const { saveDraft, loadDraft, deleteDraft, draftExists, isLoaded, draftTimestamp } = usePostDraft({
         toolType: 'wordpress-create',
@@ -96,7 +101,7 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
 
     // Initialize unsaved changes warning hook
     const { showDialog, handleLeave, handleStay, handleSaveDraft, isSaving } = useUnsavedChangesWarning({
-        hasUnsavedChanges: hasChanges(),
+        hasUnsavedChanges,
         onSaveDraft: saveDraft
     });
 
@@ -717,7 +722,7 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
             {/* Draft Dialogs */}
             <LeaveConfirmationDialog
                 open={showDialog}
-                onOpenChange={() => {}}
+                onOpenChange={() => { }}
                 onLeave={handleLeave}
                 onStay={handleStay}
                 onSaveDraft={handleSaveDraft}

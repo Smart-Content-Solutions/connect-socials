@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ArrowRight, Loader2, Wand2, Lightbulb, MessageCircleQuestion } from 'lucide-react';
 import { toast } from "sonner";
@@ -64,6 +64,11 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
         return hasDraftContent(getDraftData());
     }, [getDraftData]);
 
+    // Compute if there are unsaved changes (reactive)
+    const hasUnsavedChanges = useMemo(() => {
+        return hasDraftContent(getDraftData());
+    }, [getDraftData]);
+
     // Initialize draft hook
     const { saveDraft, loadDraft, deleteDraft, draftExists, isLoaded, draftTimestamp } = usePostDraft({
         toolType: 'ai-editor',
@@ -74,7 +79,7 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
 
     // Initialize unsaved changes warning hook
     const { showDialog, handleLeave, handleStay, handleSaveDraft, isSaving } = useUnsavedChangesWarning({
-        hasUnsavedChanges: hasChanges(),
+        hasUnsavedChanges,
         onSaveDraft: saveDraft
     });
 
@@ -91,7 +96,7 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
             const newValue = trimmed === '' ? capability : trimmed + ' ' + capability;
             return newValue;
         });
-        
+
         // Focus the textarea after adding the capability
         setTimeout(() => {
             textareaRef.current?.focus();
@@ -105,7 +110,7 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
             const target = event.target as Node;
             const isTextarea = textareaRef.current?.contains(target);
             const isInfoBox = infoBoxRef.current?.contains(target);
-            
+
             if (!isTextarea && !isInfoBox) {
                 setShowInfoBox(false);
             }
@@ -346,7 +351,7 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
                                 <ReportDisplay report={report} />
 
                                 <div className="mt-8 flex justify-end">
-                                <button
+                                    <button
                                         onClick={() => {
                                             setReport(null);
                                             setSelectedPostId(null);
@@ -368,7 +373,7 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
             {/* Draft Dialogs */}
             <LeaveConfirmationDialog
                 open={showDialog}
-                onOpenChange={() => {}}
+                onOpenChange={() => { }}
                 onLeave={handleLeave}
                 onStay={handleStay}
                 onSaveDraft={handleSaveDraft}

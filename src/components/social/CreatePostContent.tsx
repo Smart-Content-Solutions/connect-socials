@@ -1,5 +1,5 @@
 // src/components/social/CreatePostContent.tsx
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -119,6 +119,11 @@ export default function CreatePostContent(): JSX.Element {
     return hasDraftContent(getDraftData());
   }, [getDraftData]);
 
+  // Compute if there are unsaved changes (reactive)
+  const hasUnsavedChanges = useMemo(() => {
+    return hasDraftContent(getDraftData());
+  }, [getDraftData]);
+
   // Initialize draft hook
   const { saveDraft, loadDraft, deleteDraft, draftExists, isLoaded, draftTimestamp } = usePostDraft({
     toolType: 'social-automation',
@@ -129,7 +134,7 @@ export default function CreatePostContent(): JSX.Element {
 
   // Initialize unsaved changes warning hook
   const { showDialog, handleLeave, handleStay, handleSaveDraft, isSaving } = useUnsavedChangesWarning({
-    hasUnsavedChanges: hasChanges(),
+    hasUnsavedChanges,
     onSaveDraft: saveDraft
   });
 
@@ -507,7 +512,7 @@ export default function CreatePostContent(): JSX.Element {
       {/* Draft Dialogs */}
       <LeaveConfirmationDialog
         open={showDialog}
-        onOpenChange={() => {}}
+        onOpenChange={() => { }}
         onLeave={handleLeave}
         onStay={handleStay}
         onSaveDraft={handleSaveDraft}
