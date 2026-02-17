@@ -62,57 +62,63 @@ export function DraftRestoreDialog({
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogContent className="sm:max-w-md">
-                <AlertDialogHeader className="gap-3">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                            <FileText className="h-5 w-5 text-blue-600" />
+            <AlertDialogContent className="sm:max-w-md bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 p-0 overflow-hidden">
+                {/* Header with Icon */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 p-6 border-b border-blue-100 dark:border-blue-900/30">
+                    <div className="flex items-start gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-800">
+                            <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <AlertDialogTitle className="text-lg font-semibold">
-                            {title}
-                        </AlertDialogTitle>
+                        <div className="flex-1">
+                            <AlertDialogTitle className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                                {title}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                                {description || defaultDescription}
+                            </AlertDialogDescription>
+                        </div>
                     </div>
-                    <AlertDialogDescription className="text-gray-600 text-left">
-                        {description || defaultDescription}
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
+                </div>
 
-                <AlertDialogFooter className="flex-col gap-2 sm:flex-row sm:gap-2">
-                    {/* Start Fresh Button - Secondary */}
-                    <AlertDialogCancel asChild>
-                        <Button
-                            variant="outline"
-                            className="w-full sm:w-auto"
-                            onClick={onStartFresh}
-                            disabled={isLoading}
-                        >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Start Fresh
-                        </Button>
-                    </AlertDialogCancel>
+                {/* Action Buttons */}
+                <div className="p-6 bg-white dark:bg-gray-900">
+                    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        {/* Start Fresh Button - Secondary */}
+                        <AlertDialogCancel asChild>
+                            <Button
+                                variant="outline"
+                                className="w-full sm:w-auto border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                onClick={onStartFresh}
+                                disabled={isLoading}
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Start Fresh
+                            </Button>
+                        </AlertDialogCancel>
 
-                    {/* Continue Button - Primary */}
-                    <AlertDialogAction asChild>
-                        <Button
-                            variant="default"
-                            className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
-                            onClick={onContinue}
-                            disabled={isLoading}
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Loading...
-                                </>
-                            ) : (
-                                <>
-                                    <RotateCcw className="mr-2 h-4 w-4" />
-                                    Continue
-                                </>
-                            )}
-                        </Button>
-                    </AlertDialogAction>
-                </AlertDialogFooter>
+                        {/* Continue Button - Primary */}
+                        <AlertDialogAction asChild>
+                            <Button
+                                variant="default"
+                                className="w-full sm:w-auto bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white border-0 shadow-lg shadow-blue-500/25"
+                                onClick={onContinue}
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Loading...
+                                    </>
+                                ) : (
+                                    <>
+                                        <RotateCcw className="mr-2 h-4 w-4" />
+                                        Continue
+                                    </>
+                                )}
+                            </Button>
+                        </AlertDialogAction>
+                    </div>
+                </div>
             </AlertDialogContent>
         </AlertDialog>
     );
