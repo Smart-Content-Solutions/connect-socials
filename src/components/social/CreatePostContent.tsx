@@ -1,5 +1,5 @@
 // src/components/social/CreatePostContent.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useUser } from "@clerk/clerk-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 import {
   CheckCircle,
@@ -31,6 +32,10 @@ import { getLinkedInAuthData } from "@/utils/linkedinOAuth";
 import { getFacebookAuthData } from "@/utils/facebookOAuth";
 import { getInstagramAuthData } from "@/utils/instagramOAuth";
 import { getTikTokAuthData } from "@/utils/tiktokOAuth";
+import { usePostDraft } from "@/hooks/usePostDraft";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import { LeaveConfirmationDialog, DraftRestoreDialog } from "@/components/drafts";
+import { hasDraftContent } from "@/lib/draft-utils";
 
 type Platform = {
   id: string;
@@ -83,6 +88,57 @@ export default function CreatePostContent(): JSX.Element {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const errorRef = useRef<HTMLDivElement>(null);
+
+  // Draft System Integration
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+
+  // Function to get current form data for draft
+  const getDraftData = useCallback(() => ({
+    caption,
+    selectedPlatforms,
+    aiEnhance,
+    postMode,
+    scheduledTime,
+    instagramPostType,
+    postToBothFeedAndStory
+  }), [caption, selectedPlatforms, aiEnhance, postMode, scheduledTime, instagramPostType, postToBothFeedAndStory]);
+
+  // Function to restore form from draft data
+  const setDraftData = useCallback((data: Record<string, any>) => {
+    if (data.caption) setCaption(data.caption);
+    if (data.selectedPlatforms) setSelectedPlatforms(data.selectedPlatforms);
+    if (data.aiEnhance !== undefined) setAiEnhance(data.aiEnhance);
+    if (data.postMode) setPostMode(data.postMode);
+    if (data.scheduledTime) setScheduledTime(data.scheduledTime);
+    if (data.instagramPostType) setInstagramPostType(data.instagramPostType);
+    if (data.postToBothFeedAndStory !== undefined) setPostToBothFeedAndStory(data.postToBothFeedAndStory);
+  }, []);
+
+  // Function to check if form has changes
+  const hasChanges = useCallback(() => {
+    return hasDraftContent(getDraftData());
+  }, [getDraftData]);
+
+  // Initialize draft hook
+  const { saveDraft, loadDraft, deleteDraft, draftExists, isLoaded, draftTimestamp } = usePostDraft({
+    toolType: 'social-automation',
+    getDraftData,
+    setDraftData,
+    hasChanges
+  });
+
+  // Initialize unsaved changes warning hook
+  const { showDialog, handleLeave, handleStay, handleSaveDraft, isSaving } = useUnsavedChangesWarning({
+    hasUnsavedChanges: hasChanges(),
+    onSaveDraft: saveDraft
+  });
+
+  // Check for draft on mount
+  useEffect(() => {
+    if (isLoaded && draftExists) {
+      setShowRestoreDialog(true);
+    }
+  }, [isLoaded, draftExists]);
 
   useEffect(() => {
     if (errorMsg && errorRef.current) {
@@ -447,6 +503,34 @@ export default function CreatePostContent(): JSX.Element {
           </CardContent>
         </Card>
       </div>
+
+      {/* Draft Dialogs */}
+      <LeaveConfirmationDialog
+        open={showDialog}
+        onOpenChange={() => {}}
+        onLeave={handleLeave}
+        onStay={handleStay}
+        onSaveDraft={handleSaveDraft}
+        isSaving={isSaving}
+      />
+
+      <DraftRestoreDialog
+        open={showRestoreDialog}
+        onOpenChange={setShowRestoreDialog}
+        onContinue={async () => {
+          const draft = await loadDraft();
+          if (draft) {
+            setDraftData(draft);
+            toast.success('Draft restored successfully');
+          }
+          setShowRestoreDialog(false);
+        }}
+        onStartFresh={async () => {
+          await deleteDraft();
+          setShowRestoreDialog(false);
+        }}
+        draftTimestamp={draftTimestamp}
+      />
     </div>
   );
 }

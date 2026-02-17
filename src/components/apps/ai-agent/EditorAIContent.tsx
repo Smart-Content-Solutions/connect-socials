@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ArrowRight, Loader2, Wand2, Lightbulb, MessageCircleQuestion } from 'lucide-react';
 import { toast } from "sonner";
@@ -8,6 +8,10 @@ import PostSelector from './components/PostSelector';
 import ImageUploadZone from './components/ImageUploadZone';
 import ReportDisplay from './components/ReportDisplay';
 import { compressImage } from '@/lib/image-compression';
+import { usePostDraft } from '@/hooks/usePostDraft';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
+import { LeaveConfirmationDialog, DraftRestoreDialog } from '@/components/drafts';
+import { hasDraftContent } from '@/lib/draft-utils';
 
 interface EditorAIContentProps {
     sites: any[];
@@ -34,6 +38,52 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
     const [report, setReport] = useState<any>(null);
     const [showInfoBox, setShowInfoBox] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // Draft System Integration
+    const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+    // Function to get current form data for draft
+    const getDraftData = useCallback(() => ({
+        selectedSiteId,
+        selectedPostId,
+        userInstruction,
+        imagePreviews
+    }), [selectedSiteId, selectedPostId, userInstruction, imagePreviews]);
+
+    // Function to restore form from draft data
+    const setDraftData = useCallback((data: Record<string, any>) => {
+        if (data.selectedSiteId) setSelectedSiteId(data.selectedSiteId);
+        if (data.selectedPostId) setSelectedPostId(data.selectedPostId);
+        if (data.userInstruction) setUserInstruction(data.userInstruction);
+        if (data.imagePreviews) setImagePreviews(data.imagePreviews);
+    }, []);
+
+    // Function to check if form has changes
+    const hasChanges = useCallback(() => {
+        return hasDraftContent(getDraftData());
+    }, [getDraftData]);
+
+    // Initialize draft hook
+    const { saveDraft, loadDraft, deleteDraft, draftExists, isLoaded, draftTimestamp } = usePostDraft({
+        toolType: 'ai-editor',
+        getDraftData,
+        setDraftData,
+        hasChanges
+    });
+
+    // Initialize unsaved changes warning hook
+    const { showDialog, handleLeave, handleStay, handleSaveDraft, isSaving } = useUnsavedChangesWarning({
+        hasUnsavedChanges: hasChanges(),
+        onSaveDraft: saveDraft
+    });
+
+    // Check for draft on mount
+    useEffect(() => {
+        if (isLoaded && draftExists) {
+            setShowRestoreDialog(true);
+        }
+    }, [isLoaded, draftExists]);
 
     const handleCapabilityClick = (capability: string) => {
         setUserInstruction(prev => {
@@ -296,12 +346,13 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
                                 <ReportDisplay report={report} />
 
                                 <div className="mt-8 flex justify-end">
-                                    <button
+                                <button
                                         onClick={() => {
                                             setReport(null);
                                             setSelectedPostId(null);
                                             setImages([]);
                                             setUserInstruction("");
+                                            setImagePreviews([]);
                                         }}
                                         className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-2"
                                     >
@@ -313,6 +364,34 @@ export default function EditorAIContent({ sites }: EditorAIContentProps) {
                     )}
                 </div>
             </div>
+
+            {/* Draft Dialogs */}
+            <LeaveConfirmationDialog
+                open={showDialog}
+                onOpenChange={() => {}}
+                onLeave={handleLeave}
+                onStay={handleStay}
+                onSaveDraft={handleSaveDraft}
+                isSaving={isSaving}
+            />
+
+            <DraftRestoreDialog
+                open={showRestoreDialog}
+                onOpenChange={setShowRestoreDialog}
+                onContinue={async () => {
+                    const draft = await loadDraft();
+                    if (draft) {
+                        setDraftData(draft);
+                        toast.success('Draft restored successfully');
+                    }
+                    setShowRestoreDialog(false);
+                }}
+                onStartFresh={async () => {
+                    await deleteDraft();
+                    setShowRestoreDialog(false);
+                }}
+                draftTimestamp={draftTimestamp}
+            />
         </div>
     );
 }

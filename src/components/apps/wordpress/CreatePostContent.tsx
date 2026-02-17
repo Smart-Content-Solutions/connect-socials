@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Loader2, Send, AlertCircle, CheckCircle, Globe, Info, Mic, MicOff, X, Image as ImageIcon } from 'lucide-react';
 import GlassCard from './GlassCard';
@@ -8,6 +8,10 @@ import { cn } from '@/lib/utils';
 import { WordPressSite } from './WordPressSiteCard';
 import { toast } from "sonner";
 import { compressImage } from '@/lib/image-compression';
+import { usePostDraft } from '@/hooks/usePostDraft';
+import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
+import { LeaveConfirmationDialog, DraftRestoreDialog } from '@/components/drafts';
+import { hasDraftContent } from '@/lib/draft-utils';
 
 // Use backend API proxy to avoid CORS issues with direct n8n calls
 const API_PROXY_URL = "/api/wordpress-automation";
@@ -45,6 +49,63 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
     const [progress, setProgress] = useState(0);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState(false);
+
+    // Draft System Integration
+    const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+
+    // Function to get current form data for draft
+    const getDraftData = useCallback(() => ({
+        selectedSiteIds,
+        topic,
+        sections,
+        keywords,
+        location,
+        occupation,
+        audience,
+        tone,
+        customTone,
+        imagePreview
+    }), [selectedSiteIds, topic, sections, keywords, location, occupation, audience, tone, customTone, imagePreview]);
+
+    // Function to restore form from draft data
+    const setDraftData = useCallback((data: Record<string, any>) => {
+        if (data.selectedSiteIds) setSelectedSiteIds(data.selectedSiteIds);
+        if (data.topic) setTopic(data.topic);
+        if (data.sections) setSections(data.sections);
+        if (data.keywords) setKeywords(data.keywords);
+        if (data.location) setLocation(data.location);
+        if (data.occupation) setOccupation(data.occupation);
+        if (data.audience) setAudience(data.audience);
+        if (data.tone) setTone(data.tone);
+        if (data.customTone) setCustomTone(data.customTone);
+        if (data.imagePreview) setImagePreview(data.imagePreview);
+    }, []);
+
+    // Function to check if form has changes
+    const hasChanges = useCallback(() => {
+        return hasDraftContent(getDraftData());
+    }, [getDraftData]);
+
+    // Initialize draft hook
+    const { saveDraft, loadDraft, deleteDraft, draftExists, isLoaded, draftTimestamp } = usePostDraft({
+        toolType: 'wordpress-create',
+        getDraftData,
+        setDraftData,
+        hasChanges
+    });
+
+    // Initialize unsaved changes warning hook
+    const { showDialog, handleLeave, handleStay, handleSaveDraft, isSaving } = useUnsavedChangesWarning({
+        hasUnsavedChanges: hasChanges(),
+        onSaveDraft: saveDraft
+    });
+
+    // Check for draft on mount
+    useEffect(() => {
+        if (isLoaded && draftExists) {
+            setShowRestoreDialog(true);
+        }
+    }, [isLoaded, draftExists]);
 
     // Voice Input State
     const [isListening, setIsListening] = useState(false);
@@ -652,6 +713,34 @@ export default function CreatePostContent({ sites }: CreatePostContentProps) {
                     )}
                 </div>
             </div>
+
+            {/* Draft Dialogs */}
+            <LeaveConfirmationDialog
+                open={showDialog}
+                onOpenChange={() => {}}
+                onLeave={handleLeave}
+                onStay={handleStay}
+                onSaveDraft={handleSaveDraft}
+                isSaving={isSaving}
+            />
+
+            <DraftRestoreDialog
+                open={showRestoreDialog}
+                onOpenChange={setShowRestoreDialog}
+                onContinue={async () => {
+                    const draft = await loadDraft();
+                    if (draft) {
+                        setDraftData(draft);
+                        toast.success('Draft restored successfully');
+                    }
+                    setShowRestoreDialog(false);
+                }}
+                onStartFresh={async () => {
+                    await deleteDraft();
+                    setShowRestoreDialog(false);
+                }}
+                draftTimestamp={draftTimestamp}
+            />
         </div>
     );
 }
