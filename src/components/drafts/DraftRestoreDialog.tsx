@@ -62,18 +62,18 @@ export function DraftRestoreDialog({
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogContent className="sm:max-w-md bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 p-0 overflow-hidden">
+            <AlertDialogContent className="sm:max-w-[500px] glass-card border-white/10 p-0 overflow-hidden">
                 {/* Header with Icon */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 p-6 border-b border-blue-100 dark:border-blue-900/30">
+                <div className="bg-gradient-to-br from-blue-500/10 to-indigo-500/5 p-6 border-b border-blue-500/20">
                     <div className="flex items-start gap-4">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 border-2 border-blue-200 dark:border-blue-800">
-                            <FileText className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-500/20 border-2 border-blue-500/30">
+                            <FileText className="h-6 w-6 text-blue-400" />
                         </div>
-                        <div className="flex-1">
-                            <AlertDialogTitle className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                        <div className="flex-1 min-w-0">
+                            <AlertDialogTitle className="text-xl font-semibold text-white mb-2">
                                 {title}
                             </AlertDialogTitle>
-                            <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                            <AlertDialogDescription className="text-gray-400 text-sm leading-relaxed">
                                 {description || defaultDescription}
                             </AlertDialogDescription>
                         </div>
@@ -81,13 +81,13 @@ export function DraftRestoreDialog({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="p-6 bg-white dark:bg-gray-900">
+                <div className="p-6 bg-gradient-to-br from-[#3B3C3E]/60 to-[#1A1A1C]/80">
                     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                         {/* Start Fresh Button - Secondary */}
                         <AlertDialogCancel asChild>
                             <Button
                                 variant="outline"
-                                className="w-full sm:w-auto border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                className="w-full sm:w-auto border-white/20 text-gray-300 hover:bg-white/5 hover:text-white hover:border-white/30"
                                 onClick={onStartFresh}
                                 disabled={isLoading}
                             >

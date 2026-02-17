@@ -61,18 +61,18 @@ export function LeaveConfirmationDialog({
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogContent className="sm:max-w-md bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 p-0 overflow-hidden">
+            <AlertDialogContent className="sm:max-w-[500px] glass-card border-white/10 p-0 overflow-hidden">
                 {/* Header with Icon */}
-                <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/20 dark:to-orange-950/20 p-6 border-b border-amber-100 dark:border-amber-900/30">
+                <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 p-6 border-b border-amber-500/20">
                     <div className="flex items-start gap-4">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 border-2 border-amber-200 dark:border-amber-800">
-                            <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-500/20 border-2 border-amber-500/30">
+                            <AlertTriangle className="h-6 w-6 text-amber-400" />
                         </div>
-                        <div className="flex-1">
-                            <AlertDialogTitle className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                        <div className="flex-1 min-w-0">
+                            <AlertDialogTitle className="text-xl font-semibold text-white mb-2">
                                 {title}
                             </AlertDialogTitle>
-                            <AlertDialogDescription className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
+                            <AlertDialogDescription className="text-gray-400 text-sm leading-relaxed">
                                 {description}
                             </AlertDialogDescription>
                         </div>
@@ -80,13 +80,13 @@ export function LeaveConfirmationDialog({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="p-6 bg-white dark:bg-gray-900">
+                <div className="p-6 bg-gradient-to-br from-[#3B3C3E]/60 to-[#1A1A1C]/80">
                     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                         {/* Stay Button - Secondary */}
                         <AlertDialogCancel asChild>
                             <Button
                                 variant="outline"
-                                className="w-full sm:w-auto border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                                className="w-full sm:w-auto border-white/20 text-gray-300 hover:bg-white/5 hover:text-white hover:border-white/30"
                                 onClick={onStay}
                                 disabled={isSaving}
                             >
@@ -99,7 +99,7 @@ export function LeaveConfirmationDialog({
                             <AlertDialogAction asChild>
                                 <Button
                                     variant="outline"
-                                    className="flex-1 sm:flex-none border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-950/50"
+                                    className="flex-1 sm:flex-none border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:border-red-500/50"
                                     onClick={onLeave}
                                     disabled={isSaving}
                                 >
@@ -111,7 +111,7 @@ export function LeaveConfirmationDialog({
                             {/* Save Draft Button - Primary */}
                             <Button
                                 variant="default"
-                                className="flex-1 sm:flex-none bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0 shadow-lg shadow-amber-500/25"
+                                className="flex-1 sm:flex-none btn-gold hover:opacity-90 border-0 shadow-lg shadow-amber-500/25"
                                 onClick={handleSaveDraft}
                                 disabled={isSaving}
                             >
