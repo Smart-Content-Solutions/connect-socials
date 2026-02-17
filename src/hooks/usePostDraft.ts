@@ -8,7 +8,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
+import { useAuthenticatedSupabase } from '@/hooks/useAuthenticatedSupabase';
 import {
     UsePostDraftOptions,
     UsePostDraftReturn,
@@ -38,6 +38,7 @@ export function usePostDraft(options: UsePostDraftOptions): UsePostDraftReturn {
     } = options;
 
     const { user, isSignedIn, isLoaded: isUserLoaded } = useUser();
+    const supabase = useAuthenticatedSupabase();
 
     // State
     const [draftExists, setDraftExists] = useState(false);
