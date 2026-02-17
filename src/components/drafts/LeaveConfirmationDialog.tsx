@@ -61,27 +61,29 @@ export function LeaveConfirmationDialog({
 
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
-            <AlertDialogContent className="sm:max-w-md">
+            <AlertDialogContent className="sm:max-w-md glass-card-gold border-white/10 p-6">
                 <AlertDialogHeader className="gap-3">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100">
-                            <AlertTriangle className="h-5 w-5 text-amber-600" />
+                    <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20">
+                            <AlertTriangle className="h-6 w-6 text-amber-400" />
                         </div>
-                        <AlertDialogTitle className="text-lg font-semibold">
-                            {title}
-                        </AlertDialogTitle>
+                        <div className="flex flex-col gap-1 text-left">
+                            <AlertDialogTitle className="text-xl font-semibold text-white">
+                                {title}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription className="text-gray-400">
+                                {description}
+                            </AlertDialogDescription>
+                        </div>
                     </div>
-                    <AlertDialogDescription className="text-gray-600 text-left">
-                        {description}
-                    </AlertDialogDescription>
                 </AlertDialogHeader>
 
-                <AlertDialogFooter className="flex-col gap-2 sm:flex-row sm:gap-2">
+                <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                     {/* Stay Button - Secondary */}
                     <AlertDialogCancel asChild>
                         <Button
-                            variant="outline"
-                            className="w-full sm:w-auto"
+                            variant="ghost"
+                            className="w-full sm:w-auto text-gray-400 hover:text-white hover:bg-white/5 border border-white/10"
                             onClick={onStay}
                             disabled={isSaving}
                         >
@@ -89,11 +91,24 @@ export function LeaveConfirmationDialog({
                         </Button>
                     </AlertDialogCancel>
 
-                    <div className="flex gap-2 w-full sm:w-auto">
+                    <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                        {/* Leave Button - Destructive */}
+                        <AlertDialogAction asChild>
+                            <Button
+                                variant="destructive"
+                                className="flex-1 sm:flex-none bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20"
+                                onClick={onLeave}
+                                disabled={isSaving}
+                            >
+                                <LogOut className="mr-2 h-4 w-4" />
+                                Leave
+                            </Button>
+                        </AlertDialogAction>
+
                         {/* Save Draft Button - Primary */}
                         <Button
                             variant="default"
-                            className="flex-1 bg-blue-600 hover:bg-blue-700"
+                            className="flex-1 sm:flex-none btn-gold text-black hover:opacity-90 border-none"
                             onClick={handleSaveDraft}
                             disabled={isSaving}
                         >
@@ -109,21 +124,8 @@ export function LeaveConfirmationDialog({
                                 </>
                             )}
                         </Button>
-
-                        {/* Leave Button - Destructive */}
-                        <AlertDialogAction asChild>
-                            <Button
-                                variant="destructive"
-                                className="flex-1"
-                                onClick={onLeave}
-                                disabled={isSaving}
-                            >
-                                <LogOut className="mr-2 h-4 w-4" />
-                                Leave
-                            </Button>
-                        </AlertDialogAction>
                     </div>
-                </AlertDialogFooter>
+                </div>
             </AlertDialogContent>
         </AlertDialog>
     );
