@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
 import { useUser } from "@clerk/clerk-react";
@@ -264,6 +264,80 @@ export default function SocialMediaTool() {
     "Humorous",
     "Custom"
   ];
+
+  // ============================================
+  // DRAFT MANAGEMENT
+  // ============================================
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+
+  // Function to get current form data for draft
+  const getDraftData = useCallback(() => ({
+    activeTab,
+    caption,
+    selectedPlatforms,
+    aiEnhance,
+    postMode,
+    scheduledTime,
+    tone,
+    customTone,
+    videoSource,
+    aiVideoTab,
+    aiPrompt,
+    aiDuration,
+    textToVideoPrompt,
+    textToVideoNegativePrompt,
+    textToVideoDuration
+  }), [activeTab, caption, selectedPlatforms, aiEnhance, postMode, scheduledTime, tone, customTone, videoSource, aiVideoTab, aiPrompt, aiDuration, textToVideoPrompt, textToVideoNegativePrompt, textToVideoDuration]);
+
+  // Function to restore form from draft data
+  const setDraftData = useCallback((data: Record<string, any>) => {
+    if (data.activeTab) setActiveTab(data.activeTab);
+    if (data.caption) setCaption(data.caption);
+    if (data.selectedPlatforms) setSelectedPlatforms(data.selectedPlatforms);
+    if (data.aiEnhance !== undefined) setAiEnhance(data.aiEnhance);
+    if (data.postMode) setPostMode(data.postMode);
+    if (data.scheduledTime) setScheduledTime(data.scheduledTime);
+    if (data.tone) setTone(data.tone);
+    if (data.customTone) setCustomTone(data.customTone);
+    if (data.videoSource) setVideoSource(data.videoSource);
+    if (data.aiVideoTab) setAiVideoTab(data.aiVideoTab);
+    if (data.aiPrompt) setAiPrompt(data.aiPrompt);
+    if (data.aiDuration) setAiDuration(data.aiDuration);
+    if (data.textToVideoPrompt) setTextToVideoPrompt(data.textToVideoPrompt);
+    if (data.textToVideoNegativePrompt) setTextToVideoNegativePrompt(data.textToVideoNegativePrompt);
+    if (data.textToVideoDuration) setTextToVideoDuration(data.textToVideoDuration);
+  }, []);
+
+  // Function to check if form has changes
+  const hasChanges = useCallback(() => {
+    return hasDraftContent(getDraftData());
+  }, [getDraftData]);
+
+  // Compute if there are unsaved changes (reactive)
+  const hasUnsavedChanges = useMemo(() => {
+    return hasDraftContent(getDraftData());
+  }, [getDraftData]);
+
+  // Initialize draft hook
+  const { saveDraft, loadDraft, deleteDraft, draftExists, isLoaded: draftIsLoaded, draftTimestamp } = usePostDraft({
+    toolType: 'social-automation' as ToolType,
+    getDraftData,
+    setDraftData,
+    hasChanges
+  });
+
+  // Initialize unsaved changes warning hook
+  const { showDialog, handleLeave, handleStay, handleSaveDraft, isSaving } = useUnsavedChangesWarning({
+    hasUnsavedChanges,
+    onSaveDraft: saveDraft
+  });
+
+  // Check for draft on mount
+  useEffect(() => {
+    if (draftIsLoaded && draftExists) {
+      setShowRestoreDialog(true);
+    }
+  }, [draftIsLoaded, draftExists]);
 
   const handlePreview = async () => {
     if (!caption.trim()) {
@@ -4590,6 +4664,34 @@ export default function SocialMediaTool() {
 
         </motion.div>
       </div >
+
+      {/* Draft Dialogs */}
+      <LeaveConfirmationDialog
+        open={showDialog}
+        onOpenChange={() => { }}
+        onLeave={handleLeave}
+        onStay={handleStay}
+        onSaveDraft={handleSaveDraft}
+        isSaving={isSaving}
+      />
+
+      <DraftRestoreDialog
+        open={showRestoreDialog}
+        onOpenChange={setShowRestoreDialog}
+        onContinue={async () => {
+          const draft = await loadDraft();
+          if (draft) {
+            setDraftData(draft);
+            toast.success('Draft restored successfully');
+          }
+          setShowRestoreDialog(false);
+        }}
+        onStartFresh={async () => {
+          await deleteDraft();
+          setShowRestoreDialog(false);
+        }}
+        draftTimestamp={draftTimestamp}
+      />
     </div >
   );
 }
