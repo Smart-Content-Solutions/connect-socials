@@ -1,7 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
 
-import { useUser } from "@clerk/clerk-react";
+import { useUser, useSession } from "@clerk/clerk-react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle,
@@ -112,6 +113,7 @@ const platformColors: Record<string, string> = {
 
 export default function SocialMediaTool() {
   const { user, isSignedIn, isLoaded } = useUser();
+  const { session } = useSession();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'video'>('dashboard');
   const [loading, setLoading] = useState(false);
@@ -166,7 +168,7 @@ export default function SocialMediaTool() {
   // Sync platforms with selected account IDs
   useEffect(() => {
     setSelectedPlatforms(prev => {
-      const newPlatforms = [...prev];
+      let newPlatforms = [...prev];
 
       // Add or remove Facebook based on selectedFacebookPageIds
       const hasFacebookAccounts = selectedFacebookPageIds.length > 0;
@@ -175,8 +177,7 @@ export default function SocialMediaTool() {
       if (hasFacebookAccounts && !hasFacebookInPlatforms) {
         newPlatforms.push('facebook');
       } else if (!hasFacebookAccounts && hasFacebookInPlatforms) {
-        const index = newPlatforms.indexOf('facebook');
-        if (index > -1) newPlatforms.splice(index, 1);
+        newPlatforms = newPlatforms.filter(p => p !== 'facebook');
       }
 
       // Add or remove Instagram based on selectedInstagramPageIds
@@ -186,35 +187,40 @@ export default function SocialMediaTool() {
       if (hasInstagramAccounts && !hasInstagramInPlatforms) {
         newPlatforms.push('instagram');
       } else if (!hasInstagramAccounts && hasInstagramInPlatforms) {
-        const index = newPlatforms.indexOf('instagram');
-        if (index > -1) newPlatforms.splice(index, 1);
+        newPlatforms = newPlatforms.filter(p => p !== 'instagram');
       }
 
-      // Add or remove TikTok based on selectedTikTokAccountIds
+      // Special handling for Video-only platforms
+      const isVideoTab = activeTab === 'video';
+
+      // TikTok (Video Only)
       const hasTikTokAccounts = selectedTikTokAccountIds.length > 0;
       const hasTikTokInPlatforms = newPlatforms.includes('tiktok');
 
-      if (hasTikTokAccounts && !hasTikTokInPlatforms) {
+      if (hasTikTokAccounts && isVideoTab && !hasTikTokInPlatforms) {
         newPlatforms.push('tiktok');
-      } else if (!hasTikTokAccounts && hasTikTokInPlatforms) {
-        const index = newPlatforms.indexOf('tiktok');
-        if (index > -1) newPlatforms.splice(index, 1);
+      } else if ((!hasTikTokAccounts || !isVideoTab) && hasTikTokInPlatforms) {
+        newPlatforms = newPlatforms.filter(p => p !== 'tiktok');
       }
 
-      // Add or remove YouTube based on selectedYouTubeChannelIds
+      // YouTube (Video Only)
       const hasYouTubeChannels = selectedYouTubeChannelIds.length > 0;
       const hasYouTubeInPlatforms = newPlatforms.includes('youtube');
 
-      if (hasYouTubeChannels && !hasYouTubeInPlatforms) {
+      if (hasYouTubeChannels && isVideoTab && !hasYouTubeInPlatforms) {
         newPlatforms.push('youtube');
-      } else if (!hasYouTubeChannels && hasYouTubeInPlatforms) {
-        const index = newPlatforms.indexOf('youtube');
-        if (index > -1) newPlatforms.splice(index, 1);
+      } else if ((!hasYouTubeChannels || !isVideoTab) && hasYouTubeInPlatforms) {
+        newPlatforms = newPlatforms.filter(p => p !== 'youtube');
+      }
+
+      // Final safety check for Image tab
+      if (activeTab === 'create') {
+        newPlatforms = newPlatforms.filter(p => p !== 'youtube' && p !== 'tiktok');
       }
 
       return newPlatforms;
     });
-  }, [selectedFacebookPageIds, selectedInstagramPageIds, selectedTikTokAccountIds, selectedYouTubeChannelIds]);
+  }, [selectedFacebookPageIds, selectedInstagramPageIds, selectedTikTokAccountIds, selectedYouTubeChannelIds, activeTab]);
 
   // Legacy state (for backward compatibility during transition)
   const [selectedFacebookPage, setSelectedFacebookPage] = useState<FacebookPage | null>(null);
@@ -1104,6 +1110,52 @@ export default function SocialMediaTool() {
       return;
     }
 
+    // Token cost: 5s = 8 tokens, 10s = 15 tokens
+    const tokenCost = aiDuration === 5 ? 8 : 15;
+
+    // Deduct tokens before starting generation
+    try {
+      const authToken = await session?.getToken();
+      if (!authToken) {
+        toast.error('Authentication error. Please sign in again.');
+        return;
+      }
+      const deductRes = await fetch('/api/deduct-credits', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: tokenCost,
+          description: `AI Image-to-Video (${aiDuration}s)`,
+          metadata: { type: 'image_to_video', duration: aiDuration },
+        }),
+      });
+      const deductData = await deductRes.json();
+      if (!deductRes.ok) {
+        if (deductData.error === 'insufficient_credits') {
+          toast.error(
+            `Not enough tokens! You need ${tokenCost} but have ${deductData.balance || 0}. Purchase more from your Account page.`,
+            {
+              action: {
+                label: 'Buy Tokens',
+                onClick: () => window.location.href = '/account',
+              },
+              duration: 8000,
+            }
+          );
+        } else {
+          toast.error(deductData.error || 'Failed to deduct tokens');
+        }
+        return;
+      }
+      toast.success(`${tokenCost} tokens deducted (${deductData.newBalance} remaining)`);
+    } catch (deductErr: any) {
+      toast.error('Failed to check token balance. Please try again.');
+      return;
+    }
+
     setIsGeneratingAiVideo(true);
     setAiJobStatus('pending');
     setAiJobError(null);
@@ -1207,6 +1259,52 @@ export default function SocialMediaTool() {
   const handleGenerateTextToVideo = async () => {
     if (!textToVideoPrompt.trim()) {
       toast.error('Please enter a motion description');
+      return;
+    }
+
+    // Token cost: 5s = 8 tokens, 10s = 15 tokens
+    const tokenCost = textToVideoDuration === 5 ? 8 : 15;
+
+    // Deduct tokens before starting generation
+    try {
+      const authToken = await session?.getToken();
+      if (!authToken) {
+        toast.error('Authentication error. Please sign in again.');
+        return;
+      }
+      const deductRes = await fetch('/api/deduct-credits', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: tokenCost,
+          description: `AI Text-to-Video (${textToVideoDuration}s)`,
+          metadata: { type: 'text_to_video', duration: textToVideoDuration },
+        }),
+      });
+      const deductData = await deductRes.json();
+      if (!deductRes.ok) {
+        if (deductData.error === 'insufficient_credits') {
+          toast.error(
+            `Not enough tokens! You need ${tokenCost} but have ${deductData.balance || 0}. Purchase more from your Account page.`,
+            {
+              action: {
+                label: 'Buy Tokens',
+                onClick: () => window.location.href = '/account',
+              },
+              duration: 8000,
+            }
+          );
+        } else {
+          toast.error(deductData.error || 'Failed to deduct tokens');
+        }
+        return;
+      }
+      toast.success(`${tokenCost} tokens deducted (${deductData.newBalance} remaining)`);
+    } catch (deductErr: any) {
+      toast.error('Failed to check token balance. Please try again.');
       return;
     }
 
@@ -1353,7 +1451,7 @@ export default function SocialMediaTool() {
     form.append("user_id", user!.id);
     form.append("caption", caption);
     selectedPlatforms
-      .filter(p => p !== 'tiktok')
+      .filter(p => !['youtube', 'tiktok'].includes(p))
       .forEach((p) => form.append("platforms[]", p));
     form.append("post_mode", postMode);
     form.append("use_ai", aiEnhance ? "yes" : "no");
@@ -3940,6 +4038,7 @@ export default function SocialMediaTool() {
                               >
 
                                 <p className="font-semibold text-lg">{duration}s</p>
+                                <p className="text-xs mt-1 opacity-70">{duration === 5 ? '8 tokens' : '15 tokens'}</p>
 
                               </button>
 
@@ -4079,6 +4178,7 @@ export default function SocialMediaTool() {
                                   }`}
                               >
                                 <p className="font-semibold text-lg">{duration}s</p>
+                                <p className="text-xs mt-1 opacity-70">{duration === 5 ? '8 tokens' : '15 tokens'}</p>
                               </button>
                             ))}
                           </div>
