@@ -1352,7 +1352,9 @@ export default function SocialMediaTool() {
     const form = new FormData();
     form.append("user_id", user!.id);
     form.append("caption", caption);
-    selectedPlatforms.forEach((p) => form.append("platforms[]", p));
+    selectedPlatforms
+      .filter(p => p !== 'tiktok')
+      .forEach((p) => form.append("platforms[]", p));
     form.append("post_mode", postMode);
     form.append("use_ai", aiEnhance ? "yes" : "no");
     if (aiEnhance) {
@@ -1377,9 +1379,7 @@ export default function SocialMediaTool() {
     if (selectedPlatforms.includes('instagram') && selectedInstagramPageIds.length > 0) {
       selectedInstagramPageIds.forEach((id) => form.append("instagram_page_ids[]", id));
     }
-    if (selectedPlatforms.includes('tiktok') && selectedTikTokAccountIds.length > 0) {
-      selectedTikTokAccountIds.forEach((id) => form.append("tiktok_account_ids[]", id));
-    }
+
 
     if (postMode === "schedule") {
       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -2698,8 +2698,8 @@ export default function SocialMediaTool() {
             >
               {/* Connected Accounts Selector (NEW) */}
               <ConnectedAccountsSelector
-                accounts={[...connectedFacebookPages, ...connectedInstagramPages, ...connectedTikTokAccounts]}
-                selectedIds={[...selectedFacebookPageIds, ...selectedInstagramPageIds, ...selectedTikTokAccountIds]}
+                accounts={[...connectedFacebookPages, ...connectedInstagramPages]}
+                selectedIds={[...selectedFacebookPageIds, ...selectedInstagramPageIds]}
                 onToggle={(id, platform) => {
                   // Toggle Facebook
                   if (platform === 'facebook') {
@@ -2737,38 +2737,20 @@ export default function SocialMediaTool() {
                       setSelectedPlatforms(prev => [...prev, 'instagram']);
                     }
                   }
-                  // Toggle TikTok
-                  if (platform === 'tiktok') {
-                    const isCurrentlySelected = selectedTikTokAccountIds.includes(id);
-                    const newSelectedIds = isCurrentlySelected
-                      ? selectedTikTokAccountIds.filter(pid => pid !== id)
-                      : [...selectedTikTokAccountIds, id];
 
-                    setSelectedTikTokAccountIds(newSelectedIds);
-
-                    // Update platform selection
-                    if (newSelectedIds.length === 0) {
-                      setSelectedPlatforms(prev => prev.filter(p => p !== 'tiktok'));
-                    } else if (!selectedPlatforms.includes('tiktok')) {
-                      setSelectedPlatforms(prev => [...prev, 'tiktok']);
-                    }
-                  }
                 }}
                 onSelectAll={() => {
                   setSelectedFacebookPageIds(connectedFacebookPages.map(p => p.id));
                   setSelectedInstagramPageIds(connectedInstagramPages.map(p => p.id));
-                  setSelectedTikTokAccountIds(connectedTikTokAccounts.map(p => p.id));
                   // Auto-select platforms
                   const platforms = new Set(selectedPlatforms);
                   if (connectedFacebookPages.length > 0) platforms.add('facebook');
                   if (connectedInstagramPages.length > 0) platforms.add('instagram');
-                  if (connectedTikTokAccounts.length > 0) platforms.add('tiktok');
                   setSelectedPlatforms(Array.from(platforms));
                 }}
                 onDeselectAll={() => {
                   setSelectedFacebookPageIds([]);
                   setSelectedInstagramPageIds([]);
-                  setSelectedTikTokAccountIds([]);
                 }}
               />
 
