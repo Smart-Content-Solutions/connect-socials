@@ -1,10 +1,77 @@
 import Stripe from "stripe";
 import { createClerkClient } from "@clerk/backend";
+import { createClient } from "@supabase/supabase-js";
 import nodemailer from "nodemailer";
 import { getSubscriptionConfirmationEmail } from "./emails/subscription-confirmation.js";
 import { getSubscriptionCancellationEmail } from "./emails/subscription-cancellation.js";
 
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+
+// Supabase client for token credit operations
+const supabaseUrl = process.env.SUPABASE_SCS_URL || "https://bgwmonmfulmmdwlbdekz.supabase.co";
+const supabaseServiceKey = process.env.SUPABASE_SCS_SERVICE_ROLE_KEY || "";
+
+function getScsSupabase() {
+  if (!supabaseServiceKey) {
+    throw new Error("Missing SUPABASE_SCS_SERVICE_ROLE_KEY");
+  }
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
+
+async function handleTokenPurchase(session: Stripe.Checkout.Session): Promise<boolean> {
+  // Check if this is a token purchase
+  if (session.metadata?.type !== "token_purchase") {
+    return false; // Not a token purchase, let other handlers process
+  }
+
+  const clerkUserId = session.metadata?.clerkUserId || session.client_reference_id;
+  const tokenAmount = parseInt(session.metadata?.tokenAmount || "0", 10);
+
+  if (!clerkUserId || !tokenAmount) {
+    console.warn("Token purchase webhook: missing clerkUserId or tokenAmount");
+    return true; // Consumed the event, just malformed
+  }
+
+  console.log(`Processing token purchase: ${tokenAmount} tokens for user ${clerkUserId}`);
+
+  const supabase = getScsSupabase();
+
+  // Upsert user_credits — add tokens to balance
+  const { data: existing } = await supabase
+    .from("user_credits")
+    .select("balance")
+    .eq("user_id", clerkUserId)
+    .single();
+
+  if (existing) {
+    await supabase
+      .from("user_credits")
+      .update({ balance: existing.balance + tokenAmount })
+      .eq("user_id", clerkUserId);
+  } else {
+    await supabase
+      .from("user_credits")
+      .insert({ user_id: clerkUserId, balance: tokenAmount });
+  }
+
+  // Record purchase transaction
+  await supabase
+    .from("credit_transactions")
+    .insert({
+      user_id: clerkUserId,
+      amount: tokenAmount,
+      type: "purchase",
+      description: `Purchased ${tokenAmount} tokens`,
+      metadata: {
+        stripe_session_id: session.id,
+        stripe_payment_intent: session.payment_intent,
+        amount_total: session.amount_total,
+      },
+    });
+
+  console.log(`✅ Credited ${tokenAmount} tokens to user ${clerkUserId}`);
+  return true; // Consumed the event
+}
 
 // Helper function to create email transporter only when needed
 function getEmailTransporter() {
@@ -72,6 +139,17 @@ export default async function handler(req: any, res: any) {
   try {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
+
+      // Handle token purchases separately
+      try {
+        const wasTokenPurchase = await handleTokenPurchase(session);
+        if (wasTokenPurchase) {
+          return res.status(200).json({ received: true });
+        }
+      } catch (tokenErr: any) {
+        console.error("Token purchase handling error:", tokenErr);
+        // Don't fail the webhook — log and continue
+      }
 
       const clerkUserId =
         (session.metadata?.clerkUserId as string | undefined) ||
