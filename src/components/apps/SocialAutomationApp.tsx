@@ -38,6 +38,7 @@ import { usePostDraft } from "@/hooks/usePostDraft";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { LeaveConfirmationDialog, DraftRestoreDialog } from "@/components/drafts";
 import { hasDraftContent } from "@/lib/draft-utils";
+import { ChatCta } from "@/components/ui/chat-cta";
 import type { ToolType } from "@/types/draft";
 
 import {
@@ -667,6 +668,8 @@ export default function SocialMediaTool() {
 
   const gridRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const motionTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const videoDescTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [highlightStyle, setHighlightStyle] = useState({
     opacity: 0,
     transform: 'translate(0px, 0px)',
@@ -3993,19 +3996,17 @@ export default function SocialMediaTool() {
 
                           </label>
 
-                          <textarea
-
-                            value={aiPrompt}
-
-                            onChange={(e) => setAiPrompt(e.target.value)}
-
-                            rows={3}
-
-                            placeholder="Describe how you want the image to move (e.g., 'Gentle camera zoom in with subtle parallax effect')"
-
-                            className="w-full rounded-xl bg-[#2C2C2E] border border-white/10 p-3 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none text-sm"
-
-                          />
+                          <div className="relative">
+                            <textarea
+                              ref={motionTextareaRef}
+                              value={aiPrompt}
+                              onChange={(e) => setAiPrompt(e.target.value)}
+                              rows={3}
+                              placeholder="Describe how you want the image to move (e.g., 'Gentle camera zoom in with subtle parallax effect')"
+                              className="w-full rounded-xl bg-[#2C2C2E] border border-white/10 p-3 pb-8 pr-32 sm:pr-36 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none text-sm"
+                            />
+                            <ChatCta textareaRef={motionTextareaRef} starterMessage="Help me write a motion description for an image-to-video AI." />
+                          </div>
 
                         </div>
 
@@ -4141,13 +4142,17 @@ export default function SocialMediaTool() {
                           <label className="text-sm font-semibold text-[#D6D7D8] mb-3 block">
                             Video Description <span className="text-red-400">*</span>
                           </label>
-                          <textarea
-                            value={textToVideoPrompt}
-                            onChange={(e) => setTextToVideoPrompt(e.target.value)}
-                            rows={3}
-                            placeholder="Describe the video you want to create (e.g., 'A futuristic city with flying cars at sunset')"
-                            className="w-full rounded-xl bg-[#2C2C2E] border border-white/10 p-3 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none text-sm"
-                          />
+                          <div className="relative">
+                            <textarea
+                              ref={videoDescTextareaRef}
+                              value={textToVideoPrompt}
+                              onChange={(e) => setTextToVideoPrompt(e.target.value)}
+                              rows={3}
+                              placeholder="Describe the video you want to create (e.g., 'A futuristic city with flying cars at sunset')"
+                              className="w-full rounded-xl bg-[#2C2C2E] border border-white/10 p-3 pb-8 pr-32 sm:pr-36 text-[#D6D7D8] placeholder:text-[#5B5C60] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20 resize-none text-sm"
+                            />
+                            <ChatCta textareaRef={videoDescTextareaRef} starterMessage="Help me write a strong text-to-video prompt." />
+                          </div>
                         </div>
 
                         {/* Negative Prompt */}
