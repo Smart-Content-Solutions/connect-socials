@@ -57,6 +57,7 @@ export default function Account() {
   const [purchaseAmount, setPurchaseAmount] = useState(50);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [grantingTokens, setGrantingTokens] = useState(false);
+  const hasAttemptedGrant = React.useRef(false);
 
   // Fetch credits from API
   const fetchCredits = useCallback(async () => {
@@ -90,8 +91,10 @@ export default function Account() {
     if (hasGrant) return;
     if (tokenBalance > 0) return; // Already has tokens
     if (grantingTokens) return;
+    if (hasAttemptedGrant.current) return;
 
     try {
+      hasAttemptedGrant.current = true;
       setGrantingTokens(true);
       const token = await session.getToken();
       // Use the deduct endpoint in reverse — we'll handle this via a direct Supabase call through a new grant endpoint
@@ -103,8 +106,11 @@ export default function Account() {
           "Content-Type": "application/json",
         },
       });
+      const data = await res.json();
       if (res.ok) {
-        toast.success(`🎉 Welcome! You've received ${EARLY_ACCESS_TOKENS} free tokens with your Early Access plan!`);
+        if (!data.alreadyGranted) {
+          toast.success(`🎉 Welcome! You've received ${EARLY_ACCESS_TOKENS} free tokens with your Early Access plan!`);
+        }
         await fetchCredits();
       }
     } catch (err) {
