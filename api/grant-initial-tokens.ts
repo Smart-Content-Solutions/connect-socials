@@ -80,25 +80,31 @@ export default async function handler(req: any, res: any) {
         }
 
         // Grant tokens
-        const { data: existing } = await supabase
+        const { data: existing, error: existingError } = await supabase
             .from("user_credits")
             .select("balance")
             .eq("user_id", clerkUserId)
             .single();
 
+        if (existingError && existingError.code !== 'PGRST116') {
+            console.error("DB SELECT Error:", existingError);
+        }
+
         if (existing) {
-            await supabase
+            const { error: updateError } = await supabase
                 .from("user_credits")
                 .update({ balance: existing.balance + EARLY_ACCESS_GRANT })
                 .eq("user_id", clerkUserId);
+            if (updateError) throw updateError;
         } else {
-            await supabase
+            const { error: insertError } = await supabase
                 .from("user_credits")
                 .insert({ user_id: clerkUserId, balance: EARLY_ACCESS_GRANT });
+            if (insertError) throw insertError;
         }
 
         // Record transaction
-        await supabase
+        const { error: txError } = await supabase
             .from("credit_transactions")
             .insert({
                 user_id: clerkUserId,
@@ -107,6 +113,8 @@ export default async function handler(req: any, res: any) {
                 description: `Welcome bonus: ${EARLY_ACCESS_GRANT} free tokens with Early Access`,
                 metadata: { role, grant_type: "early_access_welcome" },
             });
+
+        if (txError) throw txError;
 
         console.log(`✅ Granted ${EARLY_ACCESS_GRANT} initial tokens to user ${clerkUserId}`);
 
