@@ -1,37 +1,30 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useUser } from '@clerk/clerk-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Sparkles, Loader2, Minimize2, Mic, MicOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-
-// Type definitions for chat messages
-type Message = {
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: Date;
-};
+import { useSupportAgent } from '@/context/SupportAgentContext';
 
 // Configuration
 const WEBHOOK_URL = 'https://n8n.smartcontentsolutions.co.uk/webhook/scs-support-chat';
 
 export default function SupportChat() {
     const { user } = useUser();
-    const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: 'welcome',
-            role: 'assistant',
-            content: 'Hi there! I\'m your SCS AI Support Agent. How can I help you today?',
-            timestamp: new Date()
-        }
-    ]);
-    const [inputValue, setInputValue] = useState('');
-    const [isTyping, setIsTyping] = useState(false);
-    const [isRecording, setIsRecording] = useState(false);
+    const { 
+        isOpen, 
+        messages, 
+        nudgeMessage, 
+        isNudgeVisible, 
+        openChat, 
+        closeChat, 
+        addMessage,
+        dismissNudge 
+    } = useSupportAgent();
+    
+    const [inputValue, setInputValue] = React.useState('');
+    const [isTyping, setIsTyping] = React.useState(false);
+    const [isRecording, setIsRecording] = React.useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const recognitionRef = useRef<any>(null);
@@ -114,27 +107,18 @@ export default function SupportChat() {
     const handleSendMessage = async () => {
         if (!inputValue.trim()) return;
 
-        const newMessage: Message = {
-            id: Date.now().toString(),
-            role: 'user',
-            content: inputValue.trim(),
-            timestamp: new Date()
-        };
-
-        setMessages(prev => [...prev, newMessage]);
+        const userMessage = inputValue.trim();
+        addMessage('user', userMessage);
         setInputValue('');
         setIsTyping(true);
 
         try {
             // Prepare payload
             const payload = {
-                message: newMessage.content,
+                message: userMessage,
                 user_id: user?.id || 'anonymous',
                 user_name: user?.fullName || 'Guest',
                 email: user?.emailAddresses?.[0]?.emailAddress || '',
-                // Create context string from last 5 messages to save tokens/complexity, 
-                // or let backend handle history if it supports it. 
-                // For this simple implementation, we send history array.
                 history: messages.slice(-5).map(m => ({ role: m.role, content: m.content }))
             };
 
@@ -155,26 +139,12 @@ export default function SupportChat() {
             // Expecting { response: "text" } from n8n
             const aiResponseText = data.response || data.output || data.text || "I'm sorry, I didn't get a clear response. Please try again.";
 
-            const aiMessage: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: aiResponseText,
-                timestamp: new Date()
-            };
-
-            setMessages(prev => [...prev, aiMessage]);
+            addMessage('assistant', aiResponseText);
 
         } catch (error) {
             console.error('Support Chat Error:', error);
             toast.error('Could not reach support agent.');
-
-            const errorMessage: Message = {
-                id: (Date.now() + 1).toString(),
-                role: 'assistant',
-                content: "I'm having trouble connecting to the server right now. Please try again later.",
-                timestamp: new Date()
-            };
-            setMessages(prev => [...prev, errorMessage]);
+            addMessage('assistant', "I'm having trouble connecting to the server right now. Please try again later.");
         } finally {
             setIsTyping(false);
         }
@@ -184,6 +154,14 @@ export default function SupportChat() {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSendMessage();
+        }
+    };
+
+    const handleNudgeClick = () => {
+        if (nudgeMessage) {
+            openChat(nudgeMessage);
+        } else {
+            openChat();
         }
     };
 
@@ -215,7 +193,7 @@ export default function SupportChat() {
                                 </div>
                             </div>
                             <button
-                                onClick={() => setIsOpen(false)}
+                                onClick={closeChat}
                                 className="p-1.5 rounded-lg hover:bg-white/5 text-[#A9AAAC] hover:text-white transition-colors"
                             >
                                 <Minimize2 className="w-4 h-4" />
@@ -305,11 +283,66 @@ export default function SupportChat() {
                 )}
             </AnimatePresence>
 
+            {/* Nudge Bubble */}
+            <AnimatePresence>
+                {isNudgeVisible && nudgeMessage && !isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.8, y: 10, x: 20 }}
+                        animate={{ 
+                            opacity: 1, 
+                            scale: 1, 
+                            y: 0, 
+                            x: 0,
+                        }}
+                        exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                        transition={{ 
+                            duration: 0.3,
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 20
+                        }}
+                        className="pointer-events-auto mb-3 mr-1"
+                    >
+                        <motion.div
+                            animate={{
+                                y: [0, -4, 0],
+                            }}
+                            transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                            onClick={handleNudgeClick}
+                            className="relative cursor-pointer group"
+                        >
+                            {/* Message bubble */}
+                            <div className="bg-[#2C2C2E] border border-[#E1C37A]/30 text-[#D6D7D8] px-4 py-3 rounded-2xl rounded-br-md shadow-lg max-w-[280px] relative">
+                                <p className="text-sm leading-relaxed">{nudgeMessage}</p>
+                                
+                                {/* Dismiss button */}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        dismissNudge();
+                                    }}
+                                    className="absolute -top-2 -right-2 w-5 h-5 bg-[#3B3C3E] rounded-full flex items-center justify-center text-[#A9AAAC] hover:text-white hover:bg-[#5B5C60] transition-colors"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+                            
+                            {/* Arrow pointing to button */}
+                            <div className="absolute -bottom-2 right-0 w-4 h-4 bg-[#2C2C2E] border-r border-b border-[#E1C37A]/30 transform rotate-45 translate-x-1" />
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Floating Toggle Button */}
             <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => isOpen ? closeChat() : openChat()}
                 className={cn(
                     "pointer-events-auto h-14 w-14 rounded-full flex items-center justify-center shadow-lg transition-all duration-300 relative group",
                     isOpen ? "bg-[#3B3C3E] text-[#D6D7D8] rotate-90" : "bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C]"

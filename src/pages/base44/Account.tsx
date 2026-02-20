@@ -418,7 +418,7 @@ export default function Account() {
               Credits & Tokens
             </h2>
             <p className="text-sm text-[#A9AAAC] mt-1">
-              Tokens are used for AI video generation. 1 Token = $0.10
+              Tokens are used for AI video generation. 1 Token = £0.10
             </p>
           </div>
 
@@ -462,7 +462,7 @@ export default function Account() {
                       {tokenBalance}
                     </motion.div>
                     <p className="text-sm text-[#5B5C60]">
-                      ≈ ${(tokenBalance * TOKEN_PRICE).toFixed(2)} value
+                      ≈ £{(tokenBalance * TOKEN_PRICE).toFixed(2)} value
                     </p>
                   </>
                 )}
@@ -553,8 +553,8 @@ export default function Account() {
                       key={amt}
                       onClick={() => setPurchaseAmount(amt)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${purchaseAmount === amt
-                          ? "bg-[#E1C37A]/20 text-[#E1C37A] border border-[#E1C37A]/40"
-                          : "bg-[#3B3C3E]/50 text-[#A9AAAC] border border-[#3B3C3E] hover:border-[#E1C37A]/20 hover:text-[#E1C37A]"
+                        ? "bg-[#E1C37A]/20 text-[#E1C37A] border border-[#E1C37A]/40"
+                        : "bg-[#3B3C3E]/50 text-[#A9AAAC] border border-[#3B3C3E] hover:border-[#E1C37A]/20 hover:text-[#E1C37A]"
                         }`}
                     >
                       {amt}
@@ -580,9 +580,9 @@ export default function Account() {
                       WebkitBackgroundClip: "text",
                       WebkitTextFillColor: "transparent",
                     }}>
-                      ${(purchaseAmount * TOKEN_PRICE).toFixed(2)}
+                      £{(purchaseAmount * TOKEN_PRICE).toFixed(2)}
                     </p>
-                    <p className="text-xs text-[#5B5C60]">${TOKEN_PRICE.toFixed(2)} per token</p>
+                    <p className="text-xs text-[#5B5C60]">£{TOKEN_PRICE.toFixed(2)} per token</p>
                   </div>
                 </div>
               </div>
@@ -601,7 +601,7 @@ export default function Account() {
                 ) : (
                   <>
                     <Coins className="w-4 h-4" />
-                    Buy {purchaseAmount} Tokens — ${(purchaseAmount * TOKEN_PRICE).toFixed(2)}
+                    Buy {purchaseAmount} Tokens — £{(purchaseAmount * TOKEN_PRICE).toFixed(2)}
                   </>
                 )}
               </button>

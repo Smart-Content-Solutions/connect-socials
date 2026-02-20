@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, createRoutesFromElements, Route, Navigate, Outlet, RouterProvider } from "react-router-dom";
 import { useUser, SignIn } from "@clerk/clerk-react";
 import SocialAutomationApp from "./components/apps/SocialAutomationApp";
+import { SupportAgentProvider } from "./context/SupportAgentContext";
 
 
 
@@ -102,11 +103,13 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const RootLayout = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <Outlet />
-      <FeedbackPrompt />
-      <SupportChat />
+      <SupportAgentProvider>
+        <Toaster />
+        <Sonner />
+        <Outlet />
+        <FeedbackPrompt />
+        <SupportChat />
+      </SupportAgentProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
