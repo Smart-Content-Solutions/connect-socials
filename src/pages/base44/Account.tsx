@@ -142,7 +142,7 @@ export default function Account() {
 
   // Handle token purchase via Stripe Checkout
   const handlePurchaseTokens = async () => {
-    if (!session) return;
+    if (!session || isPurchasing) return;
     try {
       setIsPurchasing(true);
       const token = await session.getToken();

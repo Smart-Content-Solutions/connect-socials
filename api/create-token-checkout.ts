@@ -61,24 +61,33 @@ export default async function handler(req: any, res: any) {
             return res.status(401).json({ error: "Invalid token" });
         }
 
-        // Parse body
-        let body: any;
-        if (req.body && typeof req.body === "object") {
-            body = req.body;
-        } else if (req.body && typeof req.body === "string") {
-            body = JSON.parse(req.body);
-        } else {
-            const chunks: Buffer[] = [];
-            for await (const chunk of req) {
-                chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        let body: any = {};
+        try {
+            if (req.body && typeof req.body === "object") {
+                body = req.body;
+            } else if (req.body && typeof req.body === "string") {
+                body = JSON.parse(req.body);
+            } else {
+                const chunks: Buffer[] = [];
+                for await (const chunk of req) {
+                    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+                }
+                const rawBody = Buffer.concat(chunks).toString("utf8");
+                if (rawBody && rawBody.trim()) {
+                    body = JSON.parse(rawBody);
+                }
             }
-            body = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+        } catch (parseError) {
+            return res.status(400).json({ error: "Invalid JSON body" });
         }
 
-        const { tokenAmount } = body;
+        let tokenAmount = body?.tokenAmount;
+        if (typeof tokenAmount === "string") {
+            tokenAmount = parseInt(tokenAmount, 10);
+        }
 
-        if (!tokenAmount || typeof tokenAmount !== "number" || tokenAmount < 10 || tokenAmount > 500) {
-            return res.status(400).json({ error: "tokenAmount must be between 10 and 500" });
+        if (!tokenAmount || typeof tokenAmount !== "number" || isNaN(tokenAmount) || tokenAmount < 10 || tokenAmount > 500) {
+            return res.status(400).json({ error: "tokenAmount must be a number between 10 and 500" });
         }
 
         const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
