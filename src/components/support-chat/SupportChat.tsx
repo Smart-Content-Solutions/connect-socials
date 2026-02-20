@@ -11,17 +11,18 @@ const WEBHOOK_URL = 'https://n8n.smartcontentsolutions.co.uk/webhook/scs-support
 
 export default function SupportChat() {
     const { user } = useUser();
-    const { 
-        isOpen, 
-        messages, 
-        nudgeMessage, 
-        isNudgeVisible, 
-        openChat, 
-        closeChat, 
+    const {
+        isOpen,
+        messages,
+        nudgeMessage,
+        isNudgeVisible,
+        isPulseOnly,
+        openChat,
+        closeChat,
         addMessage,
-        dismissNudge 
+        dismissNudge
     } = useSupportAgent();
-    
+
     const [inputValue, setInputValue] = React.useState('');
     const [isTyping, setIsTyping] = React.useState(false);
     const [isRecording, setIsRecording] = React.useState(false);
@@ -285,17 +286,17 @@ export default function SupportChat() {
 
             {/* Nudge Bubble */}
             <AnimatePresence>
-                {isNudgeVisible && nudgeMessage && !isOpen && (
+                {isNudgeVisible && !isPulseOnly && nudgeMessage && !isOpen && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.8, y: 10, x: 20 }}
-                        animate={{ 
-                            opacity: 1, 
-                            scale: 1, 
-                            y: 0, 
+                        animate={{
+                            opacity: 1,
+                            scale: 1,
+                            y: 0,
                             x: 0,
                         }}
                         exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                        transition={{ 
+                        transition={{
                             duration: 0.3,
                             type: "spring",
                             stiffness: 400,
@@ -316,9 +317,21 @@ export default function SupportChat() {
                             className="relative cursor-pointer group"
                         >
                             {/* Message bubble */}
-                            <div className="bg-[#2C2C2E] border border-[#E1C37A]/30 text-[#D6D7D8] px-4 py-3 rounded-2xl rounded-br-md shadow-lg max-w-[280px] relative">
+                            <div className="bg-[#2C2C2E] border border-[#E1C37A]/30 text-[#D6D7D8] px-4 py-3 rounded-2xl rounded-br-md shadow-lg max-w-[280px] relative pointer-events-auto">
                                 <p className="text-sm leading-relaxed">{nudgeMessage}</p>
-                                
+
+                                <div className="mt-2 flex justify-end gap-3 items-center">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            dismissNudge('notNow');
+                                        }}
+                                        className="text-xs text-[#A9AAAC] hover:text-white transition-colors px-2 py-1"
+                                    >
+                                        Not now
+                                    </button>
+                                </div>
+
                                 {/* Dismiss button */}
                                 <button
                                     onClick={(e) => {
@@ -330,7 +343,7 @@ export default function SupportChat() {
                                     <X className="w-3 h-3" />
                                 </button>
                             </div>
-                            
+
                             {/* Arrow pointing to button */}
                             <div className="absolute -bottom-2 right-0 w-4 h-4 bg-[#2C2C2E] border-r border-b border-[#E1C37A]/30 transform rotate-45 translate-x-1" />
                         </motion.div>
@@ -349,7 +362,10 @@ export default function SupportChat() {
                 )}
             >
                 {/* Pulse effect when closed */}
-                {!isOpen && (
+                {(!isOpen && isPulseOnly) && (
+                    <span className="absolute inset-0 rounded-full bg-[#E1C37A] opacity-40 animate-ping" style={{ animationDuration: '2s' }} />
+                )}
+                {(!isOpen && !isPulseOnly) && (
                     <span className="absolute inset-0 rounded-full bg-[#E1C37A] opacity-20 group-hover:animate-ping" />
                 )}
 

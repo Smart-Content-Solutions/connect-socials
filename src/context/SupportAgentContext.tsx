@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 
-// Type definitions for chat messages
 type Message = {
     id: string;
     role: 'user' | 'assistant';
@@ -9,81 +8,51 @@ type Message = {
     timestamp: Date;
 };
 
-// Storage configuration
 type SupportAgentConfig = {
-    lastShown: number | null;
-    lastDismissed: number | null;
-    lastChatOpen: number | null;
-    showCount: number;
-    dismissedCount: number;
+    lastProactiveShownAt: number | null;
+    dismissedUntil: number | null;
+    hasOpenedChatBefore: boolean;
 };
 
 const STORAGE_KEY = 'scs_support_agent_config';
 
-// Trigger messages for different pages
-const PAGE_MESSAGES: Record<string, string> = {
-    '/pricing': 'Not sure which plan fits your needs? I can help you choose!',
-    '/packages': 'Looking for the right package? Let me explain the options.',
-    '/core-tools': 'Need help understanding our tools? Ask me anything!',
-    '/corporate-tools': 'Have questions about our enterprise solutions?',
-    '/tool': 'Need assistance with this tool? I\'m here to help!',
-    '/dashboard-preview': 'Want to learn more about the dashboard features?',
-    '/starter': 'Questions about the Starter plan? I can help!',
-    '/pro': 'Curious about Pro features? Let me explain!',
-    '/checkout': 'Need help with your purchase? I\'m here to assist!',
-};
-
-const GENERAL_MESSAGES = [
-    'Need help? I\'m here to assist you!',
-    'Have any questions? Just ask!',
-    'Looking for something? I can help!',
-];
-
-const INACTIVITY_MESSAGE = 'Still there? I can help if you need anything!';
-
-// Timing constants
-const INITIAL_DELAY = 45000; // 45 seconds
-const PAGE_SPECIFIC_DELAY = 20000; // 20 seconds
-const INACTIVITY_DELAY = 30000; // 30 seconds
-const NUDGE_DURATION = 8000; // 8 seconds
-const COOLDOWN_24H = 24 * 60 * 60 * 1000; // 24 hours
-const COOLDOWN_30D = 30 * 24 * 60 * 60 * 1000; // 30 days
-const MAX_SHOWS_PER_SESSION = 3;
+// Timing Rules
+const NUDGE_DURATION = 8000;
+const COOLDOWN_24H = 24 * 60 * 60 * 1000;
+const COOLDOWN_7D = 7 * 24 * 60 * 60 * 1000;
+const COOLDOWN_30D = 30 * 24 * 60 * 60 * 1000;
 
 interface SupportAgentContextType {
     isOpen: boolean;
     messages: Message[];
     nudgeMessage: string | null;
     isNudgeVisible: boolean;
+    isPulseOnly: boolean;
     openChat: (initialMessage?: string) => void;
     closeChat: () => void;
     addMessage: (role: 'user' | 'assistant', content: string) => void;
-    dismissNudge: () => void;
+    dismissNudge: (type?: 'close' | 'notNow') => void;
     clearMessages: () => void;
+    triggerProactiveAction: (type: string, message?: string) => void;
+    setIsBusy: (busy: boolean) => void;
 }
 
 const SupportAgentContext = createContext<SupportAgentContextType | undefined>(undefined);
 
-// Load config from localStorage
 const loadConfig = (): SupportAgentConfig => {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-            return JSON.parse(stored);
-        }
+        if (stored) return JSON.parse(stored);
     } catch (e) {
         console.error('Failed to load support agent config:', e);
     }
     return {
-        lastShown: null,
-        lastDismissed: null,
-        lastChatOpen: null,
-        showCount: 0,
-        dismissedCount: 0,
+        lastProactiveShownAt: null,
+        dismissedUntil: null,
+        hasOpenedChatBefore: false,
     };
 };
 
-// Save config to localStorage
 const saveConfig = (config: SupportAgentConfig) => {
     try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
@@ -94,27 +63,28 @@ const saveConfig = (config: SupportAgentConfig) => {
 
 export function SupportAgentProvider({ children }: { children: React.ReactNode }) {
     const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: 'welcome',
-            role: 'assistant',
-            content: 'Hi there! I\'m your SCS AI Support Agent. How can I help you today?',
-            timestamp: new Date(),
-        },
-    ]);
+    const [messages, setMessages] = useState<Message[]>([{
+        id: 'welcome',
+        role: 'assistant',
+        content: 'Hi there! I\'m your SCS AI Support Agent. How can I help you today?',
+        timestamp: new Date(),
+    }]);
+
+    // UI states
     const [nudgeMessage, setNudgeMessage] = useState<string | null>(null);
     const [isNudgeVisible, setIsNudgeVisible] = useState(false);
+    const [isPulseOnly, setIsPulseOnly] = useState(false);
     const [config, setConfig] = useState<SupportAgentConfig>(loadConfig());
-    
+    const [isBusy, setIsBusy] = useState(false);
+
     const location = useLocation();
-    const nudgeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const hideNudgeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const inactivityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const lastActivityRef = useRef<number>(Date.now());
+
+    // Session state
     const sessionShowCountRef = useRef<number>(0);
     const hasShownForPathRef = useRef<Set<string>>(new Set());
+    const hideNudgeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Update config and save to localStorage
+    // Update config & localStorage
     const updateConfig = useCallback((updates: Partial<SupportAgentConfig>) => {
         setConfig(prev => {
             const newConfig = { ...prev, ...updates };
@@ -123,216 +93,196 @@ export function SupportAgentProvider({ children }: { children: React.ReactNode }
         });
     }, []);
 
-    // Check if we can show a nudge based on cooldown rules
+    // Can we show a proactive nudge?
     const canShowNudge = useCallback((): boolean => {
+        if (isBusy) return false;
+
         const now = Date.now();
-        
-        // If chat was opened recently (30 days), don't show
-        if (config.lastChatOpen && (now - config.lastChatOpen) < COOLDOWN_30D) {
+
+        if (config.hasOpenedChatBefore) {
+            // "If user opens the chat, don't pop again for 30 days"
+            // We use lastOpened internally but let's just check the opened history rule.
+            // Wait, to track exact 30d, we'd need `lastChatOpenAt`. For now we won't show if ever opened
+            // Let's rely on a 30 day timer. We'll add it to the dismissedUntil if they open it.
+        }
+
+        if (config.dismissedUntil && now < config.dismissedUntil) {
             return false;
         }
-        
-        // If user dismissed recently (24 hours), don't show
-        if (config.lastDismissed && (now - config.lastDismissed) < COOLDOWN_24H) {
-            return false;
+
+        if (sessionShowCountRef.current >= 1) {
+            return false; // Max 1 per session
         }
-        
-        // Max shows per session
-        if (sessionShowCountRef.current >= MAX_SHOWS_PER_SESSION) {
-            return false;
+
+        if (hasShownForPathRef.current.has(location.pathname)) {
+            return false; // Max 1 per page view
         }
-        
+
         return true;
-    }, [config.lastChatOpen, config.lastDismissed]);
+    }, [isBusy, config.dismissedUntil, config.hasOpenedChatBefore, location.pathname]);
 
-    // Show nudge with message
-    const showNudge = useCallback((message: string) => {
+    // Show sequence (Pulse -> Full Bubble on second trigger)
+    const showNudge = useCallback((message: string, isSoftNudge = false) => {
         if (!canShowNudge()) return;
-        
-        setNudgeMessage(message);
-        setIsNudgeVisible(true);
-        sessionShowCountRef.current += 1;
-        updateConfig({ 
-            lastShown: Date.now(),
-            showCount: config.showCount + 1 
-        });
 
-        // Auto-hide after duration
-        if (hideNudgeTimeoutRef.current) {
-            clearTimeout(hideNudgeTimeoutRef.current);
+        // If it's a soft nudge (like time-based first visit) and we haven't pulsed yet, just pulse
+        // The prompt says "First nudge: tiny pulse on chat icon. Second nudge: show message bubble."
+        // We will increment sessionShowCount ONLY on showing the bubble? Or do we count pulse as 1 pop?
+        // Prompt: "Max 1 proactive pop per session... First nudge: tiny pulse on the chat icon only"
+        // Let's make Pulse step 0.
+
+        const isFirstNudge = sessionShowCountRef.current === 0;
+
+        if (isFirstNudge && isSoftNudge) {
+            setIsPulseOnly(true);
+            setIsNudgeVisible(true);
+            // Pulse doesn't prevent second nudge, so we won't count it towards session limit.
+        } else {
+            setIsPulseOnly(false);
+            setNudgeMessage(message);
+            setIsNudgeVisible(true);
+            sessionShowCountRef.current += 1;
+            hasShownForPathRef.current.add(location.pathname);
+            updateConfig({ lastProactiveShownAt: Date.now() });
+
+            // Auto-hide
+            if (hideNudgeTimeoutRef.current) clearTimeout(hideNudgeTimeoutRef.current);
+            hideNudgeTimeoutRef.current = setTimeout(() => {
+                setIsNudgeVisible(false);
+            }, NUDGE_DURATION);
         }
-        hideNudgeTimeoutRef.current = setTimeout(() => {
-            setIsNudgeVisible(false);
-        }, NUDGE_DURATION);
-    }, [canShowNudge, config.showCount, updateConfig]);
+    }, [canShowNudge, location.pathname, updateConfig]);
 
-    // Open chat
+    // Explicit Action Trigger Router
+    const triggerProactiveAction = useCallback((type: string, payload?: string) => {
+        if (!canShowNudge()) return;
+
+        let message = '';
+        let soft = false;
+
+        switch (type) {
+            case 'time-general-45':
+                message = "Need help getting started? I can guide you in 30 seconds.";
+                soft = true;
+                break;
+            case 'time-general-90':
+                message = "Want me to set this up with you? Tap here.";
+                break;
+            case 'inactive-social-post':
+                message = "Want me to write a better caption + hashtags for this post?";
+                break;
+            case 'inactive-video':
+                message = "Want a ready-to-use prompt for Kling? Tell me your niche + style.";
+                break;
+            case 'error-video':
+                message = "I can help you get a better video result on the first try.";
+                break;
+            case 'pricing-long':
+                message = "Not sure which plan fits? Tell me what you're trying to automate.";
+                break;
+            case 'pricing-hover':
+                message = "Want the cheapest setup for your goals? I'll recommend a plan.";
+                break;
+            case 'connect-step':
+                message = "Stuck connecting your account? I'll walk you through it.";
+                break;
+            case 'validation-error':
+                message = "I can fix this with you—paste the error message here.";
+                break;
+            default:
+                message = payload || "Need help? I'm here!";
+                break;
+        }
+
+        if (message) showNudge(message, soft);
+    }, [canShowNudge, showNudge]);
+
+    // Track exit intent (desktop only)
+    useEffect(() => {
+        const handleMouseLeave = (e: MouseEvent) => {
+            if (e.clientY < 10) {
+                // User moving to close tab
+                if (canShowNudge()) triggerProactiveAction('exit-intent', 'Before you go... anything I can help with?');
+            }
+        };
+
+        if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+            document.addEventListener('mouseleave', handleMouseLeave);
+        }
+        return () => document.removeEventListener('mouseleave', handleMouseLeave);
+    }, [canShowNudge, triggerProactiveAction]);
+
+    // Time-based low-signal triggers
+    useEffect(() => {
+        if (!canShowNudge()) return;
+
+        let timeout: NodeJS.Timeout;
+        const isFirstVisit = !config.hasOpenedChatBefore && !config.lastProactiveShownAt;
+        const delay = isFirstVisit ? 45000 : 90000;
+
+        timeout = setTimeout(() => {
+            if (location.pathname === '/pricing') {
+                triggerProactiveAction('pricing-long');
+            } else if (location.pathname.includes('/tool')) {
+                triggerProactiveAction(isFirstVisit ? 'time-general-45' : 'time-general-90');
+            }
+        }, delay);
+
+        return () => clearTimeout(timeout);
+    }, [location.pathname, canShowNudge, config.hasOpenedChatBefore, config.lastProactiveShownAt, triggerProactiveAction]);
+
+    // Interactions
+    const dismissNudge = useCallback((type: 'close' | 'notNow' = 'close') => {
+        setIsNudgeVisible(false);
+        setIsPulseOnly(false);
+
+        let cooldownDuration = COOLDOWN_24H;
+        if (type === 'notNow') cooldownDuration = COOLDOWN_7D;
+
+        updateConfig({ dismissedUntil: Date.now() + cooldownDuration });
+
+        if (hideNudgeTimeoutRef.current) clearTimeout(hideNudgeTimeoutRef.current);
+    }, [updateConfig]);
+
     const openChat = useCallback((initialMessage?: string) => {
         setIsOpen(true);
         setIsNudgeVisible(false);
-        updateConfig({ lastChatOpen: Date.now() });
-        
+        setIsPulseOnly(false);
+
+        // Disable for 30 days
+        updateConfig({
+            hasOpenedChatBefore: true,
+            dismissedUntil: Date.now() + COOLDOWN_30D
+        });
+
         if (initialMessage) {
-            // Add the nudge message as context for the AI
-            const contextMessage: Message = {
+            setMessages(prev => [...prev, {
                 id: `context-${Date.now()}`,
                 role: 'assistant',
                 content: initialMessage,
                 timestamp: new Date(),
-            };
-            setMessages(prev => [...prev, contextMessage]);
+            }]);
         }
     }, [updateConfig]);
 
-    // Close chat
-    const closeChat = useCallback(() => {
-        setIsOpen(false);
-    }, []);
+    const closeChat = useCallback(() => setIsOpen(false), []);
 
-    // Add message
     const addMessage = useCallback((role: 'user' | 'assistant', content: string) => {
-        const newMessage: Message = {
+        setMessages(prev => [...prev, {
             id: Date.now().toString(),
             role,
             content,
             timestamp: new Date(),
-        };
-        setMessages(prev => [...prev, newMessage]);
+        }]);
     }, []);
 
-    // Dismiss nudge
-    const dismissNudge = useCallback(() => {
-        setIsNudgeVisible(false);
-        updateConfig({ lastDismissed: Date.now() });
-        
-        if (hideNudgeTimeoutRef.current) {
-            clearTimeout(hideNudgeTimeoutRef.current);
-        }
-    }, [updateConfig]);
-
-    // Clear messages (reset to welcome message)
     const clearMessages = useCallback(() => {
-        setMessages([
-            {
-                id: 'welcome',
-                role: 'assistant',
-                content: 'Hi there! I\'m your SCS AI Support Agent. How can I help you today?',
-                timestamp: new Date(),
-            },
-        ]);
-    }, []);
-
-    // Reset session state on mount (page load/refresh)
-    useEffect(() => {
-        sessionShowCountRef.current = 0;
-        hasShownForPathRef.current = new Set();
-    }, []);
-
-    // Page change trigger
-    useEffect(() => {
-        if (!canShowNudge()) return;
-        
-        const pathname = location.pathname;
-        
-        // Check if we've already shown for this path
-        if (hasShownForPathRef.current.has(pathname)) return;
-        
-        // Get page-specific message
-        const pageMessage = PAGE_MESSAGES[pathname];
-        
-        if (pageMessage) {
-            // Clear any existing timeout
-            if (nudgeTimeoutRef.current) {
-                clearTimeout(nudgeTimeoutRef.current);
-            }
-            
-            nudgeTimeoutRef.current = setTimeout(() => {
-                showNudge(pageMessage);
-                hasShownForPathRef.current.add(pathname);
-            }, PAGE_SPECIFIC_DELAY);
-        }
-
-        return () => {
-            if (nudgeTimeoutRef.current) {
-                clearTimeout(nudgeTimeoutRef.current);
-            }
-        };
-    }, [location.pathname, canShowNudge, showNudge]);
-
-    // Initial load trigger (general message)
-    useEffect(() => {
-        if (!canShowNudge()) return;
-        
-        // Clear any existing timeout
-        if (nudgeTimeoutRef.current) {
-            clearTimeout(nudgeTimeoutRef.current);
-        }
-        
-        nudgeTimeoutRef.current = setTimeout(() => {
-            // Only show if we haven't shown a page-specific message yet
-            if (!isNudgeVisible && !isOpen) {
-                const randomMessage = GENERAL_MESSAGES[Math.floor(Math.random() * GENERAL_MESSAGES.length)];
-                showNudge(randomMessage);
-            }
-        }, INITIAL_DELAY);
-
-        return () => {
-            if (nudgeTimeoutRef.current) {
-                clearTimeout(nudgeTimeoutRef.current);
-            }
-        };
-    }, [canShowNudge, showNudge, isNudgeVisible, isOpen]);
-
-    // Inactivity trigger
-    useEffect(() => {
-        const handleActivity = () => {
-            lastActivityRef.current = Date.now();
-            
-            // Reset inactivity timer
-            if (inactivityTimeoutRef.current) {
-                clearTimeout(inactivityTimeoutRef.current);
-            }
-            
-            // Only set up inactivity timer if chat is closed and no nudge is showing
-            if (!isOpen && !isNudgeVisible && canShowNudge()) {
-                inactivityTimeoutRef.current = setTimeout(() => {
-                    showNudge(INACTIVITY_MESSAGE);
-                }, INACTIVITY_DELAY);
-            }
-        };
-
-        // Set up initial inactivity timer
-        if (!isOpen && !isNudgeVisible && canShowNudge()) {
-            inactivityTimeoutRef.current = setTimeout(() => {
-                showNudge(INACTIVITY_MESSAGE);
-            }, INACTIVITY_DELAY);
-        }
-
-        // Add activity listeners
-        window.addEventListener('mousemove', handleActivity);
-        window.addEventListener('keypress', handleActivity);
-        window.addEventListener('click', handleActivity);
-        window.addEventListener('scroll', handleActivity);
-
-        return () => {
-            window.removeEventListener('mousemove', handleActivity);
-            window.removeEventListener('keypress', handleActivity);
-            window.removeEventListener('click', handleActivity);
-            window.removeEventListener('scroll', handleActivity);
-            
-            if (inactivityTimeoutRef.current) {
-                clearTimeout(inactivityTimeoutRef.current);
-            }
-        };
-    }, [isOpen, isNudgeVisible, canShowNudge, showNudge]);
-
-    // Cleanup on unmount
-    useEffect(() => {
-        return () => {
-            if (nudgeTimeoutRef.current) clearTimeout(nudgeTimeoutRef.current);
-            if (hideNudgeTimeoutRef.current) clearTimeout(hideNudgeTimeoutRef.current);
-            if (inactivityTimeoutRef.current) clearTimeout(inactivityTimeoutRef.current);
-        };
+        setMessages([{
+            id: 'welcome',
+            role: 'assistant',
+            content: 'Hi there! I\'m your SCS AI Support Agent. How can I help you today?',
+            timestamp: new Date(),
+        }]);
     }, []);
 
     return (
@@ -341,11 +291,14 @@ export function SupportAgentProvider({ children }: { children: React.ReactNode }
             messages,
             nudgeMessage,
             isNudgeVisible,
+            isPulseOnly,
             openChat,
             closeChat,
             addMessage,
             dismissNudge,
             clearMessages,
+            triggerProactiveAction,
+            setIsBusy,
         }}>
             {children}
         </SupportAgentContext.Provider>
@@ -354,8 +307,7 @@ export function SupportAgentProvider({ children }: { children: React.ReactNode }
 
 export function useSupportAgent() {
     const context = useContext(SupportAgentContext);
-    if (context === undefined) {
-        throw new Error('useSupportAgent must be used within a SupportAgentProvider');
-    }
+    if (context === undefined) throw new Error('useSupportAgent must be used within a SupportAgentProvider');
     return context;
 }
+
