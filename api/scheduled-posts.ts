@@ -139,7 +139,50 @@ export default async function handler(req: any, res: any) {
         return status === "history" ? bTime - aTime : aTime - bTime;
       });
 
-      return res.status(200).json({ posts: combined.slice(0, limit) });
+      const buildSignature = (post: any) => {
+        const platforms = Array.isArray(post.platforms)
+          ? [...post.platforms].map((p: string) => p.toLowerCase()).sort().join("|")
+          : "";
+        return [
+          post.user_id || "",
+          post.caption || "",
+          post.media_url || "",
+          post.post_type || "",
+          platforms,
+        ].join("::");
+      };
+
+      const dedupeWindowMs = 2 * 60 * 1000;
+      const deduped: any[] = [];
+      const seen = new Map<string, number>();
+
+      for (const post of combined) {
+        const signature = buildSignature(post);
+        const createdAt = new Date(post.created_at || 0).getTime();
+        const existingIndex = seen.get(signature);
+
+        if (existingIndex === undefined) {
+          seen.set(signature, deduped.length);
+          deduped.push(post);
+          continue;
+        }
+
+        const existing = deduped[existingIndex];
+        const existingCreatedAt = new Date(existing.created_at || 0).getTime();
+
+        if (Math.abs(createdAt - existingCreatedAt) <= dedupeWindowMs) {
+          const existingScheduled = new Date(existing.scheduled_time || 0).getTime();
+          const incomingScheduled = new Date(post.scheduled_time || 0).getTime();
+          if (incomingScheduled > existingScheduled) {
+            deduped[existingIndex] = post;
+          }
+        } else {
+          seen.set(signature, deduped.length);
+          deduped.push(post);
+        }
+      }
+
+      return res.status(200).json({ posts: deduped.slice(0, limit) });
     }
 
     // ─── POST: Create a scheduled post record ───
