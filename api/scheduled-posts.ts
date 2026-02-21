@@ -120,7 +120,15 @@ export default async function handler(req: any, res: any) {
       if (images.error) return res.status(500).json({ error: images.error.message });
       if (videos.error) return res.status(500).json({ error: videos.error.message });
 
-      const imagePosts = (images.data || []).map((row: any) => normalizePost(row, "image"));
+      const isVideoRow = (row: any) =>
+        row?.post_type === "video" ||
+        row?.media_type === "video" ||
+        row?.payload?.media_type === "video" ||
+        row?.metadata?.media_type === "video";
+
+      const imagePosts = (images.data || [])
+        .filter((row: any) => !isVideoRow(row))
+        .map((row: any) => normalizePost(row, "image"));
       const videoPosts = (videos.data || []).map((row: any) => normalizePost(row, "video"));
       const combined = [...imagePosts, ...videoPosts];
 
