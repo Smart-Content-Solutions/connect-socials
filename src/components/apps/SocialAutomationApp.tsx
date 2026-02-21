@@ -31,7 +31,8 @@ import {
   MessageCircle,
   FileText,
   AtSign,
-  Users
+  Users,
+  CalendarClock
 } from "lucide-react";
 
 import { usePostDraft } from "@/hooks/usePostDraft";
@@ -92,6 +93,8 @@ import VideoCompressionModal from "../modals/VideoCompressionModal";
 import DashboardContent from "../social/DashboardContent";
 import InstagramDashboardContent from "../social/InstagramDashboardContent";
 import ConnectedAccountsSelector, { type ConnectedAccount } from "../ConnectedAccountsSelector";
+import ScheduledPostsTracker from "../social/ScheduledPostsTracker";
+import { useScheduledPosts } from "@/hooks/useScheduledPosts";
 
 type Platform = {
   id: string;
@@ -117,6 +120,7 @@ export default function SocialMediaTool() {
   const { session } = useSession();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'video'>('dashboard');
+  const scheduledPosts = useScheduledPosts();
   const [loading, setLoading] = useState(false);
   const [caption, setCaption] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
@@ -1675,6 +1679,34 @@ export default function SocialMediaTool() {
       setShowSuccessModal(true);
       toast.success(postMode === "publish" ? "Post successfully published!" : "Post successfully scheduled!");
 
+      // Persist scheduled post to DB for tracker visibility
+      if (postMode === "schedule" && scheduledTime) {
+        try {
+          const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          await scheduledPosts.createScheduledPost({
+            caption,
+            platforms: selectedPlatforms,
+            scheduled_time: scheduledTime,
+            user_timezone: userTimezone,
+            post_type: activeTab === "video" ? "video" : "image",
+            user_email: user?.primaryEmailAddress?.emailAddress || undefined,
+            payload: {
+              caption,
+              ai_enhance: aiEnhance,
+              tone: aiEnhance ? (tone === "Custom" ? customTone : tone) : undefined,
+              image_post_types: activeTab === "create" ? imagePostTypes : undefined,
+              video_post_types: activeTab === "video" ? videoPostTypes : undefined,
+              facebook_page_ids: selectedFacebookPageIds.length > 0 ? selectedFacebookPageIds : undefined,
+              instagram_page_ids: selectedInstagramPageIds.length > 0 ? selectedInstagramPageIds : undefined,
+              tiktok_account_ids: selectedTikTokAccountIds.length > 0 ? selectedTikTokAccountIds : undefined,
+              youtube_channel_ids: selectedYouTubeChannelIds.length > 0 ? selectedYouTubeChannelIds : undefined,
+            },
+          });
+        } catch (saveErr: any) {
+          console.error("Failed to save scheduled post to tracker:", saveErr);
+        }
+      }
+
       // Clear all state
       setCaption("");
 
@@ -2459,6 +2491,33 @@ export default function SocialMediaTool() {
               <DashboardContent selectedPage={selectedFacebookPage} />
 
               {instagramData && <InstagramDashboardContent instagramData={instagramData} />}
+
+              {/* Scheduled Posts Card */}
+              <div className="rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-sm border border-white/5 overflow-hidden">
+                <div className="border-b border-white/5 p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CalendarClock className="w-5 h-5 text-[#E1C37A]" />
+                    <h3 className="text-lg font-semibold text-[#D6D7D8]">Scheduled Posts</h3>
+                    {scheduledPosts.pending.length > 0 && (
+                      <span className="px-2 py-0.5 rounded-full bg-[#E1C37A]/10 text-[#E1C37A] text-sm font-medium">
+                        {scheduledPosts.pending.length} upcoming
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="p-4">
+                  <ScheduledPostsTracker
+                    pending={scheduledPosts.pending}
+                    history={scheduledPosts.history}
+                    loading={scheduledPosts.loading}
+                    error={scheduledPosts.error}
+                    onRefresh={scheduledPosts.refresh}
+                    onCancel={scheduledPosts.cancelPost}
+                    onRetry={scheduledPosts.retryPost}
+                    onReschedule={scheduledPosts.reschedulePost}
+                  />
+                </div>
+              </div>
 
               {/* Connected Accounts — Post Image */}
               <div>
@@ -4567,6 +4626,7 @@ export default function SocialMediaTool() {
                 </button>
               </div>
             </div>
+
           </div>
 
           {/* Success Modal */}
