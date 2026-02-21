@@ -1679,34 +1679,6 @@ export default function SocialMediaTool() {
       setShowSuccessModal(true);
       toast.success(postMode === "publish" ? "Post successfully published!" : "Post successfully scheduled!");
 
-      // Persist scheduled post to DB for tracker visibility
-      if (postMode === "schedule" && scheduledTime) {
-        try {
-          const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-          await scheduledPosts.createScheduledPost({
-            caption,
-            platforms: selectedPlatforms,
-            scheduled_time: scheduledTime,
-            user_timezone: userTimezone,
-            post_type: activeTab === "video" ? "video" : "image",
-            user_email: user?.primaryEmailAddress?.emailAddress || undefined,
-            payload: {
-              caption,
-              ai_enhance: aiEnhance,
-              tone: aiEnhance ? (tone === "Custom" ? customTone : tone) : undefined,
-              image_post_types: activeTab === "create" ? imagePostTypes : undefined,
-              video_post_types: activeTab === "video" ? videoPostTypes : undefined,
-              facebook_page_ids: selectedFacebookPageIds.length > 0 ? selectedFacebookPageIds : undefined,
-              instagram_page_ids: selectedInstagramPageIds.length > 0 ? selectedInstagramPageIds : undefined,
-              tiktok_account_ids: selectedTikTokAccountIds.length > 0 ? selectedTikTokAccountIds : undefined,
-              youtube_channel_ids: selectedYouTubeChannelIds.length > 0 ? selectedYouTubeChannelIds : undefined,
-            },
-          });
-        } catch (saveErr: any) {
-          console.error("Failed to save scheduled post to tracker:", saveErr);
-        }
-      }
-
       // Clear all state
       setCaption("");
 
