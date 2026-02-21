@@ -65,7 +65,7 @@ export default async function handler(req: any, res: any) {
 
     const normalizePost = (row: any, postType: "image" | "video") => ({
       id: row.id,
-      user_id: row.user_id,
+      user_id: row.user_id ?? row.user_email ?? null,
       user_email: row.user_email ?? null,
       caption: row.caption ?? null,
       platforms: row.platforms ?? [],
@@ -94,7 +94,7 @@ export default async function handler(req: any, res: any) {
         let query = supabase
           .from(table)
           .select("*")
-          .eq("user_id", userId)
+          .or(`user_id.eq.${userId},user_email.eq.${userId}`)
           .limit(limit);
 
         if (status === "pending") {

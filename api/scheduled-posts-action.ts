@@ -75,7 +75,7 @@ export default async function handler(req: any, res: any) {
     const fetchPost = async (table: "scheduled_posts" | "scheduled_video_posts") => {
       const { data, error } = await supabase
         .from(table)
-        .select("id, status, user_id")
+        .select("id, status, user_id, user_email")
         .eq("id", id)
         .single();
       return { data, error, table };
@@ -87,7 +87,8 @@ export default async function handler(req: any, res: any) {
     const table = imageResult.data ? "scheduled_posts" : videoResult?.data ? "scheduled_video_posts" : null;
 
     if (!post || !table) return res.status(404).json({ error: "Scheduled post not found" });
-    if (post.user_id !== userId) return res.status(403).json({ error: "Forbidden" });
+    const ownerId = post.user_id || post.user_email;
+    if (ownerId !== userId) return res.status(403).json({ error: "Forbidden" });
 
     // ─── CANCEL ───
     if (action === "cancel") {
