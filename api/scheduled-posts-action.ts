@@ -38,8 +38,8 @@ async function requireAuth(req: any) {
 }
 
 function getSupabase() {
-  const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const url = process.env.VITE_SCHEDULER_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.VITE_SCHEDULER_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
   if (!url || !key) throw new Error("Missing Supabase env vars");
   return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
@@ -72,14 +72,21 @@ export default async function handler(req: any, res: any) {
     if (!id) return res.status(400).json({ error: "id is required" });
     if (!action) return res.status(400).json({ error: "action is required" });
 
-    // Verify ownership
-    const { data: post, error: fetchError } = await supabase
-      .from("scheduled_posts")
-      .select("id, status, user_id")
-      .eq("id", id)
-      .single();
+    const fetchPost = async (table: "scheduled_posts" | "scheduled_video_posts") => {
+      const { data, error } = await supabase
+        .from(table)
+        .select("id, status, user_id")
+        .eq("id", id)
+        .single();
+      return { data, error, table };
+    };
 
-    if (fetchError || !post) return res.status(404).json({ error: "Scheduled post not found" });
+    const imageResult = await fetchPost("scheduled_posts");
+    const videoResult = imageResult.data ? null : await fetchPost("scheduled_video_posts");
+    const post = imageResult.data || videoResult?.data;
+    const table = imageResult.data ? "scheduled_posts" : videoResult?.data ? "scheduled_video_posts" : null;
+
+    if (!post || !table) return res.status(404).json({ error: "Scheduled post not found" });
     if (post.user_id !== userId) return res.status(403).json({ error: "Forbidden" });
 
     // ─── CANCEL ───
@@ -89,10 +96,9 @@ export default async function handler(req: any, res: any) {
       }
 
       const { data, error } = await supabase
-        .from("scheduled_posts")
+        .from(table)
         .update({
           status: "cancelled",
-          cancelled_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq("id", id)
@@ -110,10 +116,9 @@ export default async function handler(req: any, res: any) {
       }
 
       const { data, error } = await supabase
-        .from("scheduled_posts")
+        .from(table)
         .update({
           status: "scheduled",
-          failure_reason: null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", id)
@@ -132,11 +137,10 @@ export default async function handler(req: any, res: any) {
       }
 
       const { data, error } = await supabase
-        .from("scheduled_posts")
+        .from(table)
         .update({
           scheduled_time,
           status: "scheduled",
-          failure_reason: null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", id)

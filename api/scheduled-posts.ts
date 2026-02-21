@@ -63,30 +63,75 @@ export default async function handler(req: any, res: any) {
     const { userId } = auth;
     const supabase = getSupabase();
 
+    const normalizePost = (row: any, postType: "image" | "video") => ({
+      id: row.id,
+      user_id: row.user_id,
+      user_email: row.user_email ?? null,
+      caption: row.caption ?? null,
+      platforms: row.platforms ?? [],
+      media_url: row.media_url ?? null,
+      scheduled_time: row.scheduled_time,
+      user_timezone: row.user_timezone ?? null,
+      post_type: postType,
+      status: row.status ?? "scheduled",
+      payload: row.payload ?? row.metadata ?? {},
+      result_metadata: row.result_metadata ?? {},
+      failure_reason: row.failure_reason ?? null,
+      created_at: row.created_at ?? null,
+      updated_at: row.updated_at ?? row.created_at ?? null,
+      started_at: row.started_at ?? null,
+      posted_at: row.posted_at ?? null,
+      cancelled_at: row.cancelled_at ?? null,
+    });
+
     // ─── GET: List scheduled posts ───
     if (req.method === "GET") {
       const url = new URL(req.url, `http://${req.headers.host}`);
       const status = url.searchParams.get("status") || "all";
       const limit = Math.min(parseInt(url.searchParams.get("limit") || "20", 10), 50);
 
-      let query = supabase
-        .from("scheduled_posts")
-        .select("*")
-        .eq("user_id", userId)
-        .order("scheduled_time", { ascending: true })
-        .limit(limit);
+      const buildQuery = (table: "scheduled_posts" | "scheduled_video_posts") => {
+        let query = supabase
+          .from(table)
+          .select("*")
+          .eq("user_id", userId)
+          .limit(limit);
 
-      if (status === "pending") {
-        query = query.in("status", ["scheduled", "processing"]);
-      } else if (status === "history") {
-        query = query
-          .in("status", ["posted", "failed", "cancelled"])
-          .order("updated_at", { ascending: false });
-      }
+        if (status === "pending") {
+          query = query
+            .in("status", ["scheduled", "processing"])
+            .order("scheduled_time", { ascending: true });
+        } else if (status === "history") {
+          query = query
+            .in("status", ["posted", "failed", "cancelled"])
+            .order("updated_at", { ascending: false });
+        } else {
+          query = query.order("scheduled_time", { ascending: true });
+        }
 
-      const { data, error } = await query;
-      if (error) return res.status(500).json({ error: error.message });
-      return res.status(200).json({ posts: data || [] });
+        return query;
+      };
+
+      const [images, videos] = await Promise.all([
+        buildQuery("scheduled_posts"),
+        buildQuery("scheduled_video_posts"),
+      ]);
+
+      if (images.error) return res.status(500).json({ error: images.error.message });
+      if (videos.error) return res.status(500).json({ error: videos.error.message });
+
+      const imagePosts = (images.data || []).map((row: any) => normalizePost(row, "image"));
+      const videoPosts = (videos.data || []).map((row: any) => normalizePost(row, "video"));
+      const combined = [...imagePosts, ...videoPosts];
+
+      combined.sort((a, b) => {
+        const field = status === "history" ? "updated_at" : "scheduled_time";
+        const aTime = new Date(a[field] || 0).getTime();
+        const bTime = new Date(b[field] || 0).getTime();
+        return status === "history" ? bTime - aTime : aTime - bTime;
+      });
+
+      return res.status(200).json({ posts: combined.slice(0, limit) });
     }
 
     // ─── POST: Create a scheduled post record ───
@@ -109,25 +154,43 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: "platforms array is required" });
       }
 
+      const targetTable = post_type === "video" ? "scheduled_video_posts" : "scheduled_posts";
+
+      const insertPayload =
+        post_type === "video"
+          ? {
+              user_id: userId,
+              user_email: body.user_email || null,
+              caption: caption || null,
+              platforms,
+              media_url: media_url || null,
+              scheduled_time,
+              user_timezone: user_timezone || null,
+              status: "scheduled",
+              media_type: "video",
+              metadata: payload || {},
+            }
+          : {
+              user_id: userId,
+              user_email: body.user_email || null,
+              caption: caption || null,
+              platforms,
+              media_url: media_url || null,
+              scheduled_time,
+              user_timezone: user_timezone || null,
+              post_type: post_type || "image",
+              payload: payload || {},
+              status: "scheduled",
+            };
+
       const { data, error } = await supabase
-        .from("scheduled_posts")
-        .insert({
-          user_id: userId,
-          user_email: body.user_email || null,
-          caption: caption || null,
-          platforms,
-          media_url: media_url || null,
-          scheduled_time,
-          user_timezone: user_timezone || null,
-          post_type: post_type || "image",
-          payload: payload || {},
-          status: "scheduled",
-        })
+        .from(targetTable)
+        .insert(insertPayload as any)
         .select()
         .single();
 
       if (error) return res.status(500).json({ error: error.message });
-      return res.status(201).json({ post: data });
+      return res.status(201).json({ post: normalizePost(data, post_type === "video" ? "video" : "image") });
     }
 
     return res.status(405).json({ error: "Method not allowed" });
