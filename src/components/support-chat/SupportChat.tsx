@@ -175,7 +175,13 @@ export default function SupportChat() {
         } catch (error) {
             console.error('Support Chat Error:', error);
             toast.error('Could not reach support agent.');
-            addMessage('assistant', "I'm having trouble connecting to the server right now. Please try again later.");
+            const debugCode = error instanceof Error
+                ? `${error.name}:${error.message}`.slice(0, 120)
+                : String(error).slice(0, 120);
+            // #region agent log
+            fetch('http://127.0.0.1:7561/ingest/9939b280-ecb9-4bf6-a4f2-1186e63d634e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'4e9078'},body:JSON.stringify({sessionId:'4e9078',runId:debugRunId,hypothesisId:'H6-H10',location:'src/components/support-chat/SupportChat.tsx:173',message:'Support chat catch branch reached',data:{debugCode},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
+            addMessage('assistant', `I'm having trouble connecting to the server right now. Please try again later. (debug: ${debugCode})`);
         } finally {
             setIsTyping(false);
         }
