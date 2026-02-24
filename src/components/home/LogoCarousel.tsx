@@ -25,13 +25,13 @@ const topRowLogos = [
   // Core tech platforms
   { name: "Google", url: "https://www.google.com/", logo: "https://cdn.simpleicons.org/google/4285F4" },
   { name: "Apple", url: "https://www.apple.com/", logo: "https://cdn.simpleicons.org/apple/FFFFFF" },
-  { name: "Microsoft", url: "https://www.microsoft.com/", logo: "https://cdn.simpleicons.org/microsoft/5E5E5E" },
+  { name: "Microsoft", url: "https://www.microsoft.com/", logo: "/icons/logo-carousel/Microsoft_logo.svg" },
   { name: "Meta", url: "https://about.meta.com/", logo: "https://cdn.simpleicons.org/meta/0082FB" },
-  { name: "Amazon", url: "https://www.amazon.com/", logo: "https://cdn.simpleicons.org/amazon/FF9900" },
+  { name: "Amazon", url: "https://www.amazon.com/", logo: "/icons/logo-carousel/Amazon_logo.png" },
   { name: "Adobe", url: "https://www.adobe.com/", logo: "https://cdn.simpleicons.org/adobe/FF0000" },
   { name: "Salesforce", url: "https://www.salesforce.com/", logo: "https://cdn.simpleicons.org/salesforce/00A1E0" },
   { name: "IBM", url: "https://www.ibm.com/", logo: "https://cdn.simpleicons.org/ibm/054ADA" },
-  { name: "Oracle", url: "https://www.oracle.com/", logo: "https://cdn.simpleicons.org/oracle/F80000" },
+  { name: "Oracle", url: "https://www.oracle.com/", logo: "/icons/logo-carousel/Oracle_logo.png" },
   { name: "Samsung", url: "https://www.samsung.com/", logo: "https://cdn.simpleicons.org/samsung/1428A0" },
   { name: "Intel", url: "https://www.intel.com/", logo: "https://cdn.simpleicons.org/intel/0071C5" },
   { name: "NVIDIA", url: "https://www.nvidia.com/", logo: "https://cdn.simpleicons.org/nvidia/76B900" },
@@ -72,7 +72,7 @@ const topRowLogos = [
 // Bottom Row, Global brands & enterprises, no food / drink brands
 const bottomRowLogos = [
   // Retail & consumer
-  { name: "Walmart", url: "https://www.walmart.com/", logo: "https://cdn.simpleicons.org/walmart/0071CE" },
+  { name: "Walmart", url: "https://www.walmart.com/", logo: "/icons/logo-carousel/walmart.png" },
   { name: "Target", url: "https://www.target.com/", logo: "https://cdn.simpleicons.org/target/CC0000" },
   { name: "IKEA", url: "https://www.ikea.com/", logo: "https://cdn.simpleicons.org/ikea/0058A3" },
   { name: "eBay", url: "https://www.ebay.com/", logo: "https://cdn.simpleicons.org/ebay/E53238" },
@@ -106,11 +106,11 @@ const bottomRowLogos = [
 
   // Electronics & industrial
   { name: "LG", url: "https://www.lg.com/", logo: "https://cdn.simpleicons.org/lg/A50034" },
-  { name: "Philips", url: "https://www.philips.com/", logo: "https://cdn.simpleicons.org/philips/0B5ED7" },
+  { name: "Philips", url: "https://www.philips.com/", logo: "/icons/logo-carousel/Philips.png" },
   { name: "Siemens", url: "https://www.siemens.com/", logo: "https://cdn.simpleicons.org/siemens/009999" },
 
   // Fashion
-  { name: "H&M", url: "https://www.hm.com/", logo: "https://cdn.simpleicons.org/hm/E50010" },
+  { name: "H&M", url: "https://www.hm.com/", logo: "/icons/logo-carousel/H&M.png" },
 ];
 
 // Single Logo Tile component
