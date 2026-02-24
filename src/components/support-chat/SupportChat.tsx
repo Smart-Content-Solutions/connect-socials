@@ -109,6 +109,7 @@ export default function SupportChat() {
         if (!inputValue.trim()) return;
 
         const userMessage = inputValue.trim();
+        const debugRunId = `support-chat-${Date.now()}`;
         addMessage('user', userMessage);
         setInputValue('');
         setIsTyping(true);
@@ -122,23 +123,52 @@ export default function SupportChat() {
                 email: user?.emailAddresses?.[0]?.emailAddress || '',
                 history: messages.slice(-5).map(m => ({ role: m.role, content: m.content }))
             };
+            // #region agent log
+            fetch('http://127.0.0.1:7561/ingest/9939b280-ecb9-4bf6-a4f2-1186e63d634e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'4e9078'},body:JSON.stringify({sessionId:'4e9078',runId:debugRunId,hypothesisId:'H1-H4',location:'src/components/support-chat/SupportChat.tsx:126',message:'Support chat request prepared',data:{webhookUrl:WEBHOOK_URL,userId:user?.id||'anonymous',messageLength:userMessage.length,historyLength:payload.history.length},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
 
-            const response = await fetch(WEBHOOK_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-            });
+            let response: Response;
+            try {
+                response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+            } catch (networkError) {
+                // #region agent log
+                fetch('http://127.0.0.1:7561/ingest/9939b280-ecb9-4bf6-a4f2-1186e63d634e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'4e9078'},body:JSON.stringify({sessionId:'4e9078',runId:debugRunId,hypothesisId:'H1-H3',location:'src/components/support-chat/SupportChat.tsx:131',message:'Support chat fetch threw network-level error',data:{name:networkError instanceof Error ? networkError.name : 'unknown',message:networkError instanceof Error ? networkError.message : String(networkError)},timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
+                throw networkError;
+            }
+            // #region agent log
+            fetch('http://127.0.0.1:7561/ingest/9939b280-ecb9-4bf6-a4f2-1186e63d634e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'4e9078'},body:JSON.stringify({sessionId:'4e9078',runId:debugRunId,hypothesisId:'H2',location:'src/components/support-chat/SupportChat.tsx:141',message:'Support chat received HTTP response',data:{ok:response.ok,status:response.status,statusText:response.statusText,contentType:response.headers.get('content-type')||''},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
 
             if (!response.ok) {
                 throw new Error(`Support service unavailable: ${response.status}`);
             }
 
-            const data = await response.json();
+            const rawResponseText = await response.text();
+            // #region agent log
+            fetch('http://127.0.0.1:7561/ingest/9939b280-ecb9-4bf6-a4f2-1186e63d634e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'4e9078'},body:JSON.stringify({sessionId:'4e9078',runId:debugRunId,hypothesisId:'H5',location:'src/components/support-chat/SupportChat.tsx:152',message:'Support chat raw response captured',data:{textLength:rawResponseText.length,preview:rawResponseText.slice(0,200)},timestamp:Date.now()})}).catch(()=>{});
+            // #endregion
+            let data: Record<string, unknown>;
+            try {
+                data = rawResponseText ? JSON.parse(rawResponseText) : {};
+            } catch (parseError) {
+                // #region agent log
+                fetch('http://127.0.0.1:7561/ingest/9939b280-ecb9-4bf6-a4f2-1186e63d634e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'4e9078'},body:JSON.stringify({sessionId:'4e9078',runId:debugRunId,hypothesisId:'H5',location:'src/components/support-chat/SupportChat.tsx:158',message:'Support chat JSON parse failed',data:{name:parseError instanceof Error ? parseError.name : 'unknown',message:parseError instanceof Error ? parseError.message : String(parseError)},timestamp:Date.now()})}).catch(()=>{});
+                // #endregion
+                throw parseError;
+            }
 
             // Expecting { response: "text" } from n8n
-            const aiResponseText = data.response || data.output || data.text || "I'm sorry, I didn't get a clear response. Please try again.";
+            const aiResponseValue = data.response ?? data.output ?? data.text;
+            const aiResponseText = typeof aiResponseValue === 'string' && aiResponseValue.trim()
+                ? aiResponseValue
+                : "I'm sorry, I didn't get a clear response. Please try again.";
 
             addMessage('assistant', aiResponseText);
 
