@@ -56,7 +56,7 @@ import SignupPage from "./pages/base44/Signup";
 
 // ✅ Other
 import NotFound from "./pages/NotFound";
-import WordPressPluginSetup from "./pages/docs/WordPressPluginSetup";
+import WordPressPluginSetup from "./pages/documentation/WordPressPluginSetup";
 import WordpressAutomationApp from "./components/apps/WordpressAutomationApp";
 import AIAgentTool from "./components/apps/ai-agent/AIAgentTool";
 
