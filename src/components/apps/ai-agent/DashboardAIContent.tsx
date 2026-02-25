@@ -12,7 +12,12 @@ import {
     Globe,
     BarChart3,
     Activity,
-    Loader2
+    Loader2,
+    Download,
+    BookOpen,
+    ExternalLink,
+    ShieldCheck,
+    ArrowRight
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUser } from "@clerk/clerk-react";
@@ -225,15 +230,58 @@ export default function DashboardAIContent() {
                 </div>
             </div>
 
-            {/* Info Banner */}
-            <div className="mb-6 p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-start gap-3">
-                <Activity className="w-5 h-5 text-purple-500 shrink-0 mt-0.5" />
-                <div>
-                    <h4 className="text-[#D6D7D8] font-semibold text-sm">Activity Monitoring</h4>
-                    <p className="text-[#A9AAAC] text-xs mt-1">
-                        All AI training sessions and post enhancements are tracked here for monitoring and reassurance.
-                        View detailed history of what the AI has been doing.
+            {/* Plugin Setup Quick Access */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+                <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-600/15 to-indigo-600/5 border border-blue-500/20 backdrop-blur-md flex gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center shrink-0 border border-blue-500/30">
+                        <Download className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <div>
+                        <h4 className="text-[#D6D7D8] font-bold text-sm mb-1 uppercase tracking-wider">Step 1: Get the Plugin</h4>
+                        <p className="text-[#A9AAAC] text-xs leading-relaxed mb-4">
+                            Download the SCS connector to bridge your WordPress site with our AI Agent.
+                        </p>
+                        <a
+                            href="/downloads/smart-content-solutions.zip"
+                            className="inline-flex items-center gap-2 text-sm font-bold text-blue-400 hover:text-blue-300 transition-colors group"
+                        >
+                            Download Controller ZIP
+                            <ExternalLink className="w-3.5 h-3.5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                        </a>
+                    </div>
+                </div>
+
+                <div className="p-5 rounded-2xl bg-[#3B3C3E]/20 border border-white/5 backdrop-blur-md flex gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 border border-white/10">
+                        <BookOpen className="w-6 h-6 text-[#A9AAAC]" />
+                    </div>
+                    <div>
+                        <h4 className="text-[#D6D7D8] font-bold text-sm mb-1 uppercase tracking-wider">Step 2: Install & Connect</h4>
+                        <p className="text-[#A9AAAC] text-xs leading-relaxed mb-4">
+                            Follow our 2-minute guide to activate the plugin and start training your AI.
+                        </p>
+                        <a
+                            href="/docs/wordpress-plugin-setup"
+                            className="inline-flex items-center gap-2 text-sm font-bold text-[#D6D7D8] hover:text-white transition-colors group"
+                        >
+                            View Setup Guide
+                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {/* Activity Info Banner (Modified for visual balance) */}
+            <div className="mb-6 p-4 rounded-xl bg-purple-500/5 border border-purple-500/10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <ShieldCheck className="w-5 h-5 text-purple-400" />
+                    <p className="text-[#A9AAAC] text-xs">
+                        <span className="text-purple-300 font-medium">Activity Monitoring Active:</span> All agent actions are securely logged for your review.
                     </p>
+                </div>
+                <div className="flex gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-[10px] text-green-500 uppercase font-bold tracking-widest">System Live</span>
                 </div>
             </div>
 

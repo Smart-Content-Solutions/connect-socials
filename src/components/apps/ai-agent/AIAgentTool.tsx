@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Sparkles, LayoutDashboard, Info } from 'lucide-react';
+import { Brain, Sparkles, LayoutDashboard, Info, Download, BookOpen } from 'lucide-react';
 import DashboardAIContent from './DashboardAIContent';
 import TrainAIContent from './TrainAIContent';
 import EditorAIContent from './EditorAIContent';
@@ -163,12 +163,28 @@ export default function AIAgentTool() {
                     </div>
                     <div>
                         <h4 className="text-[#D6D7D8] font-bold text-sm mb-1">Important: WordPress Plugin Required</h4>
-                        <p className="text-[#A9AAAC] text-xs leading-relaxed max-w-3xl">
+                        <p className="text-[#A9AAAC] text-xs leading-relaxed max-w-3xl mb-4">
                             To enable AI training and post optimization, please ensure the
                             <span className="text-white font-medium mx-1">Smart Content Solutions</span>
                             plugin is installed and activated in your WordPress dashboard.
                             The AI agent cannot access your content without this connection.
                         </p>
+                        <div className="flex flex-wrap gap-3">
+                            <a
+                                href="/downloads/smart-content-solutions.zip"
+                                className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 rounded-lg text-xs font-semibold text-blue-300 transition-all hover:scale-105 active:scale-95"
+                            >
+                                <Download className="w-3.5 h-3.5" />
+                                Download Plugin (.zip)
+                            </a>
+                            <a
+                                href="/docs/wordpress-plugin-setup"
+                                className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-semibold text-[#D6D7D8] transition-all"
+                            >
+                                <BookOpen className="w-3.5 h-3.5" />
+                                Installation Guide
+                            </a>
+                        </div>
                     </div>
                 </motion.div>
 
