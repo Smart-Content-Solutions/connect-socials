@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Sparkles, LayoutDashboard } from 'lucide-react';
+import { Brain, Sparkles, LayoutDashboard, Info } from 'lucide-react';
 import DashboardAIContent from './DashboardAIContent';
 import TrainAIContent from './TrainAIContent';
 import EditorAIContent from './EditorAIContent';
@@ -151,6 +151,26 @@ export default function AIAgentTool() {
                         </button>
                     </div>
                 </div>
+
+                {/* Global Info Banner */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="mb-8 p-4 rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border border-blue-500/20 flex items-start gap-4 backdrop-blur-md"
+                >
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center shrink-0">
+                        <Info className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <div>
+                        <h4 className="text-[#D6D7D8] font-bold text-sm mb-1">Important: WordPress Plugin Required</h4>
+                        <p className="text-[#A9AAAC] text-xs leading-relaxed max-w-3xl">
+                            To enable AI training and post optimization, please ensure the
+                            <span className="text-white font-medium mx-1">Smart Content Solutions</span>
+                            plugin is installed and activated in your WordPress dashboard.
+                            The AI agent cannot access your content without this connection.
+                        </p>
+                    </div>
+                </motion.div>
 
                 {/* Content Area with Slide Animation */}
                 <motion.div
