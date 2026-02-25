@@ -8,8 +8,6 @@ import { useUser, SignIn } from "@clerk/clerk-react";
 import SocialAutomationApp from "./components/apps/SocialAutomationApp";
 import { SupportAgentProvider } from "./context/SupportAgentContext";
 
-
-
 // ✅ Layout
 import Layout from "./pages/base44/Layout";
 
@@ -58,6 +56,7 @@ import SignupPage from "./pages/base44/Signup";
 
 // ✅ Other
 import NotFound from "./pages/NotFound";
+import WordPressPluginSetup from "./pages/docs/WordPressPluginSetup";
 import WordpressAutomationApp from "./components/apps/WordpressAutomationApp";
 import AIAgentTool from "./components/apps/ai-agent/AIAgentTool";
 
@@ -139,6 +138,14 @@ const router = createBrowserRouter(
         element={
           <Layout>
             <About />
+          </Layout>
+        }
+      />
+      <Route
+        path="/docs/wordpress-plugin-setup"
+        element={
+          <Layout>
+            <WordPressPluginSetup />
           </Layout>
         }
       />
