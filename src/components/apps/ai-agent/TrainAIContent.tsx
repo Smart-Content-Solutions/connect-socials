@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, Save, Link as LinkIcon, Building2, Megaphone, Users, RefreshCw } from 'lucide-react';
+import { Brain, Save, Link as LinkIcon, Building2, Megaphone, Users, RefreshCw, Info } from 'lucide-react';
 import GlassCard from './GlassCard';
 import { toast } from "sonner";
 import { useUser } from "@clerk/clerk-react";
@@ -124,10 +124,20 @@ export default function TrainAIContent({ sites, onTrainingComplete }: TrainAICon
                         </div>
 
                         {selectedSiteId && (
-                            <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/10 text-sm text-purple-200">
-                                <p>✓ Site connected</p>
-                                <p>✓ Credentials ready</p>
-                                <p>✓ Indexing ready</p>
+                            <div className="space-y-3">
+                                <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/10 text-sm text-purple-200">
+                                    <p>✓ Site connected</p>
+                                    <p>✓ Credentials ready</p>
+                                    <p>✓ Indexing ready</p>
+                                </div>
+                                
+                                <div className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 flex gap-3">
+                                    <Info className="w-5 h-5 text-blue-400 shrink-0" />
+                                    <p className="text-xs text-blue-200/80 leading-relaxed">
+                                        <strong className="text-blue-300 block mb-1">WP Plugin Required</strong>
+                                        Ensure the Smart Content Solutions plugin is installed and activated on your WordPress site for the AI Agent to function correctly.
+                                    </p>
+                                </div>
                             </div>
                         )}
                     </div>
