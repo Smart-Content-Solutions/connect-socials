@@ -10,7 +10,7 @@ const topRowLogos = [
   { name: "YouTube", url: "https://www.youtube.com/", logo: "https://cdn.simpleicons.org/youtube/FF0000" },
   { name: "X", url: "https://x.com/", logo: "https://cdn.simpleicons.org/x/FFFFFF" },
   { name: "Snapchat", url: "https://www.snapchat.com/", logo: "https://cdn.simpleicons.org/snapchat/FFFC00" },
-  { name: "LinkedIn", url: "https://www.linkedin.com/", logo: "https://cdn.simpleicons.org/snapchat/FFFC00" },
+  { name: "LinkedIn", url: "https://www.linkedin.com/", logo: "/icons/logo-carousel/LinkedIn_logo_initials.png" },
   { name: "Reddit", url: "https://www.reddit.com/", logo: "https://cdn.simpleicons.org/reddit/FF4500" },
   { name: "Pinterest", url: "https://www.pinterest.com/", logo: "https://cdn.simpleicons.org/pinterest/BD081C" },
   { name: "Twitch", url: "https://www.twitch.tv/", logo: "https://cdn.simpleicons.org/twitch/9146FF" },
@@ -25,13 +25,13 @@ const topRowLogos = [
   // Core tech platforms
   { name: "Google", url: "https://www.google.com/", logo: "https://cdn.simpleicons.org/google/4285F4" },
   { name: "Apple", url: "https://www.apple.com/", logo: "https://cdn.simpleicons.org/apple/FFFFFF" },
-  { name: "Microsoft", url: "https://www.microsoft.com/", logo: "https://cdn.simpleicons.org/microsoft/5E5E5E" },
+  { name: "Microsoft", url: "https://www.microsoft.com/", logo: "/icons/logo-carousel/Microsoft_logo.svg" },
   { name: "Meta", url: "https://about.meta.com/", logo: "https://cdn.simpleicons.org/meta/0082FB" },
-  { name: "Amazon", url: "https://www.amazon.com/", logo: "https://cdn.simpleicons.org/amazon/FF9900" },
-  { name: "Adobe", url: "https://www.adobe.com/", logo: "https://cdn.simpleicons.org/adobe/FF0000" },
-  { name: "Salesforce", url: "https://www.salesforce.com/", logo: "https://cdn.simpleicons.org/salesforce/00A1E0" },
-  { name: "IBM", url: "https://www.ibm.com/", logo: "https://cdn.simpleicons.org/ibm/054ADA" },
-  { name: "Oracle", url: "https://www.oracle.com/", logo: "https://cdn.simpleicons.org/oracle/F80000" },
+  { name: "Amazon", url: "https://www.amazon.com/", logo: "/icons/logo-carousel/Amazon_logo.png" },
+  { name: "Adobe", url: "https://www.adobe.com/", logo: "/icons/logo-carousel/Adobe_Corporate_wordmark.svg.png" },
+  { name: "Salesforce", url: "https://www.salesforce.com/", logo: "/icons/logo-carousel/Salesforce.com_logo.svg.png" },
+  { name: "IBM", url: "https://www.ibm.com/", logo: "/icons/logo-carousel/IBM_logoBerdaiOthmane.png" },
+  { name: "Oracle", url: "https://www.oracle.com/", logo: "/icons/logo-carousel/Oracle_logo.png" },
   { name: "Samsung", url: "https://www.samsung.com/", logo: "https://cdn.simpleicons.org/samsung/1428A0" },
   { name: "Intel", url: "https://www.intel.com/", logo: "https://cdn.simpleicons.org/intel/0071C5" },
   { name: "NVIDIA", url: "https://www.nvidia.com/", logo: "https://cdn.simpleicons.org/nvidia/76B900" },
@@ -40,51 +40,51 @@ const topRowLogos = [
   { name: "PayPal", url: "https://www.paypal.com/", logo: "https://cdn.simpleicons.org/paypal/003087" },
   { name: "Shopify", url: "https://www.shopify.com/", logo: "https://cdn.simpleicons.org/shopify/7AB55C" },
   { name: "Stripe", url: "https://stripe.com/", logo: "https://cdn.simpleicons.org/stripe/635BFF" },
-  { name: "Slack", url: "https://slack.com/", logo: "https://cdn.simpleicons.org/slack/4A154B" },
+  { name: "Slack", url: "https://slack.com/", logo: "/icons/logo-carousel/Slack_icon_2019.svg.png" },
 
   // Google ecosystem, marketing and tools
-  { name: "Google Home", url: "https://home.google.com/", logo: "https://cdn.simpleicons.org/googlehome/4285F4" },
-  { name: "Google Ads", url: "https://ads.google.com/", logo: "https://cdn.simpleicons.org/googleads/4285F4" },
+  { name: "Google Home", url: "https://home.google.com/", logo: "/icons/logo-carousel/google_home_logo_transparent.png" },
+  { name: "Google Ads", url: "https://ads.google.com/", logo: "/icons/logo-carousel/Google_Ads_logo.png" },
   { name: "Google Maps", url: "https://maps.google.com/", logo: "https://cdn.simpleicons.org/googlemaps/4285F4" },
   { name: "Google Meet", url: "https://meet.google.com/", logo: "https://cdn.simpleicons.org/googlemeet/00897B" },
-  { name: "Google Chrome", url: "https://www.google.com/chrome/", logo: "https://cdn.simpleicons.org/googlechrome/4285F4" },
-  { name: "Google Drive", url: "https://drive.google.com/", logo: "https://cdn.simpleicons.org/googledrive/4285F4" },
-  { name: "Google Photos", url: "https://photos.google.com/", logo: "https://cdn.simpleicons.org/googlephotos/4285F4" },
+  { name: "Google Chrome", url: "https://www.google.com/chrome/", logo: "/icons/logo-carousel/Google_Chrome_icon_(February_2022).png" },
+  { name: "Google Drive", url: "https://drive.google.com/", logo: "/icons/logo-carousel/Google_Drive_icon_(2020).png" },
+  { name: "Google Photos", url: "https://photos.google.com/", logo: "/icons/logo-carousel/Google_Photos_icon_(2020-2025).png" },
   { name: "Google Gemini", url: "https://gemini.google.com/", logo: "https://cdn.simpleicons.org/googlegemini/8E75B2" },
 
   // Productivity & AI tools
   { name: "Notion", url: "https://www.notion.so/", logo: "https://cdn.simpleicons.org/notion/000000" },
-  { name: "OpenAI", url: "https://openai.com/", logo: "https://cdn.simpleicons.org/openai/412991" },
-  { name: "Perplexity", url: "https://www.perplexity.ai/", logo: "https://cdn.simpleicons.org/perplexity/1F2933" },
-  { name: "Grok", url: "https://grok.com/", logo: "https://upload.wikimedia.org/wikipedia/commons/8/8a/Grok-feb-2025-logo.svg" },
+  { name: "OpenAI", url: "https://openai.com/", logo: "/icons/logo-carousel/openai_logo.png" },
+  { name: "Perplexity", url: "https://www.perplexity.ai/", logo: "/icons/logo-carousel/perplexity_logod.png" },
+  { name: "Grok", url: "https://grok.com/", logo: "/icons/logo-carousel/Grok-icon.png" },
   { name: "n8n", url: "https://n8n.io/", logo: "https://cdn.simpleicons.org/n8n/FFFFFF" },
 
   // Office 365 apps
-  { name: "Microsoft Word", url: "https://www.microsoft.com/microsoft-365/word", logo: "https://cdn.simpleicons.org/microsoftword/2B579A" },
+  { name: "Microsoft Word", url: "https://www.microsoft.com/microsoft-365/word", logo: "/icons/logo-carousel/Microsoft_Office_Word_(2019–2025).png" },
   { name: "Microsoft Excel", url: "https://www.microsoft.com/microsoft-365/excel", logo: "https://cdn.simpleicons.org/microsoftexcel/217346" },
   { name: "Microsoft PowerPoint", url: "https://www.microsoft.com/microsoft-365/powerpoint", logo: "https://cdn.simpleicons.org/microsoftpowerpoint/B7472A" },
   { name: "Microsoft Outlook", url: "https://outlook.live.com/", logo: "https://cdn.simpleicons.org/microsoftoutlook/0078D4" },
-  { name: "Microsoft OneDrive", url: "https://onedrive.live.com/", logo: "https://cdn.simpleicons.org/microsoftonedrive/0078D4" },
-  { name: "Microsoft OneNote", url: "https://www.onenote.com/", logo: "https://cdn.simpleicons.org/microsoftonenote/7719AA" },
-  { name: "Microsoft Teams", url: "https://www.microsoft.com/microsoft-teams/", logo: "https://cdn.simpleicons.org/microsoftteams/6264A7" },
+  { name: "Microsoft OneDrive", url: "https://onedrive.live.com/", logo: "/icons/logo-carousel/Microsoft_Office_OneDrive.png" },
+  { name: "Microsoft OneNote", url: "https://www.onenote.com/", logo: "/icons/logo-carousel/Microsoft_Office_OneNote.png" },
+  { name: "Microsoft Teams", url: "https://www.microsoft.com/microsoft-teams/", logo: "/icons/logo-carousel/Microsoft_Office_Teams_(2019–2025).png" },
 ];
 
 // Bottom Row, Global brands & enterprises, no food / drink brands
 const bottomRowLogos = [
   // Retail & consumer
-  { name: "Walmart", url: "https://www.walmart.com/", logo: "https://cdn.simpleicons.org/walmart/0071CE" },
+  { name: "Walmart", url: "https://www.walmart.com/", logo: "/icons/logo-carousel/walmart.png" },
   { name: "Target", url: "https://www.target.com/", logo: "https://cdn.simpleicons.org/target/CC0000" },
   { name: "IKEA", url: "https://www.ikea.com/", logo: "https://cdn.simpleicons.org/ikea/0058A3" },
   { name: "eBay", url: "https://www.ebay.com/", logo: "https://cdn.simpleicons.org/ebay/E53238" },
-  { name: "Alibaba", url: "https://www.alibaba.com/", logo: "https://cdn.simpleicons.org/alibaba/FF6A00" },
+  { name: "Alibaba", url: "https://www.alibaba.com/", logo: "/icons/logo-carousel/alibaba.png" },
 
   // Automotive
   { name: "Tesla", url: "https://www.tesla.com/", logo: "https://cdn.simpleicons.org/tesla/CC0000" },
-  { name: "BMW", url: "https://www.bmw.com/", logo: "https://cdn.simpleicons.org/bmw/0066B1" },
-  { name: "Mercedes-Benz", url: "https://www.mercedes-benz.com/", logo: "https://cdn.simpleicons.org/mercedes/00ADEF" },
-  { name: "Audi", url: "https://www.audi.com/", logo: "https://cdn.simpleicons.org/audi/BB0A30" },
-  { name: "Volkswagen", url: "https://www.volkswagen.com/", logo: "https://cdn.simpleicons.org/volkswagen/151F5D" },
-  { name: "Ford", url: "https://www.ford.com/", logo: "https://cdn.simpleicons.org/ford/003478" },
+  { name: "BMW", url: "https://www.bmw.com/", logo: "/icons/logo-carousel/BMW.png" },
+  { name: "Mercedes-Benz", url: "https://www.mercedes-benz.com/", logo: "/icons/logo-carousel/Mercedes-Logo.svg.png" },
+  { name: "Audi", url: "https://www.audi.com/", logo: "/icons/logo-carousel/audi_logo_silver.png" },
+  { name: "Volkswagen", url: "https://www.volkswagen.com/", logo: "/icons/logo-carousel/volkswagen_logo.png" },
+  { name: "Ford", url: "https://www.ford.com/", logo: "/icons/logo-carousel/Ford_logo_flat.png" },
   { name: "Porsche", url: "https://www.porsche.com/", logo: "https://cdn.simpleicons.org/porsche/B12B28" },
   { name: "Ferrari", url: "https://www.ferrari.com/", logo: "https://cdn.simpleicons.org/ferrari/DA291C" },
   { name: "Toyota", url: "https://www.toyota.com/", logo: "https://cdn.simpleicons.org/toyota/EB0A1E" },
@@ -98,7 +98,7 @@ const bottomRowLogos = [
 
   // Finance
   { name: "Visa", url: "https://www.visa.com/", logo: "https://cdn.simpleicons.org/visa/1A1F71" },
-  { name: "Mastercard", url: "https://www.mastercard.com/", logo: "https://cdn.simpleicons.org/mastercard/EB001B" },
+  { name: "Mastercard", url: "https://www.mastercard.com/", logo: "/icons/logo-carousel/Mastercard-logo.png" },
 
   // Logistics
   { name: "UPS", url: "https://www.ups.com/", logo: "https://cdn.simpleicons.org/ups/351C15" },
@@ -106,11 +106,11 @@ const bottomRowLogos = [
 
   // Electronics & industrial
   { name: "LG", url: "https://www.lg.com/", logo: "https://cdn.simpleicons.org/lg/A50034" },
-  { name: "Philips", url: "https://www.philips.com/", logo: "https://cdn.simpleicons.org/philips/0B5ED7" },
+  { name: "Philips", url: "https://www.philips.com/", logo: "/icons/logo-carousel/Philips.png" },
   { name: "Siemens", url: "https://www.siemens.com/", logo: "https://cdn.simpleicons.org/siemens/009999" },
 
   // Fashion
-  { name: "H&M", url: "https://www.hm.com/", logo: "https://cdn.simpleicons.org/hm/E50010" },
+  { name: "H&M", url: "https://www.hm.com/", logo: "/icons/logo-carousel/H&M.png" },
 ];
 
 // Single Logo Tile component
