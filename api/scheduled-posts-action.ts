@@ -75,7 +75,7 @@ export default async function handler(req: any, res: any) {
     const fetchPost = async (table: "scheduled_posts" | "scheduled_video_posts") => {
       const { data, error } = await supabase
         .from(table)
-        .select("id, status, user_id, user_email")
+        .select("id, status, user_id, user_email, user_timezone")
         .eq("id", id)
         .single();
       return { data, error, table };
@@ -137,10 +137,52 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: `Cannot reschedule a post with status "${post.status}"` });
       }
 
+      let normalizedTime = scheduled_time;
+      const userTz = post.user_timezone || "UTC";
+
+      // If the time doesn't look like an ISO string with offset/UTC, normalize it
+      if (typeof scheduled_time === "string" && !scheduled_time.includes("Z") && !scheduled_time.includes("+")) {
+        try {
+          const timeStr = scheduled_time.replace("T", " ").replace("Z", "").trim();
+          const [datePart, timePart] = timeStr.split(" ");
+          const [year, month, day] = datePart.split("-").map(Number);
+          const [hour, minute, second = 0] = (timePart || "00:00:00").split(":").map(Number);
+
+          const testDate = new Date();
+          const userFormatter = new Intl.DateTimeFormat("en-US", {
+            timeZone: userTz,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: false,
+            timeZoneName: "longOffset",
+          });
+
+          const userDateStr = userFormatter.format(testDate);
+          const offsetMatch = userDateStr.match(/GMT([+-])(\d{1,2}):(\d{2})/);
+          let offsetMinutes = 0;
+          if (offsetMatch) {
+            const sign = offsetMatch[1] === "+" ? 1 : -1;
+            const hours = parseInt(offsetMatch[2]);
+            const mins = parseInt(offsetMatch[3]);
+            offsetMinutes = sign * (hours * 60 + mins);
+          }
+
+          const localTimestamp = Date.UTC(year, month - 1, day, hour, minute, second);
+          const utcTimestamp = localTimestamp - offsetMinutes * 60 * 1000;
+          normalizedTime = new Date(utcTimestamp).toISOString();
+        } catch (e) {
+          console.error("Reschedule normalization failed:", e);
+        }
+      }
+
       const { data, error } = await supabase
         .from(table)
         .update({
-          scheduled_time,
+          scheduled_time: normalizedTime,
           status: "scheduled",
           updated_at: new Date().toISOString(),
         })
