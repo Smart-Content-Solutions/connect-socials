@@ -146,7 +146,6 @@ export default function SocialMediaTool() {
   // Legacy single-file states (for backward compatibility during transition)
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
@@ -1726,9 +1725,7 @@ export default function SocialMediaTool() {
         await sendToBackend();
       }
 
-      setIsSuccess(true);
       setShowSuccessModal(true);
-      toast.success(postMode === "publish" ? "Post successfully published!" : "Post successfully scheduled!");
 
       // Clear all state
       setCaption("");
@@ -1754,8 +1751,6 @@ export default function SocialMediaTool() {
       });
 
       setSelectedPlatforms([]);
-
-      setTimeout(() => setIsSuccess(false), 5000);
     } catch (err: any) {
 
       setErrorMsg(err.message);
@@ -2469,24 +2464,6 @@ export default function SocialMediaTool() {
             </button>
           </div>
         </div>
-
-        {isSuccess && (
-          <div className="mb-6 p-4 rounded-xl bg-[#E1C37A]/10 border border-[#E1C37A]/20 flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-green-400 mt-0.5" />
-            <div>
-              <p className="text-[#D6D7D8] font-medium">
-                Success! content {postMode === 'publish' ? 'published' : 'scheduled'}.
-                {activeTab === 'video' && ' Your automated post should be visible within a minute.'}
-              </p>
-              {selectedFacebookPage && selectedPlatforms.includes('facebook') && (
-                <p className="text-[#A9AAAC] text-xs mt-1">
-                  Posted to <b>{selectedFacebookPage.name}</b> (ID: {selectedFacebookPage.id}) using
-                  <code>pages_manage_posts</code> permission.
-                </p>
-              )}
-            </div>
-          </div>
-        )}
 
         {errorMsg && (
           <div ref={errorRef} className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
