@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { toast } from "sonner";
 
 import { useUser, useSession } from "@clerk/clerk-react";
-import { useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle,
@@ -32,7 +32,8 @@ import {
   FileText,
   AtSign,
   Users,
-  CalendarClock
+  CalendarClock,
+  Coins
 } from "lucide-react";
 
 import { usePostDraft } from "@/hooks/usePostDraft";
@@ -122,9 +123,22 @@ const platformColors: Record<string, string> = {
   bluesky: '#0085FF'
 };
 
+const TOKEN_PRICE = 0.10;
+const MIN_TOKENS_PURCHASE = 10;
+const MAX_TOKENS_PURCHASE = 500;
+const TOKEN_PURCHASE_STEP = 5;
+const AI_VIDEO_TOKEN_COST: Record<5 | 10, number> = {
+  5: 8,
+  10: 15,
+};
+
 export default function SocialMediaTool() {
   const { user, isSignedIn, isLoaded } = useUser();
   const { session } = useSession();
+  const [searchParams] = useSearchParams();
+  const queryTab = searchParams.get('tab');
+  const queryVideoSource = searchParams.get('videoSource');
+  const queryTokenStatus = searchParams.get('tokens');
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'video'>('dashboard');
   const scheduledPosts = useScheduledPosts();
@@ -284,6 +298,17 @@ export default function SocialMediaTool() {
   const [textToVideoPrompt, setTextToVideoPrompt] = useState('');
   const [textToVideoNegativePrompt, setTextToVideoNegativePrompt] = useState('');
   const [textToVideoDuration, setTextToVideoDuration] = useState<5 | 10>(5);
+  const [tokenBalance, setTokenBalance] = useState(0);
+  const [loadingCredits, setLoadingCredits] = useState(false);
+  const [showTokenModal, setShowTokenModal] = useState(false);
+  const [purchaseAmount, setPurchaseAmount] = useState(50);
+  const [isPurchasingTokens, setIsPurchasingTokens] = useState(false);
+
+  const imageToVideoTokenCost = AI_VIDEO_TOKEN_COST[aiDuration];
+  const textToVideoTokenCost = AI_VIDEO_TOKEN_COST[textToVideoDuration];
+  const selectedAiTokenCost = aiVideoTab === 'image' ? imageToVideoTokenCost : textToVideoTokenCost;
+  const hasEnoughImageTokens = tokenBalance >= imageToVideoTokenCost;
+  const hasEnoughTextTokens = tokenBalance >= textToVideoTokenCost;
 
   const TONE_OPTIONS = [
     "Professional",
@@ -367,6 +392,102 @@ export default function SocialMediaTool() {
       setShowRestoreDialog(true);
     }
   }, [draftIsLoaded, draftExists]);
+
+  const fetchCredits = useCallback(async () => {
+    if (!session) return;
+    try {
+      setLoadingCredits(true);
+      const authToken = await session.getToken();
+      if (!authToken) return;
+
+      const res = await fetch('/api/get-credits', {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch token balance');
+      }
+
+      const data = await res.json();
+      setTokenBalance(data.balance ?? 0);
+    } catch (error) {
+      console.error('Failed to fetch token balance:', error);
+    } finally {
+      setLoadingCredits(false);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (!isSignedIn || !session) return;
+    if (activeTab === 'video' && videoSource === 'generate') {
+      fetchCredits();
+    }
+  }, [isSignedIn, session, activeTab, videoSource, fetchCredits]);
+
+  useEffect(() => {
+    if (queryTab === 'video') {
+      setActiveTab('video');
+    }
+    if (queryVideoSource === 'generate') {
+      setVideoSource('generate');
+    }
+  }, [queryTab, queryVideoSource]);
+
+  useEffect(() => {
+    if (queryTokenStatus === 'success') {
+      toast.success('Tokens purchased successfully! Your balance will update shortly.');
+      fetchCredits();
+      setTimeout(() => fetchCredits(), 2000);
+      setTimeout(() => fetchCredits(), 5000);
+    } else if (queryTokenStatus === 'cancelled') {
+      toast.info('Token purchase cancelled.');
+    }
+  }, [queryTokenStatus, fetchCredits]);
+
+  const handlePurchaseTokens = async () => {
+    if (!session || isPurchasingTokens) return;
+    try {
+      setIsPurchasingTokens(true);
+      const authToken = await session.getToken();
+      if (!authToken) {
+        toast.error('Authentication error. Please sign in again.');
+        return;
+      }
+
+      const res = await fetch('/api/create-token-checkout', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tokenAmount: purchaseAmount,
+          successPath: '/apps/social-automation?tab=video&videoSource=generate&tokens=success',
+          cancelPath: '/apps/social-automation?tab=video&videoSource=generate&tokens=cancelled',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to start token purchase');
+    } finally {
+      setIsPurchasingTokens(false);
+    }
+  };
+
+  const openTokenModal = () => {
+    setShowTokenModal(true);
+    fetchCredits();
+  };
 
   const handlePreview = async () => {
     if (!caption.trim()) {
@@ -1156,8 +1277,7 @@ export default function SocialMediaTool() {
       return;
     }
 
-    // Token cost: 5s = 8 tokens, 10s = 15 tokens
-    const tokenCost = aiDuration === 5 ? 8 : 15;
+    const tokenCost = imageToVideoTokenCost;
 
     // Deduct tokens before starting generation
     try {
@@ -1182,11 +1302,11 @@ export default function SocialMediaTool() {
       if (!deductRes.ok) {
         if (deductData.error === 'insufficient_credits') {
           toast.error(
-            `Not enough tokens! You need ${tokenCost} but have ${deductData.balance || 0}. Purchase more from your Account page.`,
+            `Not enough tokens! You need ${tokenCost} but have ${deductData.balance || 0}. Purchase more tokens to continue.`,
             {
               action: {
                 label: 'Buy Tokens',
-                onClick: () => window.location.href = '/account',
+                onClick: openTokenModal,
               },
               duration: 8000,
             }
@@ -1196,6 +1316,7 @@ export default function SocialMediaTool() {
         }
         return;
       }
+      setTokenBalance((prev) => (typeof deductData.newBalance === 'number' ? deductData.newBalance : Math.max(prev - tokenCost, 0)));
       toast.success(`${tokenCost} tokens deducted (${deductData.newBalance} remaining)`);
     } catch (deductErr: any) {
       toast.error('Failed to check token balance. Please try again.');
@@ -1308,8 +1429,7 @@ export default function SocialMediaTool() {
       return;
     }
 
-    // Token cost: 5s = 8 tokens, 10s = 15 tokens
-    const tokenCost = textToVideoDuration === 5 ? 8 : 15;
+    const tokenCost = textToVideoTokenCost;
 
     // Deduct tokens before starting generation
     try {
@@ -1334,11 +1454,11 @@ export default function SocialMediaTool() {
       if (!deductRes.ok) {
         if (deductData.error === 'insufficient_credits') {
           toast.error(
-            `Not enough tokens! You need ${tokenCost} but have ${deductData.balance || 0}. Purchase more from your Account page.`,
+            `Not enough tokens! You need ${tokenCost} but have ${deductData.balance || 0}. Purchase more tokens to continue.`,
             {
               action: {
                 label: 'Buy Tokens',
-                onClick: () => window.location.href = '/account',
+                onClick: openTokenModal,
               },
               duration: 8000,
             }
@@ -1348,6 +1468,7 @@ export default function SocialMediaTool() {
         }
         return;
       }
+      setTokenBalance((prev) => (typeof deductData.newBalance === 'number' ? deductData.newBalance : Math.max(prev - tokenCost, 0)));
       toast.success(`${tokenCost} tokens deducted (${deductData.newBalance} remaining)`);
     } catch (deductErr: any) {
       toast.error('Failed to check token balance. Please try again.');
@@ -3962,6 +4083,45 @@ export default function SocialMediaTool() {
 
 
 
+                    <div className="mb-4 rounded-xl border border-[#E1C37A]/20 bg-[#1A1A1C]/60 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-[#A9AAAC]">Available Tokens</p>
+                          {loadingCredits ? (
+                            <p className="text-sm text-[#D6D7D8] mt-1 flex items-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin text-[#E1C37A]" />
+                              Loading token balance...
+                            </p>
+                          ) : (
+                            <p className="text-xl font-bold text-[#E1C37A] mt-1">{tokenBalance}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={openTokenModal}
+                          className="px-4 py-2 rounded-lg border border-[#E1C37A]/40 text-[#E1C37A] text-sm font-medium hover:bg-[#E1C37A]/10 transition-colors"
+                        >
+                          Manage / Buy Tokens
+                        </button>
+                      </div>
+                      <div className="mt-3 text-xs text-[#A9AAAC] space-y-1">
+                        <p>
+                          Selected generation cost: <span className="text-[#E1C37A] font-semibold">{selectedAiTokenCost} tokens</span>
+                        </p>
+                        <p>
+                          {tokenBalance >= selectedAiTokenCost ? (
+                            <>
+                              Remaining after generate: <span className="text-green-400 font-semibold">{tokenBalance - selectedAiTokenCost} tokens</span>
+                            </>
+                          ) : (
+                            <>
+                              Need <span className="text-red-400 font-semibold">{selectedAiTokenCost - tokenBalance} more tokens</span> to generate.
+                            </>
+                          )}
+                        </p>
+                        <p>1 Token = £{TOKEN_PRICE.toFixed(2)}</p>
+                      </div>
+                    </div>
+
                     {/* Image → Video Tab */}
 
                     {aiVideoTab === 'image' && (
@@ -4121,7 +4281,7 @@ export default function SocialMediaTool() {
 
                           onClick={handleGenerateAiVideo}
 
-                          disabled={!aiSourceImage || isGeneratingAiVideo}
+                          disabled={!aiSourceImage || isGeneratingAiVideo || loadingCredits || !hasEnoughImageTokens}
 
                           className="w-full py-4 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
 
@@ -4150,6 +4310,18 @@ export default function SocialMediaTool() {
                           )}
 
                         </button>
+
+                        {!loadingCredits && !hasEnoughImageTokens && (
+                          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center justify-between gap-3">
+                            <span>You need {imageToVideoTokenCost} tokens to generate this video.</span>
+                            <button
+                              onClick={openTokenModal}
+                              className="px-3 py-1 rounded-md border border-red-400/30 hover:bg-red-500/10 transition-colors text-xs font-semibold"
+                            >
+                              Buy Tokens
+                            </button>
+                          </div>
+                        )}
 
 
 
@@ -4256,7 +4428,7 @@ export default function SocialMediaTool() {
                         {/* Generate Button */}
                         <button
                           onClick={handleGenerateTextToVideo}
-                          disabled={!textToVideoPrompt.trim() || isGeneratingAiVideo}
+                          disabled={!textToVideoPrompt.trim() || isGeneratingAiVideo || loadingCredits || !hasEnoughTextTokens}
                           className="w-full py-4 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isGeneratingAiVideo ? (
@@ -4271,6 +4443,18 @@ export default function SocialMediaTool() {
                             </>
                           )}
                         </button>
+
+                        {!loadingCredits && !hasEnoughTextTokens && (
+                          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center justify-between gap-3">
+                            <span>You need {textToVideoTokenCost} tokens to generate this video.</span>
+                            <button
+                              onClick={openTokenModal}
+                              className="px-3 py-1 rounded-md border border-red-400/30 hover:bg-red-500/10 transition-colors text-xs font-semibold"
+                            >
+                              Buy Tokens
+                            </button>
+                          </div>
+                        )}
 
                         {/* Status Messages */}
                         {aiJobStatus === 'pending' && (
@@ -4688,6 +4872,112 @@ export default function SocialMediaTool() {
               maxSizeMB={MAX_VIDEO_SIZE_MB}
             />
           )}
+          <AnimatePresence>
+            {showTokenModal && (
+              <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  className="bg-[#3B3C3E] rounded-2xl w-full max-w-xl border border-[#E1C37A]/30 shadow-2xl relative overflow-hidden"
+                >
+                  <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#2C2C2E]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-[#E1C37A]/10 flex items-center justify-center">
+                        <Coins className="w-5 h-5 text-[#E1C37A]" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-[#D6D7D8]">Tokens</h3>
+                        <p className="text-xs text-[#A9AAAC]">Buy tokens without leaving post video</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowTokenModal(false)}
+                      className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-5 h-5 text-[#A9AAAC]" />
+                    </button>
+                  </div>
+
+                  <div className="p-6 space-y-5">
+                    <div className="rounded-xl bg-[#1A1A1C]/70 border border-[#E1C37A]/15 p-4 flex items-center justify-between">
+                      <p className="text-sm text-[#A9AAAC]">Current balance</p>
+                      <p className="text-xl font-bold text-[#E1C37A]">
+                        {loadingCredits ? '...' : tokenBalance} tokens
+                      </p>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-2 text-xs text-[#A9AAAC]">
+                        <span>{MIN_TOKENS_PURCHASE} tokens</span>
+                        <span>{MAX_TOKENS_PURCHASE} tokens</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={MIN_TOKENS_PURCHASE}
+                        max={MAX_TOKENS_PURCHASE}
+                        step={TOKEN_PURCHASE_STEP}
+                        value={purchaseAmount}
+                        onChange={(e) => setPurchaseAmount(Number(e.target.value))}
+                        className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                        style={{
+                          background: `linear-gradient(to right, #E1C37A 0%, #B6934C ${((purchaseAmount - MIN_TOKENS_PURCHASE) / (MAX_TOKENS_PURCHASE - MIN_TOKENS_PURCHASE)) * 100}%, #3B3C3E ${((purchaseAmount - MIN_TOKENS_PURCHASE) / (MAX_TOKENS_PURCHASE - MIN_TOKENS_PURCHASE)) * 100}%, #3B3C3E 100%)`,
+                        }}
+                      />
+                      <div className="flex gap-2 mt-4 flex-wrap">
+                        {[10, 25, 50, 100, 200, 500].map((amt) => (
+                          <button
+                            key={amt}
+                            onClick={() => setPurchaseAmount(amt)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${purchaseAmount === amt
+                              ? "bg-[#E1C37A]/20 text-[#E1C37A] border border-[#E1C37A]/40"
+                              : "bg-[#3B3C3E]/50 text-[#A9AAAC] border border-[#3B3C3E] hover:border-[#E1C37A]/20 hover:text-[#E1C37A]"
+                              }`}
+                          >
+                            {amt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl bg-[#1A1A1C]/60 border border-white/10 p-4 flex items-center justify-between">
+                      <p className="text-sm text-[#A9AAAC]">
+                        <span className="text-white font-semibold">{purchaseAmount}</span> tokens
+                      </p>
+                      <p className="text-lg font-bold text-[#E1C37A]">£{(purchaseAmount * TOKEN_PRICE).toFixed(2)}</p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => {
+                          setShowTokenModal(false);
+                          window.location.href = '/account';
+                        }}
+                        className="flex-1 px-4 py-3 rounded-xl border border-white/10 text-[#D6D7D8] hover:bg-white/5 transition-colors text-sm"
+                      >
+                        Go To Account
+                      </button>
+                      <button
+                        onClick={handlePurchaseTokens}
+                        disabled={isPurchasingTokens}
+                        className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_15px_rgba(225,195,122,0.3)] transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {isPurchasingTokens ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Redirecting...
+                          </>
+                        ) : (
+                          `Buy ${purchaseAmount} Tokens`
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
           {/* AI Preview Modal */}
           <AnimatePresence>
             {showPreviewModal && (
