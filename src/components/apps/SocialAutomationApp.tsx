@@ -105,6 +105,12 @@ type Platform = {
   isConnected: () => boolean;
 };
 
+type PreviewContext = {
+  caption: string;
+  tone: string;
+  tab: "create" | "video";
+};
+
 const platformColors: Record<string, string> = {
   facebook: '#1877F2',
   instagram: '#E4405F',
@@ -125,6 +131,7 @@ export default function SocialMediaTool() {
   const [caption, setCaption] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [aiEnhance, setAiEnhance] = useState(true);
+  const [lastPreviewContext, setLastPreviewContext] = useState<PreviewContext | null>(null);
 
   const [postMode, setPostMode] = useState("publish");
   const [scheduledTime, setScheduledTime] = useState("");
@@ -248,6 +255,17 @@ export default function SocialMediaTool() {
   const [previewText, setPreviewText] = useState("");
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const effectiveTone = tone === "Custom" ? customTone.trim() : tone;
+  const hasCurrentAiPreview = useMemo(() => {
+    if (!lastPreviewContext) return false;
+    if (activeTab !== "create" && activeTab !== "video") return false;
+
+    return (
+      lastPreviewContext.caption === caption &&
+      lastPreviewContext.tone === effectiveTone &&
+      lastPreviewContext.tab === activeTab
+    );
+  }, [activeTab, caption, effectiveTone, lastPreviewContext]);
 
   // AI Video Generation State
   const [videoSource, setVideoSource] = useState<'upload' | 'generate'>('upload');
@@ -356,13 +374,22 @@ export default function SocialMediaTool() {
       return;
     }
 
+    if (activeTab !== "create" && activeTab !== "video") {
+      toast.error("Preview is only available in image and video tabs");
+      return;
+    }
+
+    const captionSnapshot = caption;
+    const toneSnapshot = effectiveTone;
+    const tabSnapshot = activeTab;
+
     setIsGeneratingPreview(true);
 
     try {
       const form = new FormData();
       form.append("user_id", user?.id || "");
-      form.append("caption", caption);
-      form.append("tone", tone === "Custom" ? customTone : tone);
+      form.append("caption", captionSnapshot);
+      form.append("tone", toneSnapshot);
       form.append("preview", "true");
       form.append("use_ai", "yes");
 
@@ -404,6 +431,11 @@ export default function SocialMediaTool() {
 
       if (enhancedCaption && (data.status === "success" || isPreview)) {
         setPreviewText(enhancedCaption);
+        setLastPreviewContext({
+          caption: captionSnapshot,
+          tone: toneSnapshot,
+          tab: tabSnapshot
+        });
         setShowPreviewModal(true);
       } else {
         throw new Error(data.message || "Could not generate enhanced text");
@@ -418,6 +450,13 @@ export default function SocialMediaTool() {
 
   const handleUseEnhancedText = () => {
     setCaption(previewText);
+    if (activeTab === "create" || activeTab === "video") {
+      setLastPreviewContext({
+        caption: previewText,
+        tone: effectiveTone,
+        tab: activeTab
+      });
+    }
     setShowPreviewModal(false);
     setAiEnhance(false); // Disable auto-enhance since we already used it
     toast.success("Design updated with enhanced text!");
@@ -1625,6 +1664,13 @@ export default function SocialMediaTool() {
     if (!caption.trim())
       return setErrorMsg("Caption is required.");
 
+    if (aiEnhance && activeTab !== "dashboard" && !hasCurrentAiPreview) {
+      setErrorMsg("Please preview the AI-enhanced caption before continuing.");
+      toast.info("Preview is required before publishing.");
+      await handlePreview();
+      return;
+    }
+
     if (selectedPlatforms.length === 0)
       return setErrorMsg("Select at least one connected platform.");
 
@@ -1681,6 +1727,7 @@ export default function SocialMediaTool() {
 
       // Clear all state
       setCaption("");
+      setLastPreviewContext(null);
 
       // Clear legacy single-file states
       setImageFile(null);
@@ -3187,14 +3234,19 @@ export default function SocialMediaTool() {
                           <button
                             onClick={handlePreview}
                             disabled={isGeneratingPreview || !caption.trim()}
-                            className="text-xs bg-[#E1C37A]/10 text-[#E1C37A] border border-[#E1C37A]/30 px-3 py-1 rounded-lg hover:bg-[#E1C37A]/20 transition-colors flex items-center gap-1.5"
+                            className={`text-xs border px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5 ${hasCurrentAiPreview
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                              : "bg-[#E1C37A]/10 text-[#E1C37A] border-[#E1C37A]/30 hover:bg-[#E1C37A]/20"
+                              }`}
                           >
                             {isGeneratingPreview ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : hasCurrentAiPreview ? (
+                              <CheckCircle className="w-3 h-3" />
                             ) : (
                               <Eye className="w-3 h-3" />
                             )}
-                            Preview
+                            {hasCurrentAiPreview ? "Previewed" : "Preview"}
                           </button>
                         )}
                         <button
@@ -3266,6 +3318,7 @@ export default function SocialMediaTool() {
                 <button
                   onClick={() => {
                     setCaption("");
+                    setLastPreviewContext(null);
                     setImageFile(null);
                     setImagePreview(null);
                     setImageFiles([]);
@@ -4482,14 +4535,19 @@ export default function SocialMediaTool() {
                           <button
                             onClick={handlePreview}
                             disabled={isGeneratingPreview || !caption.trim()}
-                            className="text-xs bg-[#E1C37A]/10 text-[#E1C37A] border border-[#E1C37A]/30 px-3 py-1 rounded-lg hover:bg-[#E1C37A]/20 transition-colors flex items-center gap-1.5"
+                            className={`text-xs border px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5 ${hasCurrentAiPreview
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                              : "bg-[#E1C37A]/10 text-[#E1C37A] border-[#E1C37A]/30 hover:bg-[#E1C37A]/20"
+                              }`}
                           >
                             {isGeneratingPreview ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : hasCurrentAiPreview ? (
+                              <CheckCircle className="w-3 h-3" />
                             ) : (
                               <Eye className="w-3 h-3" />
                             )}
-                            Preview
+                            {hasCurrentAiPreview ? "Previewed" : "Preview"}
                           </button>
                         )}
                         <button
@@ -4561,6 +4619,7 @@ export default function SocialMediaTool() {
                 <button
                   onClick={() => {
                     setCaption("");
+                    setLastPreviewContext(null);
                     setVideoFile(null);
                     setVideoPreview(null);
                     setVideoFiles([]);
