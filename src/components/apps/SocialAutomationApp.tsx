@@ -94,6 +94,7 @@ import DashboardContent from "../social/DashboardContent";
 import InstagramDashboardContent from "../social/InstagramDashboardContent";
 import ConnectedAccountsSelector, { type ConnectedAccount } from "../ConnectedAccountsSelector";
 import ScheduledPostsTracker from "../social/ScheduledPostsTracker";
+import { ScheduleDateTimePicker } from "../social/ScheduleDateTimePicker";
 import { useScheduledPosts } from "@/hooks/useScheduledPosts";
 
 type Platform = {
@@ -1673,6 +1674,10 @@ export default function SocialMediaTool() {
 
     if (selectedPlatforms.length === 0)
       return setErrorMsg("Select at least one connected platform.");
+
+    if (postMode === "schedule" && !scheduledTime) {
+      return setErrorMsg("Please choose a schedule date and time, then click Confirm.");
+    }
 
     // Validate that Facebook/Instagram accounts are selected if those platforms are chosen
     if (selectedPlatforms.includes('facebook') && selectedFacebookPageIds.length === 0) {
@@ -3304,12 +3309,10 @@ export default function SocialMediaTool() {
                 </div>
 
                 {postMode === 'schedule' && (
-                  <input
-                    type="datetime-local"
-                    className="w-full bg-[#3B3C3E]/50 border border-white/10 p-3 rounded-xl text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20"
+                  <ScheduleDateTimePicker
                     value={scheduledTime}
-                    onChange={(e) => setScheduledTime(e.target.value)}
-                    style={{ colorScheme: 'dark' }}
+                    onChange={setScheduledTime}
+                    minDateTime={new Date()}
                   />
                 )}
               </div>
@@ -4605,12 +4608,10 @@ export default function SocialMediaTool() {
                 </div>
 
                 {postMode === 'schedule' && (
-                  <input
-                    type="datetime-local"
-                    className="w-full bg-[#3B3C3E]/50 border border-white/10 p-3 rounded-xl text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20"
+                  <ScheduleDateTimePicker
                     value={scheduledTime}
-                    onChange={(e) => setScheduledTime(e.target.value)}
-                    style={{ colorScheme: 'dark' }}
+                    onChange={setScheduledTime}
+                    minDateTime={new Date()}
                   />
                 )}
               </div>
