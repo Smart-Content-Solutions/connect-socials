@@ -831,10 +831,31 @@ export default function SocialMediaTool() {
 
 
   const gridRef = useRef<HTMLDivElement>(null);
+  const videoGridRef = useRef<HTMLDivElement>(null);
+  const imageWhenToPostRef = useRef<HTMLDivElement>(null);
+  const videoWhenToPostRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const motionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const videoDescTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [highlightStyle, setHighlightStyle] = useState({
+    opacity: 0,
+    transform: 'translate(0px, 0px)',
+    width: 0,
+    height: 0,
+  });
+  const [videoHighlightStyle, setVideoHighlightStyle] = useState({
+    opacity: 0,
+    transform: 'translate(0px, 0px)',
+    width: 0,
+    height: 0,
+  });
+  const [imageWhenToPostHighlightStyle, setImageWhenToPostHighlightStyle] = useState({
+    opacity: 0,
+    transform: 'translate(0px, 0px)',
+    width: 0,
+    height: 0,
+  });
+  const [videoWhenToPostHighlightStyle, setVideoWhenToPostHighlightStyle] = useState({
     opacity: 0,
     transform: 'translate(0px, 0px)',
     width: 0,
@@ -1028,6 +1049,66 @@ export default function SocialMediaTool() {
 
   const handleGridMouseLeave = useCallback(() => {
     setHighlightStyle(prev => ({ ...prev, opacity: 0 }));
+  }, []);
+
+  const handleVideoCardMouseEnter = useCallback((e: React.MouseEvent) => {
+    const card = e.currentTarget;
+    const container = videoGridRef.current;
+    if (!container || !card) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+
+    setVideoHighlightStyle({
+      opacity: 1,
+      transform: `translate(${cardRect.left - containerRect.left}px, ${cardRect.top - containerRect.top}px)`,
+      width: cardRect.width,
+      height: cardRect.height,
+    });
+  }, []);
+
+  const handleVideoGridMouseLeave = useCallback(() => {
+    setVideoHighlightStyle(prev => ({ ...prev, opacity: 0 }));
+  }, []);
+
+  const handleImageWhenToPostCardMouseEnter = useCallback((e: React.MouseEvent) => {
+    const card = e.currentTarget;
+    const container = imageWhenToPostRef.current;
+    if (!container || !card) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+
+    setImageWhenToPostHighlightStyle({
+      opacity: 1,
+      transform: `translate(${cardRect.left - containerRect.left}px, ${cardRect.top - containerRect.top}px)`,
+      width: cardRect.width,
+      height: cardRect.height,
+    });
+  }, []);
+
+  const handleImageWhenToPostMouseLeave = useCallback(() => {
+    setImageWhenToPostHighlightStyle(prev => ({ ...prev, opacity: 0 }));
+  }, []);
+
+  const handleVideoWhenToPostCardMouseEnter = useCallback((e: React.MouseEvent) => {
+    const card = e.currentTarget;
+    const container = videoWhenToPostRef.current;
+    if (!container || !card) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+
+    setVideoWhenToPostHighlightStyle({
+      opacity: 1,
+      transform: `translate(${cardRect.left - containerRect.left}px, ${cardRect.top - containerRect.top}px)`,
+      width: cardRect.width,
+      height: cardRect.height,
+    });
+  }, []);
+
+  const handleVideoWhenToPostMouseLeave = useCallback(() => {
+    setVideoWhenToPostHighlightStyle(prev => ({ ...prev, opacity: 0 }));
   }, []);
 
   const isSelected = (id: string) => selectedPlatforms.includes(id);
@@ -2814,8 +2895,24 @@ export default function SocialMediaTool() {
                 <p className="text-sm text-[#A9AAAC] mb-6">Manage accounts for short-form video posting</p>
 
                 <div
+                  ref={videoGridRef}
                   className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                  onMouseLeave={handleVideoGridMouseLeave}
                 >
+                  <div
+                    className="absolute pointer-events-none rounded-2xl hidden md:block"
+                    style={{
+                      opacity: videoHighlightStyle.opacity,
+                      transform: videoHighlightStyle.transform,
+                      width: videoHighlightStyle.width,
+                      height: videoHighlightStyle.height,
+                      background: 'linear-gradient(135deg, rgba(225, 195, 122, 0.15) 0%, rgba(182, 148, 76, 0.1) 100%)',
+                      boxShadow: '0 0 40px rgba(225, 195, 122, 0.35), 0 0 80px rgba(212, 175, 55, 0.2)',
+                      border: '1px solid rgba(225, 195, 122, 0.25)',
+                      transition: 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      zIndex: 0,
+                    }}
+                  />
                   {ALL_PLATFORMS.filter(p => ['facebook', 'instagram', 'tiktok', 'youtube', 'linkedin', 'x'].includes(p.id)).map((p) => {
                     const connected = p.isConnected();
                     const Icon = p.icon;
@@ -2831,6 +2928,7 @@ export default function SocialMediaTool() {
                     return (
                       <div
                         key={p.id}
+                        onMouseEnter={handleVideoCardMouseEnter}
                         className="relative z-10 p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 hover:border-[#E1C37A]/20 transition-all duration-300"
                       >
                         <div className="flex items-start justify-between mb-4">
@@ -3366,10 +3464,29 @@ export default function SocialMediaTool() {
 
               <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
                 <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">When to Post</h3>
-                <div className="grid grid-cols-2 gap-3 mb-4">
+                <div
+                  ref={imageWhenToPostRef}
+                  className="relative grid grid-cols-2 gap-3 mb-4"
+                  onMouseLeave={handleImageWhenToPostMouseLeave}
+                >
+                  <div
+                    className="absolute pointer-events-none rounded-xl hidden md:block"
+                    style={{
+                      opacity: imageWhenToPostHighlightStyle.opacity,
+                      transform: imageWhenToPostHighlightStyle.transform,
+                      width: imageWhenToPostHighlightStyle.width,
+                      height: imageWhenToPostHighlightStyle.height,
+                      background: 'linear-gradient(135deg, rgba(225, 195, 122, 0.15) 0%, rgba(182, 148, 76, 0.1) 100%)',
+                      boxShadow: '0 0 40px rgba(225, 195, 122, 0.35), 0 0 80px rgba(212, 175, 55, 0.2)',
+                      border: '1px solid rgba(225, 195, 122, 0.25)',
+                      transition: 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      zIndex: 0,
+                    }}
+                  />
                   <button
                     onClick={() => setPostMode('publish')}
-                    className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
+                    onMouseEnter={handleImageWhenToPostCardMouseEnter}
+                    className={`relative z-10 p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
                       ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
                       : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
                       }`}
@@ -3388,7 +3505,8 @@ export default function SocialMediaTool() {
 
                   <button
                     onClick={() => setPostMode('schedule')}
-                    className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
+                    onMouseEnter={handleImageWhenToPostCardMouseEnter}
+                    className={`relative z-10 p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
                       ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
                       : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
                       }`}
@@ -4728,10 +4846,29 @@ export default function SocialMediaTool() {
 
               <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
                 <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">When to Post</h3>
-                <div className="grid grid-cols-2 gap-3 mb-4">
+                <div
+                  ref={videoWhenToPostRef}
+                  className="relative grid grid-cols-2 gap-3 mb-4"
+                  onMouseLeave={handleVideoWhenToPostMouseLeave}
+                >
+                  <div
+                    className="absolute pointer-events-none rounded-xl hidden md:block"
+                    style={{
+                      opacity: videoWhenToPostHighlightStyle.opacity,
+                      transform: videoWhenToPostHighlightStyle.transform,
+                      width: videoWhenToPostHighlightStyle.width,
+                      height: videoWhenToPostHighlightStyle.height,
+                      background: 'linear-gradient(135deg, rgba(225, 195, 122, 0.15) 0%, rgba(182, 148, 76, 0.1) 100%)',
+                      boxShadow: '0 0 40px rgba(225, 195, 122, 0.35), 0 0 80px rgba(212, 175, 55, 0.2)',
+                      border: '1px solid rgba(225, 195, 122, 0.25)',
+                      transition: 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      zIndex: 0,
+                    }}
+                  />
                   <button
                     onClick={() => setPostMode('publish')}
-                    className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
+                    onMouseEnter={handleVideoWhenToPostCardMouseEnter}
+                    className={`relative z-10 p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
                       ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
                       : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
                       }`}
@@ -4750,7 +4887,8 @@ export default function SocialMediaTool() {
 
                   <button
                     onClick={() => setPostMode('schedule')}
-                    className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
+                    onMouseEnter={handleVideoWhenToPostCardMouseEnter}
+                    className={`relative z-10 p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
                       ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
                       : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
                       }`}
