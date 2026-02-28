@@ -1976,6 +1976,8 @@ export default function SocialMediaTool() {
     );
 
   const connectedCount = ALL_PLATFORMS.filter(p => p.isConnected()).length;
+  const imageSupportedPlatforms = new Set(['facebook', 'instagram', 'linkedin', 'bluesky']);
+  const videoSupportedPlatforms = new Set(['facebook', 'instagram', 'linkedin', 'tiktok', 'youtube']);
 
   return (
     <div className="min-h-screen pt-24 pb-20 bg-[#1A1A1C] text-[#D6D7D8]">
@@ -2757,6 +2759,7 @@ export default function SocialMediaTool() {
                     const connected = p.isConnected();
                     const Icon = p.icon;
                     const color = platformColors[p.id] || '#E1C37A';
+                    const isComingSoon = !imageSupportedPlatforms.has(p.id);
 
                     return (
                       <div
@@ -2764,6 +2767,13 @@ export default function SocialMediaTool() {
                         onMouseEnter={handleCardMouseEnter}
                         className="relative z-10 p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 hover:border-[#E1C37A]/20 transition-all duration-300"
                       >
+                        {isComingSoon && (
+                          <div className="absolute inset-0 z-20 rounded-2xl bg-[#1A1A1C]/70 backdrop-blur-[2px] flex items-center justify-center pointer-events-auto">
+                            <span className="px-3 py-1 rounded-full border border-[#E1C37A]/40 bg-[#E1C37A]/15 text-[#E1C37A] text-xs font-semibold tracking-wide uppercase">
+                              Coming Soon
+                            </span>
+                          </div>
+                        )}
                         <div className="flex items-start justify-between mb-4">
                           <div
                             className="w-12 h-12 rounded-xl flex items-center justify-center"
@@ -2803,7 +2813,7 @@ export default function SocialMediaTool() {
                             : 'Not connected'}
                         </p>
 
-                        {p.connect && (
+                        {p.connect && !isComingSoon && (
                           <div className="space-y-2">
                             {connected && p.id === 'facebook' ? (
                               <>
@@ -2917,6 +2927,7 @@ export default function SocialMediaTool() {
                     const connected = p.isConnected();
                     const Icon = p.icon;
                     const color = platformColors[p.id] || '#E1C37A';
+                    const isComingSoon = !videoSupportedPlatforms.has(p.id);
 
                     // Rename for video context
                     let displayName = p.name;
@@ -2931,6 +2942,13 @@ export default function SocialMediaTool() {
                         onMouseEnter={handleVideoCardMouseEnter}
                         className="relative z-10 p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 hover:border-[#E1C37A]/20 transition-all duration-300"
                       >
+                        {isComingSoon && (
+                          <div className="absolute inset-0 z-20 rounded-2xl bg-[#1A1A1C]/70 backdrop-blur-[2px] flex items-center justify-center pointer-events-auto">
+                            <span className="px-3 py-1 rounded-full border border-[#E1C37A]/40 bg-[#E1C37A]/15 text-[#E1C37A] text-xs font-semibold tracking-wide uppercase">
+                              Coming Soon
+                            </span>
+                          </div>
+                        )}
                         <div className="flex items-start justify-between mb-4">
                           <div
                             className="w-12 h-12 rounded-xl flex items-center justify-center"
@@ -2970,7 +2988,7 @@ export default function SocialMediaTool() {
                             : 'Not connected'}
                         </p>
 
-                        {p.connect && (
+                        {p.connect && !isComingSoon && (
                           <div className="space-y-2">
                             {connected && p.id === 'facebook' ? (
                               <>
