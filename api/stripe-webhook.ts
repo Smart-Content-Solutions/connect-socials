@@ -164,13 +164,17 @@ export default async function handler(req: any, res: any) {
       const currentRole = (user.publicMetadata as any)?.role as string | undefined;
 
       if (!neverDowngradeAdmin(currentRole)) {
+        const planName = session.metadata?.planName || "Early Access";
         await clerkClient.users.updateUser(clerkUserId, {
           publicMetadata: {
             ...(user.publicMetadata || {}),
+            base_tier: "early_access",
             role: "early_access",
             stripeCustomerId: session.customer as string,
             subscriptionId: session.subscription as string,
-            planName: session.metadata?.planName || "Early Access",
+            subscription_plan: planName,
+            planName,
+            subscription_status: "active",
             subscriptionStatus: "active",
             hasUsedTrial: true, // Mark trial as used once they successfully subscribe
           },
@@ -227,7 +231,10 @@ export default async function handler(req: any, res: any) {
         await clerkClient.users.updateUser(clerkUserId, {
           publicMetadata: {
             ...(user.publicMetadata || {}),
-            role: "user",
+            base_tier: "free",
+            role: "free",
+            subscription_status: "canceled",
+            subscriptionStatus: "canceled",
           },
         });
         console.log(`Revoked early_access for ${clerkUserId}`);
@@ -271,8 +278,8 @@ export default async function handler(req: any, res: any) {
       if (!clerkUserId) return res.status(200).json({ received: true });
 
       const status = sub.status; // active, trialing, past_due, unpaid, canceled, etc.
-      const shouldHaveAccess = status === "active" || status === "trialing";
-      const desiredRole = shouldHaveAccess ? "early_access" : "user";
+      const shouldHaveAccess = status === "active" || status === "trialing" || status === "past_due";
+      const desiredRole = shouldHaveAccess ? "early_access" : "free";
 
       const user = await clerkClient.users.getUser(clerkUserId);
       const currentRole = (user.publicMetadata as any)?.role as string | undefined;
@@ -281,9 +288,11 @@ export default async function handler(req: any, res: any) {
         await clerkClient.users.updateUser(clerkUserId, {
           publicMetadata: {
             ...(user.publicMetadata || {}),
+            base_tier: desiredRole,
             role: desiredRole,
             stripeCustomerId: sub.customer as string,
             subscriptionId: sub.id,
+            subscription_status: status,
             subscriptionStatus: status,
           },
         });

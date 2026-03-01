@@ -83,7 +83,10 @@ export default function Account() {
   // Auto-grant tokens for early_access users
   const grantInitialTokens = useCallback(async () => {
     if (!session || !user) return;
-    const role = (user.publicMetadata?.role as string) || "user";
+    const role =
+      (user.publicMetadata?.base_tier as string) ||
+      (user.publicMetadata?.role as string) ||
+      "free";
     if (role !== "early_access" && role !== "admin") return;
 
     // Check if already granted
@@ -190,10 +193,19 @@ export default function Account() {
   }
 
   // Get user details from metadata
-  const role = (user.publicMetadata?.role as string) || "user";
-  const planName = (user.publicMetadata?.planName as string) || "Early Access Plan";
-  const subscriptionStatus = (user.publicMetadata?.subscriptionStatus as string) || "active";
-  const hasSubscription = role === "early_access" || role === "admin";
+  const role =
+    (user.publicMetadata?.base_tier as string) ||
+    (user.publicMetadata?.role as string) ||
+    "free";
+  const planName =
+    (user.publicMetadata?.subscription_plan as string) ||
+    (user.publicMetadata?.planName as string) ||
+    "Early Access Plan";
+  const subscriptionStatus =
+    (user.publicMetadata?.subscription_status as string) ||
+    (user.publicMetadata?.subscriptionStatus as string) ||
+    "none";
+  const hasSubscription = role === "early_access" || role === "admin" || role === "pro";
   const isActive = subscriptionStatus === "active" || subscriptionStatus === "trialing";
   const stripeCustomerId = user.publicMetadata?.stripeCustomerId;
 
@@ -686,7 +698,7 @@ export default function Account() {
         </div>
 
         {/* ✅ PLANNER SECTION - ADMIN ONLY */}
-        {user?.publicMetadata?.role === "admin" && (
+        {(user?.publicMetadata?.base_tier === "admin" || user?.publicMetadata?.role === "admin") && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}

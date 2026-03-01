@@ -157,14 +157,23 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         entitlements:
           (clerkUser.publicMetadata?.entitlements as string[]) || [],
         subscription_plan:
-          (clerkUser.publicMetadata?.subscription_plan as string) || "none",
+          (clerkUser.publicMetadata?.subscription_plan as string) ||
+          (clerkUser.publicMetadata?.planName as string) ||
+          "none",
         subscription_status:
           (clerkUser.publicMetadata?.subscription_status as
             | "active"
             | "past_due"
             | "canceled"
             | "trialing"
-            | "none") || "none",
+            | "none") ||
+          (clerkUser.publicMetadata?.subscriptionStatus as
+            | "active"
+            | "past_due"
+            | "canceled"
+            | "trialing"
+            | "none") ||
+          "none",
         publicMetadata: clerkUser.publicMetadata
       };
 
@@ -194,14 +203,23 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       entitlements:
         (clerkUser.publicMetadata?.entitlements as string[]) || [],
       subscription_plan:
-        (clerkUser.publicMetadata?.subscription_plan as string) || "none",
+        (clerkUser.publicMetadata?.subscription_plan as string) ||
+        (clerkUser.publicMetadata?.planName as string) ||
+        "none",
       subscription_status:
         (clerkUser.publicMetadata?.subscription_status as
           | "active"
           | "past_due"
           | "canceled"
           | "trialing"
-          | "none") || "none",
+          | "none") ||
+        (clerkUser.publicMetadata?.subscriptionStatus as
+          | "active"
+          | "past_due"
+          | "canceled"
+          | "trialing"
+          | "none") ||
+        "none",
       publicMetadata: clerkUser.publicMetadata
     };
 

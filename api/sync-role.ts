@@ -84,6 +84,8 @@ export default async function handler(req: any, res: any) {
         console.log(`[Sync] Valid payment verified. Updating user role. Current: ${currentRole || currentBaseTier}`);
 
         if (currentRole !== "admin" && currentBaseTier !== "admin") {
+            const planName = session.metadata?.planName || "Early Access";
+            const subscriptionStatus = session.payment_status === "no_payment_required" ? "trialing" : "active";
             await clerkClient.users.updateUser(userId, {
                 publicMetadata: {
                     ...(user.publicMetadata || {}),
@@ -92,9 +94,11 @@ export default async function handler(req: any, res: any) {
                     role: "early_access", // Backward compatibility
                     stripeCustomerId: session.customer as string,
                     subscriptionId: session.subscription as string,
-                    planName: session.metadata?.planName || "Early Access",
+                    subscription_plan: planName,
+                    planName,
                     // If it was no_payment_required, it's likely a trial
-                    subscriptionStatus: session.payment_status === "no_payment_required" ? "trialing" : "active"
+                    subscription_status: subscriptionStatus,
+                    subscriptionStatus
                 }
             });
             console.log(`[Sync] SUCCESS: User ${userId} upgraded to early_access`);

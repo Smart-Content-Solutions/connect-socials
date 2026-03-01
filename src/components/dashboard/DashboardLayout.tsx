@@ -4,8 +4,6 @@ import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
   Share2,
-  Mail,
-  BarChart3,
   Phone,
   Settings,
   LogOut,
@@ -25,12 +23,10 @@ export default function DashboardLayout({ children, user }) {
 
   const navItems = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { name: "Daily Tracker", path: "/planner/daily-tracker", icon: CalendarCheck },
+    { name: "Core Tools", path: "/core-tools", icon: CalendarCheck },
     { name: "Social Posts", path: "/social-posts", icon: Share2 },
-    { name: "Email Campaigns", path: "/email-campaigns", icon: Mail },
-    { name: "Analytics", path: "/analytics", icon: BarChart3 },
     { name: "Leads & Calls", path: "/leads-calls", icon: Phone },
-    { name: "Account Settings", path: "/account-settings", icon: Settings },
+    { name: "Account", path: "/account", icon: Settings },
   ];
 
   const isActive = (path) => location.pathname === path;

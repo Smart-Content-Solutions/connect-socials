@@ -80,7 +80,7 @@ export default async function handler(req: any, res: any) {
     }
 
     const { userId, role, base_tier, addEntitlement, removeEntitlement } = body;
-    const allowedRoles = ["admin", "early_access", "user", "free"];
+    const allowedRoles = ["admin", "early_access", "pro", "free"];
 
     if (!userId || typeof userId !== "string") {
       return res.status(400).json({ error: "Missing or invalid userId" });
@@ -130,7 +130,7 @@ export default async function handler(req: any, res: any) {
       user: {
         id: updated.id,
         base_tier: updated.publicMetadata?.base_tier ?? "free",
-        role: updated.publicMetadata?.role ?? "user",
+        role: updated.publicMetadata?.role ?? "free",
         entitlements: updated.publicMetadata?.entitlements ?? [],
       },
     });

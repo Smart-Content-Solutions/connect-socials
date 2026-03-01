@@ -25,6 +25,7 @@ import Account from "./pages/base44/Account";
 
 // ✅ Platform Pages
 import DashboardPreview from "./pages/base44/DashboardPreview";
+import Dashboard from "./pages/base44/Dashboard";
 import CoreTools from "./pages/base44/CoreTools";
 import CorporateTools from "./pages/base44/CorporateTools";
 import Pricing from "./pages/base44/Pricing";
@@ -208,6 +209,16 @@ const router = createBrowserRouter(
 
       {/* ✅ PLATFORM ROUTES */}
       <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/dashboard-preview"
         element={
           <Layout>
@@ -326,7 +337,7 @@ const router = createBrowserRouter(
         path="/social-posts"
         element={
           <ProtectedRoute>
-            <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
+            <RoleProtectedRoute requiredToolId="social-automation">
               <SocialMediaTool />
             </RoleProtectedRoute>
           </ProtectedRoute>
@@ -422,7 +433,7 @@ const router = createBrowserRouter(
         path="/apps/social-automation"
         element={
           <ProtectedRoute>
-            <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
+            <RoleProtectedRoute requiredToolId="social-automation">
               <Layout>
                 <SocialAutomationApp />
               </Layout>
@@ -434,7 +445,7 @@ const router = createBrowserRouter(
         path="/apps/wordpress-seo"
         element={
           <ProtectedRoute>
-            <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
+            <RoleProtectedRoute requiredToolId="wordpress-seo">
               <Layout>
                 <WordpressAutomationApp />
               </Layout>
@@ -446,7 +457,7 @@ const router = createBrowserRouter(
         path="/apps/ai-agent"
         element={
           <ProtectedRoute>
-            <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
+            <RoleProtectedRoute requiredToolId="ai-agent">
               <Layout>
                 <AIAgentTool />
               </Layout>

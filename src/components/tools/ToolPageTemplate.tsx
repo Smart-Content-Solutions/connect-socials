@@ -58,11 +58,11 @@ export default function ToolPageTemplate({ tool }: ToolPageTemplateProps) {
   const isEarlyAccess = user?.base_tier === "early_access";
   const isPro = user?.base_tier === "pro";
 
-  // hasAccessToTool now correctly handles early_access/pro via entitlements
-  const hasAccess = isAdmin || isEarlyAccess || isPro || hasAccessToTool(tool.planRequired);
+  // hasAccessToTool expects a tool ID, not a plan label.
+  const hasAccess = isAdmin || isEarlyAccess || isPro || hasAccessToTool(tool.id);
 
-  // Get the referrer from URL parameter, fallback to dashboard-preview
-  const referrerPath = searchParams.get("from") || "/dashboard-preview";
+  // Get the referrer from URL parameter, fallback to dashboard
+  const referrerPath = searchParams.get("from") || "/dashboard";
 
   const categoryColors = {
     Core: {
