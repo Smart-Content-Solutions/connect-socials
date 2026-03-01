@@ -171,6 +171,7 @@ export default function SocialMediaTool() {
 
   const [loadingPlatform, setLoadingPlatform] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const MAX_IMAGE_FILES = 10;
   const [showBlueskyModal, setShowBlueskyModal] = useState(false);
   const [showBlueskyInfo, setShowBlueskyInfo] = useState(false);
   const [blueskyUsername, setBlueskyUsername] = useState("");
@@ -1124,24 +1125,32 @@ export default function SocialMediaTool() {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Limit to 10 images max
-    const maxFiles = 10;
-    const selectedFiles = files.slice(0, maxFiles);
-
-    if (files.length > maxFiles) {
-      toast.warning(`Only ${maxFiles} images can be uploaded at once. Using the first ${maxFiles}.`);
+    const remainingSlots = Math.max(0, MAX_IMAGE_FILES - imageFiles.length);
+    if (remainingSlots === 0) {
+      toast.warning(`Maximum of ${MAX_IMAGE_FILES} images reached.`);
+      e.target.value = '';
+      return;
     }
 
-    setImageFiles(prev => [...prev, ...selectedFiles].slice(0, maxFiles));
+    const selectedFiles = files.slice(0, remainingSlots);
+
+    if (files.length > remainingSlots) {
+      toast.warning(`Only ${remainingSlots} image${remainingSlots === 1 ? '' : 's'} can be added. Maximum is ${MAX_IMAGE_FILES}.`);
+    }
+
+    setImageFiles(prev => [...prev, ...selectedFiles]);
 
     // Generate previews for all selected files
     selectedFiles.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreviews(prev => [...prev, String(reader.result)].slice(0, maxFiles));
+        setImagePreviews(prev => [...prev, String(reader.result)]);
       };
       reader.readAsDataURL(file);
     });
+
+    // Allow re-selecting the same file from the file picker.
+    e.target.value = '';
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -1152,21 +1161,25 @@ export default function SocialMediaTool() {
 
     if (imageFilesDropped.length === 0) return;
 
-    // Limit to 10 images max
-    const maxFiles = 10;
-    const selectedFiles = imageFilesDropped.slice(0, maxFiles);
-
-    if (imageFilesDropped.length > maxFiles) {
-      toast.warning(`Only ${maxFiles} images can be uploaded at once. Using the first ${maxFiles}.`);
+    const remainingSlots = Math.max(0, MAX_IMAGE_FILES - imageFiles.length);
+    if (remainingSlots === 0) {
+      toast.warning(`Maximum of ${MAX_IMAGE_FILES} images reached.`);
+      return;
     }
 
-    setImageFiles(prev => [...prev, ...selectedFiles].slice(0, maxFiles));
+    const selectedFiles = imageFilesDropped.slice(0, remainingSlots);
+
+    if (imageFilesDropped.length > remainingSlots) {
+      toast.warning(`Only ${remainingSlots} image${remainingSlots === 1 ? '' : 's'} can be added. Maximum is ${MAX_IMAGE_FILES}.`);
+    }
+
+    setImageFiles(prev => [...prev, ...selectedFiles]);
 
     // Generate previews for all selected files
     selectedFiles.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreviews(prev => [...prev, String(reader.result)].slice(0, maxFiles));
+        setImagePreviews(prev => [...prev, String(reader.result)]);
       };
       reader.readAsDataURL(file);
     });
@@ -3199,7 +3212,20 @@ export default function SocialMediaTool() {
                 </div>
               </div>
 
-              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (imagePreviews.length < MAX_IMAGE_FILES) {
+                    setIsDragging(true);
+                  }
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                className={`p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border transition-colors ${isDragging
+                  ? 'border-[#E1C37A]/60 bg-[#E1C37A]/5'
+                  : 'border-white/5'
+                  }`}
+              >
                 <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
                   Media <span className="text-[#5B5C60] font-normal">({imageFiles.length > 0 ? `${imageFiles.length} images` : imagePreview ? '1 image' : 'optional'})</span>
                 </h3>
@@ -3303,9 +3329,6 @@ export default function SocialMediaTool() {
                   </div>
                 ) : (
                   <div
-                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={handleDrop}
                     onClick={() => document.getElementById('file-upload')?.click()}
                     className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all duration-300 ${isDragging
                       ? 'border-[#E1C37A] bg-[#E1C37A]/5'
