@@ -191,6 +191,7 @@ export default function SocialMediaTool() {
   const [selectedTikTokAccountIds, setSelectedTikTokAccountIds] = useState<string[]>([]);
   const [connectedYouTubeChannels, setConnectedYouTubeChannels] = useState<ConnectedAccount[]>([]);
   const [selectedYouTubeChannelIds, setSelectedYouTubeChannelIds] = useState<string[]>([]);
+  const hasTriggeredVideoFirstRef = useRef(false);
 
   // Sync platforms with selected account IDs
   useEffect(() => {
@@ -310,6 +311,43 @@ export default function SocialMediaTool() {
   const selectedAiTokenCost = aiVideoTab === 'image' ? imageToVideoTokenCost : textToVideoTokenCost;
   const hasEnoughImageTokens = tokenBalance >= imageToVideoTokenCost;
   const hasEnoughTextTokens = tokenBalance >= textToVideoTokenCost;
+
+  useEffect(() => {
+    const busy = loading || isGeneratingPreview || isGeneratingAiVideo || loadingCredits || isPurchasingTokens;
+    window.dispatchEvent(new CustomEvent("scs-support-signal", { detail: { busy } }));
+  }, [loading, isGeneratingPreview, isGeneratingAiVideo, loadingCredits, isPurchasingTokens]);
+
+  useEffect(() => {
+    if (activeTab !== "video" || hasTriggeredVideoFirstRef.current) return;
+    hasTriggeredVideoFirstRef.current = true;
+    window.dispatchEvent(
+      new CustomEvent("scs-support-signal", { detail: { type: "video-first-time" } })
+    );
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!errorMsg) return;
+    window.dispatchEvent(
+      new CustomEvent("scs-support-signal", { detail: { type: "validation-error" } })
+    );
+  }, [errorMsg]);
+
+  useEffect(() => {
+    if (aiJobStatus !== "failed" || !aiJobError) return;
+    window.dispatchEvent(
+      new CustomEvent("scs-support-signal", { detail: { type: "error-video" } })
+    );
+    window.dispatchEvent(
+      new CustomEvent("scs-support-signal", { detail: { type: "validation-error" } })
+    );
+  }, [aiJobStatus, aiJobError]);
+
+  useEffect(() => {
+    if (!showTikTokAccountsModal) return;
+    window.dispatchEvent(
+      new CustomEvent("scs-support-signal", { detail: { type: "connect-step" } })
+    );
+  }, [showTikTokAccountsModal]);
 
   const TONE_OPTIONS = [
     "Professional",
@@ -1301,6 +1339,9 @@ export default function SocialMediaTool() {
 
     if (videoFilesSelected.length === 0) {
       toast.error('Please upload valid video files');
+      window.dispatchEvent(
+        new CustomEvent("scs-support-signal", { detail: { type: "validation-error" } })
+      );
       return;
     }
 
@@ -1353,6 +1394,9 @@ export default function SocialMediaTool() {
 
     if (!f.type.startsWith('image/')) {
       toast.error('Please upload a valid image file');
+      window.dispatchEvent(
+        new CustomEvent("scs-support-signal", { detail: { type: "validation-error" } })
+      );
       return;
     }
 

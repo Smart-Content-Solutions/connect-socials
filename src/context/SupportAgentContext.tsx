@@ -12,15 +12,19 @@ type SupportAgentConfig = {
     lastProactiveShownAt: number | null;
     dismissedUntil: number | null;
     hasOpenedChatBefore: boolean;
+    completedPages: string[];
 };
 
 const STORAGE_KEY = 'scs_support_agent_config';
+const SESSION_PAGES_KEY = 'scs_support_pages_session';
 
 // Timing Rules
 const NUDGE_DURATION = 8000;
 const COOLDOWN_24H = 24 * 60 * 60 * 1000;
 const COOLDOWN_7D = 7 * 24 * 60 * 60 * 1000;
 const COOLDOWN_30D = 30 * 24 * 60 * 60 * 1000;
+const TOOL_INACTIVITY_MS = 30000;
+const RECENT_TYPING_GRACE_MS = 2500;
 
 interface SupportAgentContextType {
     isOpen: boolean;
@@ -50,7 +54,26 @@ const loadConfig = (): SupportAgentConfig => {
         lastProactiveShownAt: null,
         dismissedUntil: null,
         hasOpenedChatBefore: false,
+        completedPages: [],
     };
+};
+
+const loadSessionPages = (): string[] => {
+    try {
+        const stored = sessionStorage.getItem(SESSION_PAGES_KEY);
+        if (stored) return JSON.parse(stored);
+    } catch (e) {
+        console.error('Failed to load support agent session pages:', e);
+    }
+    return [];
+};
+
+const saveSessionPages = (pages: string[]) => {
+    try {
+        sessionStorage.setItem(SESSION_PAGES_KEY, JSON.stringify(pages));
+    } catch (e) {
+        console.error('Failed to save support agent session pages:', e);
+    }
 };
 
 const saveConfig = (config: SupportAgentConfig) => {
@@ -83,6 +106,11 @@ export function SupportAgentProvider({ children }: { children: React.ReactNode }
     const sessionShowCountRef = useRef<number>(0);
     const hasShownForPathRef = useRef<Set<string>>(new Set());
     const hideNudgeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const validationErrorCountRef = useRef<number>(0);
+    const userInteractedRef = useRef<boolean>(false);
+    const lastInputAtRef = useRef<number>(0);
+    const inactivityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const sessionPagesShownRef = useRef<Set<string>>(new Set(loadSessionPages()));
 
     // Update config & localStorage
     const updateConfig = useCallback((updates: Partial<SupportAgentConfig>) => {
@@ -93,9 +121,27 @@ export function SupportAgentProvider({ children }: { children: React.ReactNode }
         });
     }, []);
 
+    const trackSessionPageShown = useCallback((path: string) => {
+        if (sessionPagesShownRef.current.has(path)) return;
+        sessionPagesShownRef.current.add(path);
+        saveSessionPages(Array.from(sessionPagesShownRef.current));
+    }, []);
+
+    const isBusyByUserInput = useCallback(() => {
+        const activeElement = document.activeElement as HTMLElement | null;
+        if (!activeElement) return false;
+        const tagName = activeElement.tagName.toLowerCase();
+        const isTypingField = tagName === 'input' || tagName === 'textarea' || activeElement.isContentEditable;
+        return isTypingField && Date.now() - lastInputAtRef.current < RECENT_TYPING_GRACE_MS;
+    }, []);
+
     // Can we show a proactive nudge?
     const canShowNudge = useCallback((): boolean => {
         if (isBusy) return false;
+        if (isOpen) return false;
+        if (isBusyByUserInput()) return false;
+        if (location.pathname.includes('/checkout')) return false;
+        if (location.pathname.includes('/success')) return false;
 
         const now = Date.now();
 
@@ -119,7 +165,7 @@ export function SupportAgentProvider({ children }: { children: React.ReactNode }
         }
 
         return true;
-    }, [isBusy, config.dismissedUntil, config.hasOpenedChatBefore, location.pathname]);
+    }, [isBusy, isOpen, isBusyByUserInput, config.dismissedUntil, config.hasOpenedChatBefore, location.pathname]);
 
     // Show sequence (Pulse -> Full Bubble on second trigger)
     const showNudge = useCallback((message: string, isSoftNudge = false) => {
@@ -137,13 +183,20 @@ export function SupportAgentProvider({ children }: { children: React.ReactNode }
             setIsPulseOnly(true);
             setIsNudgeVisible(true);
             // Pulse doesn't prevent second nudge, so we won't count it towards session limit.
+            if (hideNudgeTimeoutRef.current) clearTimeout(hideNudgeTimeoutRef.current);
+            hideNudgeTimeoutRef.current = setTimeout(() => {
+                setIsNudgeVisible(false);
+                setIsPulseOnly(false);
+            }, NUDGE_DURATION);
         } else {
             setIsPulseOnly(false);
             setNudgeMessage(message);
             setIsNudgeVisible(true);
             sessionShowCountRef.current += 1;
             hasShownForPathRef.current.add(location.pathname);
+            trackSessionPageShown(location.pathname);
             updateConfig({ lastProactiveShownAt: Date.now() });
+            validationErrorCountRef.current = 0;
 
             // Auto-hide
             if (hideNudgeTimeoutRef.current) clearTimeout(hideNudgeTimeoutRef.current);
@@ -151,7 +204,7 @@ export function SupportAgentProvider({ children }: { children: React.ReactNode }
                 setIsNudgeVisible(false);
             }, NUDGE_DURATION);
         }
-    }, [canShowNudge, location.pathname, updateConfig]);
+    }, [canShowNudge, location.pathname, trackSessionPageShown, updateConfig]);
 
     // Explicit Action Trigger Router
     const triggerProactiveAction = useCallback((type: string, payload?: string) => {
@@ -183,11 +236,28 @@ export function SupportAgentProvider({ children }: { children: React.ReactNode }
             case 'pricing-hover':
                 message = "Want the cheapest setup for your goals? I'll recommend a plan.";
                 break;
+            case 'pricing-faq':
+                message = "Not sure which plan fits? Tell me what you’re trying to automate.";
+                break;
             case 'connect-step':
                 message = "Stuck connecting your account? I'll walk you through it.";
                 break;
             case 'validation-error':
+                validationErrorCountRef.current += 1;
+                if (validationErrorCountRef.current < 2) return;
                 message = "I can fix this with you—paste the error message here.";
+                break;
+            case 'inactive-connect':
+                message = "Tell me what step you’re on and what error you see.";
+                break;
+            case 'inactive-social-upgrade':
+                message = "I can improve this post for engagement—want a quick upgrade?";
+                break;
+            case 'video-first-time':
+                message = "I can help you get a better video result on the first try.";
+                break;
+            case 'exit-intent':
+                message = payload || "Before you go... anything I can help with?";
                 break;
             default:
                 message = payload || "Need help? I'm here!";
@@ -196,6 +266,75 @@ export function SupportAgentProvider({ children }: { children: React.ReactNode }
 
         if (message) showNudge(message, soft);
     }, [canShowNudge, showNudge]);
+
+    useEffect(() => {
+        validationErrorCountRef.current = 0;
+    }, [location.pathname]);
+
+    // Track any user activity to support inactivity/no-interaction rules.
+    useEffect(() => {
+        const markInteracted = (event?: Event) => {
+            userInteractedRef.current = true;
+            if (!event) return;
+            if (event.type === 'keydown' || event.type === 'input') {
+                lastInputAtRef.current = Date.now();
+            }
+        };
+
+        const events: (keyof DocumentEventMap)[] = ['click', 'pointerdown', 'keydown', 'input', 'scroll'];
+        events.forEach((eventName) => {
+            document.addEventListener(eventName, markInteracted, { passive: true });
+        });
+
+        return () => {
+            events.forEach((eventName) => {
+                document.removeEventListener(eventName, markInteracted);
+            });
+        };
+    }, []);
+
+    // Tool-page inactivity trigger (25-40s target, fixed at 30s for predictability).
+    useEffect(() => {
+        const isToolPath =
+            location.pathname === '/tool' ||
+            location.pathname.includes('/social-posts') ||
+            location.pathname.includes('/apps/social-automation') ||
+            location.pathname.includes('/apps/wordpress-seo') ||
+            location.pathname.includes('/apps/ai-agent');
+
+        if (!isToolPath || !canShowNudge()) return;
+
+        const resetInactivityTimer = () => {
+            if (inactivityTimeoutRef.current) clearTimeout(inactivityTimeoutRef.current);
+            inactivityTimeoutRef.current = setTimeout(() => {
+                if (location.pathname.includes('/apps/wordpress-seo')) {
+                    triggerProactiveAction('inactive-connect');
+                    return;
+                }
+                if (location.pathname.includes('/apps/social-automation') || location.pathname.includes('/social-posts')) {
+                    triggerProactiveAction('inactive-social-post');
+                    return;
+                }
+                if (location.pathname.includes('/tool') || location.pathname.includes('/apps/ai-agent')) {
+                    triggerProactiveAction('inactive-social-upgrade');
+                }
+            }, TOOL_INACTIVITY_MS);
+        };
+
+        const events: (keyof DocumentEventMap)[] = ['click', 'pointerdown', 'keydown', 'input', 'scroll'];
+        events.forEach((eventName) => {
+            document.addEventListener(eventName, resetInactivityTimer, { passive: true });
+        });
+
+        resetInactivityTimer();
+
+        return () => {
+            if (inactivityTimeoutRef.current) clearTimeout(inactivityTimeoutRef.current);
+            events.forEach((eventName) => {
+                document.removeEventListener(eventName, resetInactivityTimer);
+            });
+        };
+    }, [location.pathname, canShowNudge, triggerProactiveAction]);
 
     // Track exit intent (desktop only)
     useEffect(() => {
@@ -218,18 +357,61 @@ export function SupportAgentProvider({ children }: { children: React.ReactNode }
 
         let timeout: NodeJS.Timeout;
         const isFirstVisit = !config.hasOpenedChatBefore && !config.lastProactiveShownAt;
+        const isPageCompleted = config.completedPages.includes(location.pathname);
+        if (!isFirstVisit && isPageCompleted) return;
         const delay = isFirstVisit ? 45000 : 90000;
 
         timeout = setTimeout(() => {
+            if (isFirstVisit && userInteractedRef.current) {
+                return;
+            }
             if (location.pathname === '/pricing') {
                 triggerProactiveAction('pricing-long');
-            } else if (location.pathname.includes('/tool')) {
+            } else if (
+                location.pathname.includes('/tool') ||
+                location.pathname.includes('/apps/social-automation') ||
+                location.pathname.includes('/apps/wordpress-seo') ||
+                location.pathname.includes('/apps/ai-agent') ||
+                location.pathname.includes('/social-posts')
+            ) {
                 triggerProactiveAction(isFirstVisit ? 'time-general-45' : 'time-general-90');
             }
         }, delay);
 
         return () => clearTimeout(timeout);
-    }, [location.pathname, canShowNudge, config.hasOpenedChatBefore, config.lastProactiveShownAt, triggerProactiveAction]);
+    }, [location.pathname, canShowNudge, config.hasOpenedChatBefore, config.lastProactiveShownAt, config.completedPages, triggerProactiveAction]);
+
+    // Custom signal bridge for page-level triggers without tightly coupling components.
+    useEffect(() => {
+        const handler = (event: Event) => {
+            const customEvent = event as CustomEvent<{
+                type?: string;
+                message?: string;
+                busy?: boolean;
+                pageCompleted?: string;
+            }>;
+            const detail = customEvent.detail;
+            if (!detail) return;
+
+            if (typeof detail.busy === 'boolean') {
+                setIsBusy(detail.busy);
+            }
+
+            if (detail.pageCompleted) {
+                const normalized = detail.pageCompleted;
+                if (!config.completedPages.includes(normalized)) {
+                    updateConfig({ completedPages: [...config.completedPages, normalized] });
+                }
+            }
+
+            if (detail.type) {
+                triggerProactiveAction(detail.type, detail.message);
+            }
+        };
+
+        window.addEventListener('scs-support-signal', handler as EventListener);
+        return () => window.removeEventListener('scs-support-signal', handler as EventListener);
+    }, [config.completedPages, triggerProactiveAction, updateConfig]);
 
     // Interactions
     const dismissNudge = useCallback((type: 'close' | 'notNow' = 'close') => {

@@ -20,6 +20,7 @@ export default function PricingCardsSection({
   const [highlightStyle, setHighlightStyle] = useState({ opacity: 0 });
   const [activeIndex, setActiveIndex] = useState(1);
   const gridRef = useRef<HTMLDivElement | null>(null);
+  const pricingHoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const iconMap = {
     Starter: Zap,
@@ -51,12 +52,14 @@ export default function PricingCardsSection({
     window.addEventListener("resize", handleResize);
     return () => {
       clearTimeout(timer);
+      if (pricingHoverTimerRef.current) clearTimeout(pricingHoverTimerRef.current);
       window.removeEventListener("resize", handleResize);
     };
   }, [activeIndex]);
 
   const handleStartTrial = async () => {
     try {
+      window.dispatchEvent(new CustomEvent("scs-support-signal", { detail: { busy: true } }));
       if (!isLoaded) {
         alert("Auth is loading, please try again.");
         return;
@@ -89,10 +92,17 @@ export default function PricingCardsSection({
         throw new Error(data?.error || "Checkout failed");
       }
 
+      window.dispatchEvent(
+        new CustomEvent("scs-support-signal", {
+          detail: { pageCompleted: "/pricing" },
+        })
+      );
       window.location.href = data.url;
     } catch (err) {
       console.error(err);
       alert("Failed to start checkout. Please try again.");
+    } finally {
+      window.dispatchEvent(new CustomEvent("scs-support-signal", { detail: { busy: false } }));
     }
   };
 
@@ -217,6 +227,17 @@ export default function PricingCardsSection({
             <div className="text-center">
               <button
                 onClick={handleStartTrial}
+                onMouseEnter={() => {
+                  if (pricingHoverTimerRef.current) clearTimeout(pricingHoverTimerRef.current);
+                  pricingHoverTimerRef.current = setTimeout(() => {
+                    window.dispatchEvent(
+                      new CustomEvent("scs-support-signal", { detail: { type: "pricing-hover" } })
+                    );
+                  }, 1200);
+                }}
+                onMouseLeave={() => {
+                  if (pricingHoverTimerRef.current) clearTimeout(pricingHoverTimerRef.current);
+                }}
                 className="w-full h-14 rounded-xl btn-gold text-base font-semibold hover:scale-[1.02] transition-transform"
               >
                 Start 3-Day Free Trial

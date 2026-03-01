@@ -12,6 +12,7 @@ export default function WordPressTool() {
     const [activeTab, setActiveTab] = useState<'create' | 'dashboard'>('dashboard');
     const [sites, setSites] = useState<WordPressSite[]>([]);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const hasPromptedConnectRef = useRef(false);
 
     const { user, isLoaded } = useUser();
 
@@ -116,6 +117,17 @@ export default function WordPressTool() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     }, [activeTab]);
+
+    useEffect(() => {
+        if (hasPromptedConnectRef.current) return;
+        if (activeTab !== 'dashboard') return;
+        if (sites.length > 0) return;
+
+        hasPromptedConnectRef.current = true;
+        window.dispatchEvent(
+            new CustomEvent("scs-support-signal", { detail: { type: "connect-step" } })
+        );
+    }, [activeTab, sites.length]);
 
     const saveSites = async (newSites: WordPressSite[]) => {
         // 1. Update State & Local Storage (Instant UI update)
