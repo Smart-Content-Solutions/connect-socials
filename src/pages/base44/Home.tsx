@@ -17,6 +17,7 @@ import ProblemSection from "../../components/home/ProblemSection";
 export default function Home() {
   const [email, setEmail] = useState("");
   const [videoLoaded, setVideoLoaded] = useState(false);
+  const [aspectRatio, setAspectRatio] = useState(16 / 9);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   return (
@@ -91,7 +92,10 @@ export default function Home() {
                   "0 0 20px rgba(225, 195, 122, 0.3), 0 0 40px rgba(225, 195, 122, 0.15)",
               }}
             >
-              <div className="aspect-video rounded-2xl bg-[#1A1A1C] relative overflow-hidden">
+              <div
+                className="w-full rounded-2xl bg-[#1A1A1C] relative overflow-hidden"
+                style={{ aspectRatio }}
+              >
                 <motion.video
                   ref={videoRef}
                   initial={{ opacity: 0 }}
@@ -101,9 +105,19 @@ export default function Home() {
                   muted
                   loop
                   playsInline
+                  onLoadedMetadata={() => {
+                    if (
+                      videoRef.current?.videoWidth &&
+                      videoRef.current?.videoHeight
+                    ) {
+                      setAspectRatio(
+                        videoRef.current.videoWidth / videoRef.current.videoHeight
+                      );
+                    }
+                  }}
                   onLoadedData={() => setVideoLoaded(true)}
                   className="w-full h-full object-cover rounded-2xl"
-                  src="YOUR_VIDEO_URL_HERE"
+                  src="/videos/landing-demo.mp4"
                 />
 
                 {!videoLoaded && (
