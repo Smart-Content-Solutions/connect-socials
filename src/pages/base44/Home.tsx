@@ -18,7 +18,34 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [videoLoaded, setVideoLoaded] = useState(false);
   const [aspectRatio, setAspectRatio] = useState(16 / 9);
+  const [featureHighlightStyle, setFeatureHighlightStyle] = useState<React.CSSProperties>({ opacity: 0 });
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const featureGridRef = useRef<HTMLDivElement | null>(null);
+
+  const handleFeatureHover = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (!featureGridRef.current) return;
+
+    const card = event.currentTarget;
+    const gridRect = featureGridRef.current.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+
+    const x = cardRect.left - gridRect.left;
+    const y = cardRect.top - gridRect.top;
+
+    setFeatureHighlightStyle({
+      opacity: 1,
+      transform: `translate(${x}px, ${y}px)`,
+      width: `${cardRect.width}px`,
+      height: `${cardRect.height}px`,
+    });
+  };
+
+  const clearFeatureHover = () => {
+    setFeatureHighlightStyle((prev) => ({
+      ...prev,
+      opacity: 0,
+    }));
+  };
 
   return (
     <div className="min-h-screen">
@@ -49,36 +76,53 @@ export default function Home() {
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="space-y-6"
+              className="relative"
             >
-              {[
-                { icon: Zap, title: "Instant Automation", desc: "Connect once. Watch it work forever." },
-                { icon: BarChart3, title: "Real Analytics", desc: "Numbers that actually mean something." },
-                { icon: Bot, title: "AI That Learns", desc: "Gets smarter with every campaign you run." },
-                { icon: Shield, title: "Enterprise Security", desc: "Bank-grade encryption. Zero compromises." },
-              ].map((item, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="flex gap-4 p-4 rounded-xl hover:bg-[#3B3C3E]/20 transition-colors"
-                >
-                  <div className="w-12 h-12 rounded-xl gold-gradient flex items-center justify-center flex-shrink-0">
-                    <item.icon className="w-6 h-6 text-[#1A1A1C]" />
-                  </div>
+              <div
+                className="absolute rounded-xl pointer-events-none transition-all duration-300 ease-out"
+                style={{
+                  background:
+                    "radial-gradient(circle at top left, rgba(225,195,122,0.22), rgba(15,15,16,0.3))",
+                  boxShadow:
+                    "0 0 40px rgba(225, 195, 122, 0.30), 0 0 60px rgba(225, 195, 122, 0.14)",
+                  backdropFilter: "blur(8px)",
+                  zIndex: 0,
+                  ...featureHighlightStyle,
+                }}
+              />
 
-                  <div>
-                    <h4 className="font-semibold text-white mb-1">
-                      {item.title}
-                    </h4>
-                    <p className="text-sm text-[#A9AAAC]">
-                      {item.desc}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
+              <div ref={featureGridRef} className="relative z-10 space-y-6">
+                {[
+                  { icon: Zap, title: "Instant Automation", desc: "Connect once. Watch it work forever." },
+                  { icon: BarChart3, title: "Real Analytics", desc: "Numbers that actually mean something." },
+                  { icon: Bot, title: "AI That Learns", desc: "Gets smarter with every campaign you run." },
+                  { icon: Shield, title: "Enterprise Security", desc: "Bank-grade encryption. Zero compromises." },
+                ].map((item, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.1 }}
+                    onMouseEnter={handleFeatureHover}
+                    onMouseLeave={clearFeatureHover}
+                    className="group flex gap-4 p-4 rounded-xl hover:bg-[#3B3C3E]/20 transition-transform duration-200 hover:-translate-y-1 cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-xl gold-gradient flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-6 h-6 text-[#1A1A1C]" />
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold text-white mb-1">
+                        {item.title}
+                      </h4>
+                      <p className="text-sm text-[#A9AAAC]">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </motion.div>
 
             {/* RIGHT VIDEO */}
