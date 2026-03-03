@@ -107,9 +107,12 @@ const mapWpPostToBlogPost = (wpPost: WpPost): BlogPost => {
  * @param page - Page number (default: 1)
  * @returns Promise<BlogPost[]> - Array of blog posts
  */
-export async function fetchWpPosts(page: number = 1): Promise<BlogPost[]> {
+export async function fetchWpPosts(
+  page: number = 1,
+  perPage: number = 12
+): Promise<BlogPost[]> {
   try {
-    const url = `${WP_API_BASE}/posts?per_page=12&page=${page}&_embed`;
+    const url = `${WP_API_BASE}/posts?per_page=${perPage}&page=${page}&_embed`;
     const response = await fetch(url);
 
     if (!response.ok) {

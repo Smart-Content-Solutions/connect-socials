@@ -31,10 +31,6 @@ export default function BlogCard({ post }: BlogCardProps) {
             alt={post.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
-          {/* Category Badge */}
-          <span className="absolute top-4 left-4 px-3 py-1 bg-[#E1C37A] text-[#1A1A1C] text-xs font-semibold rounded-full">
-            {post.category}
-          </span>
         </div>
 
         {/* Content */}

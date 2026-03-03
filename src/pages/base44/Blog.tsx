@@ -1,15 +1,48 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import BlogHero from "../../components/blog/BlogHero";
 import BlogGrid from "../../components/blog/BlogGrid";
 import { BlogPost } from "../../components/blog/BlogCard";
 import { fetchWpPosts } from "../../components/blog/blogApi";
+import BlogManageModal from "../../components/blog/BlogManageModal";
+import {
+  AssignmentMap,
+  fetchBlogSections,
+  saveBlogSections,
+} from "../../components/blog/blogSectionsApi";
+import { useSubscription } from "../../components/subscription/useSubscription";
+import { useAuth } from "@clerk/clerk-react";
+import { toast } from "sonner";
 
 export default function Blog() {
+  const { user } = useSubscription();
+  const { getToken } = useAuth();
+
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [assignments, setAssignments] = useState<AssignmentMap>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [managePosts, setManagePosts] = useState<BlogPost[]>([]);
+  const [manageLoading, setManageLoading] = useState(false);
+  const [manageSaving, setManageSaving] = useState(false);
+
+  const isAdmin =
+    user?.base_tier === "admin" || user?.publicMetadata?.role === "admin";
+
+  useEffect(() => {
+    const loadAssignments = async () => {
+      try {
+        const data = await fetchBlogSections();
+        setAssignments(data);
+      } catch {
+        // Non-fatal for blog page; default split still works.
+      }
+    };
+
+    loadAssignments();
+  }, []);
 
   useEffect(() => {
     const loadPosts = async () => {
@@ -35,9 +68,54 @@ export default function Blog() {
     loadPosts();
   }, [currentPage]);
 
+  const ourPosts = useMemo(
+    () => posts.filter((post) => assignments[String(post.id)] !== "client"),
+    [posts, assignments]
+  );
+
+  const clientPosts = useMemo(
+    () => posts.filter((post) => assignments[String(post.id)] === "client"),
+    [posts, assignments]
+  );
+
   const handleLoadMore = () => {
     if (!loading && hasMore) {
       setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const handleOpenManage = async () => {
+    if (!isAdmin) return;
+    setManageOpen(true);
+
+    if (managePosts.length > 0 || manageLoading) return;
+    setManageLoading(true);
+
+    try {
+      const fetchedPosts = await fetchWpPosts(1, 100);
+      setManagePosts(fetchedPosts);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to load posts for management");
+    } finally {
+      setManageLoading(false);
+    }
+  };
+
+  const handleSaveAssignments = async (nextAssignments: AssignmentMap) => {
+    setManageSaving(true);
+    try {
+      const token = await getToken();
+      if (!token) {
+        throw new Error("You must be signed in as admin to save changes.");
+      }
+      const savedAssignments = await saveBlogSections(nextAssignments, token);
+      setAssignments(savedAssignments);
+      toast.success("Blog sections updated");
+      setManageOpen(false);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save blog sections");
+    } finally {
+      setManageSaving(false);
     }
   };
 
@@ -98,6 +176,18 @@ export default function Blog() {
       <BlogHero />
       <section className="py-16 bg-[#1A1A1C]">
         <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+            <h2 className="text-3xl font-bold text-white">Our Posts</h2>
+            {isAdmin && (
+              <button
+                onClick={handleOpenManage}
+                className="px-4 py-2 rounded-md bg-[#E1C37A] text-[#1A1A1C] font-semibold hover:bg-[#E1C37A]/90 transition-colors"
+              >
+                Manage
+              </button>
+            )}
+          </div>
+
           {/* Loading state */}
           {loading && posts.length === 0 && (
             <div className="text-center py-12 text-[#A9AAAC]">
@@ -114,8 +204,24 @@ export default function Blog() {
             </div>
           )}
 
-          {/* Posts grid */}
-          {posts.length > 0 && <BlogGrid posts={posts} />}
+          {/* Our Posts grid */}
+          {ourPosts.length > 0 && <BlogGrid posts={ourPosts} />}
+          {!loading && !error && ourPosts.length === 0 && posts.length > 0 && (
+            <div className="text-center py-12 text-[#A9AAAC]">
+              No posts in this section yet.
+            </div>
+          )}
+
+          {/* Client section */}
+          {posts.length > 0 && (
+            <div className="mt-14">
+              <h2 className="text-3xl font-bold text-white mb-6">Our Clients</h2>
+              <BlogGrid
+                posts={clientPosts}
+                emptyMessage="No client posts available."
+              />
+            </div>
+          )}
 
           {/* Empty state */}
           {!loading && !error && posts.length === 0 && (
@@ -145,6 +251,22 @@ export default function Blog() {
           )}
         </div>
       </section>
+
+      <BlogManageModal
+        isOpen={manageOpen}
+        posts={managePosts}
+        assignments={assignments}
+        saving={manageSaving}
+        onClose={() => setManageOpen(false)}
+        onSave={handleSaveAssignments}
+      />
+      {manageOpen && manageLoading && (
+        <div className="fixed inset-0 z-[60] pointer-events-none flex items-center justify-center">
+          <div className="bg-[#0F0F10]/95 border border-[#3B3C3E] rounded-lg px-4 py-3 text-[#A9AAAC]">
+            Loading posts...
+          </div>
+        </div>
+      )}
     </div>
   );
 }
