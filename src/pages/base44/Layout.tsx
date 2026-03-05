@@ -206,6 +206,18 @@ function LayoutContent({ children }: { children: ReactNode }) {
                 <Link to="/contact" className="block text-sm text-[#A9AAAC] hover:text-white">
                   Book a Call
                 </Link>
+                <Link
+                  to="/contact?feedback=bug#feedback"
+                  className="block text-sm text-[#A9AAAC] hover:text-white"
+                >
+                  Report a Bug
+                </Link>
+                <Link
+                  to="/contact?feedback=feature#feedback"
+                  className="block text-sm text-[#A9AAAC] hover:text-white"
+                >
+                  Request a Feature
+                </Link>
               </div>
             </div>
           </div>
