@@ -2,6 +2,7 @@ import { clerkClient } from "@clerk/clerk-sdk-node";
 import { verifyToken } from "@clerk/backend";
 import { createClient } from "@supabase/supabase-js";
 import { sendTicketEmailEvent } from "../utils/ticket-email.js";
+import { createAdminNotification } from "../utils/admin-notifications.js";
 
 function getBearerToken(req: any): string | null {
   const header = req.headers?.authorization || req.headers?.Authorization;
@@ -223,6 +224,22 @@ export default async function handler(req: any, res: any) {
         sendTicketEmailEvent("ticket_assigned", data).catch((err) => {
           console.error("[Admin Tickets] Failed to send assignment email:", err);
         });
+
+        createAdminNotification(supabase, {
+          recipientUserId: data.assigned_to_user_id,
+          type: "ticket_assigned",
+          title: "Ticket assigned to you",
+          message: `You were assigned: ${data.subject}`,
+          entityType: "ticket",
+          entityId: data.id,
+          metadata: {
+            ticketId: data.id,
+            priority: data.priority,
+            assignedBy: auth.userId,
+          },
+        }).catch((err) => {
+          console.error("[Admin Tickets] Failed to create assignment notification:", err);
+        });
       }
 
       // Send email notification for status changes
@@ -230,6 +247,24 @@ export default async function handler(req: any, res: any) {
         sendTicketEmailEvent("ticket_status_updated", data).catch((err) => {
           console.error("[Admin Tickets] Failed to send status update email:", err);
         });
+
+        if (data.assigned_to_user_id && data.assigned_to_user_id !== auth.userId) {
+          createAdminNotification(supabase, {
+            recipientUserId: data.assigned_to_user_id,
+            type: "ticket_status_changed",
+            title: "Ticket status updated",
+            message: `${data.subject} moved to ${data.status.replace(/_/g, " ")}`,
+            entityType: "ticket",
+            entityId: data.id,
+            metadata: {
+              ticketId: data.id,
+              status: data.status,
+              updatedBy: auth.userId,
+            },
+          }).catch((err) => {
+            console.error("[Admin Tickets] Failed to create status notification:", err);
+          });
+        }
       }
 
       return res.status(200).json({ ticket: data });

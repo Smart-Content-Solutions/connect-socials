@@ -158,15 +158,15 @@ export default function Contact() {
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
                   <Mail className="w-5 h-5" />
-                  <p className="text-[#D6D7D8]">hello@smartcontentsolutions.co</p>
+                  <p className="text-[#D6D7D8]">support@smartcontentsolutions.co.uk</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <Phone className="w-5 h-5" />
-                  <p className="text-[#D6D7D8]">+1 (555) 123-4567</p>
+                  <p className="text-[#D6D7D8]">+447904455177</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <MapPin className="w-5 h-5" />
-                  <p className="text-[#D6D7D8]">London, UK (Remote-first)</p>
+                  <p className="text-[#D6D7D8]">Cheshire</p>
                 </div>
               </div>
             </motion.div>

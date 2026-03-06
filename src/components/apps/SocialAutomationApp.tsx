@@ -46,7 +46,8 @@ import type { ToolType } from "@/types/draft";
 import {
   initiateLinkedInAuth,
   clearLinkedInAuthData,
-  isLinkedInConnected
+  isLinkedInConnected,
+  getLinkedInAuthData
 } from "@/utils/linkedinOAuth";
 
 import {
@@ -1069,6 +1070,108 @@ export default function SocialMediaTool() {
       isConnected: () => false
     }
   ];
+
+  const getConnectedIdentityLabel = useCallback((platformId: string): string => {
+    const summarizeNames = (label: string, names: Array<string | null | undefined>): string | null => {
+      const uniqueNames = Array.from(
+        new Set(
+          names
+            .map(name => (typeof name === "string" ? name.trim() : ""))
+            .filter(Boolean)
+        )
+      );
+
+      if (uniqueNames.length === 0) return null;
+      if (uniqueNames.length === 1) return `${label}: ${uniqueNames[0]}`;
+      return `${label}: ${uniqueNames[0]} +${uniqueNames.length - 1} more`;
+    };
+
+    if (platformId === "facebook") {
+      if (selectedFacebookPage?.name) {
+        return `Page: ${selectedFacebookPage.name}`;
+      }
+
+      const selectedPages = connectedFacebookPages.filter(page =>
+        selectedFacebookPageIds.includes(page.id)
+      );
+      const selectedPagesLabel = summarizeNames(
+        "Pages",
+        selectedPages.length > 0 ? selectedPages.map(page => page.name) : connectedFacebookPages.map(page => page.name)
+      );
+      if (selectedPagesLabel) return selectedPagesLabel;
+
+      const facebookAuthData = getFacebookAuthData();
+      if (facebookAuthData?.name) return `Login: ${facebookAuthData.name}`;
+      return "Connected";
+    }
+
+    if (platformId === "instagram") {
+      const selectedAccounts = connectedInstagramPages.filter(account =>
+        selectedInstagramPageIds.includes(account.id)
+      );
+      const selectedAccountsLabel = summarizeNames(
+        "Accounts",
+        selectedAccounts.length > 0 ? selectedAccounts.map(account => account.nickname || account.name) : connectedInstagramPages.map(account => account.nickname || account.name)
+      );
+      if (selectedAccountsLabel) return selectedAccountsLabel;
+
+      if (instagramData?.username) return `Connected as @${instagramData.username}`;
+      if (instagramData?.name) return `Connected as ${instagramData.name}`;
+      return "Connected";
+    }
+
+    if (platformId === "linkedin") {
+      const linkedInAuthData = getLinkedInAuthData();
+      const fullName = [linkedInAuthData?.firstName, linkedInAuthData?.lastName].filter(Boolean).join(" ").trim();
+      if (fullName) return `Profile: ${fullName}`;
+      if (linkedInAuthData?.emailAddress) return `Login: ${linkedInAuthData.emailAddress}`;
+      if (linkedInAuthData?.linkedin_user_id) return `ID: ${linkedInAuthData.linkedin_user_id}`;
+      return "Connected";
+    }
+
+    if (platformId === "tiktok") {
+      const selectedAccounts = connectedTikTokAccounts.filter(account =>
+        selectedTikTokAccountIds.includes(account.id)
+      );
+      const selectedAccountsLabel = summarizeNames(
+        "Accounts",
+        selectedAccounts.length > 0 ? selectedAccounts.map(account => account.nickname || account.name) : connectedTikTokAccounts.map(account => account.nickname || account.name)
+      );
+      if (selectedAccountsLabel) return selectedAccountsLabel;
+      return "Connected";
+    }
+
+    if (platformId === "youtube") {
+      const selectedChannels = connectedYouTubeChannels.filter(channel =>
+        selectedYouTubeChannelIds.includes(channel.id)
+      );
+      const selectedChannelsLabel = summarizeNames(
+        "Channels",
+        selectedChannels.length > 0 ? selectedChannels.map(channel => channel.name) : connectedYouTubeChannels.map(channel => channel.name)
+      );
+      if (selectedChannelsLabel) return selectedChannelsLabel;
+      return "Connected";
+    }
+
+    if (platformId === "bluesky") {
+      const blueskyCredentials = getBlueskyCredentials();
+      if (blueskyCredentials?.username) return `Handle: ${blueskyCredentials.username}`;
+      return "Connected";
+    }
+
+    return "Connected";
+  }, [
+    connectedFacebookPages,
+    connectedInstagramPages,
+    connectedTikTokAccounts,
+    connectedYouTubeChannels,
+    instagramData,
+    selectedFacebookPage,
+    selectedFacebookPageIds,
+    selectedInstagramPageIds,
+    selectedTikTokAccountIds,
+    selectedYouTubeChannelIds,
+  ]);
 
   const handleCardMouseEnter = useCallback((e: React.MouseEvent) => {
     const card = e.currentTarget;
@@ -2862,11 +2965,7 @@ export default function SocialMediaTool() {
                         <h3 className="text-[#D6D7D8] font-semibold text-lg mb-1">{p.name}</h3>
                         <p className="text-[#5B5C60] text-sm mb-4">
                           {connected
-                            ? (p.id === 'facebook' && selectedFacebookPage
-                              ? `Page: ${selectedFacebookPage.name}`
-                              : p.id === 'instagram'
-                                ? `Connected as @${instagramData?.username || 'User'}`
-                                : 'Connected')
+                            ? getConnectedIdentityLabel(p.id)
                             : 'Not connected'}
                         </p>
 
@@ -3037,11 +3136,7 @@ export default function SocialMediaTool() {
                         <h3 className="text-[#D6D7D8] font-semibold text-lg mb-1">{displayName}</h3>
                         <p className="text-[#5B5C60] text-sm mb-4">
                           {connected
-                            ? (p.id === 'facebook' && selectedFacebookPage
-                              ? `Page: ${selectedFacebookPage.name}`
-                              : p.id === 'instagram'
-                                ? `Connected as @${instagramData?.username || 'User'}`
-                                : 'Connected')
+                            ? getConnectedIdentityLabel(p.id)
                             : 'Not connected'}
                         </p>
 

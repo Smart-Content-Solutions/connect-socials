@@ -2,6 +2,7 @@ import { clerkClient } from "@clerk/clerk-sdk-node";
 import { verifyToken } from "@clerk/backend";
 import { createClient } from "@supabase/supabase-js";
 import { sendTicketEmailEvent } from "../utils/ticket-email.js";
+import { createNotificationsForAdmins } from "../utils/admin-notifications.js";
 
 function getBearerToken(req: any): string | null {
   const header = req.headers?.authorization || req.headers?.Authorization;
@@ -174,6 +175,25 @@ export default async function handler(req: any, res: any) {
       if (currentTicket) {
         await sendTicketEmailEvent("user_replied", currentTicket, comment).catch((err) => {
           console.error("[Tickets/Comments] Failed to send user_replied email:", err);
+        });
+
+        await createNotificationsForAdmins(
+          supabase,
+          {
+            type: "ticket_user_replied",
+            title: "Customer replied to ticket",
+            message: `${currentTicket.created_by_name || "Customer"} replied on: ${currentTicket.subject}`,
+            entityType: "ticket",
+            entityId: currentTicket.id,
+            metadata: {
+              ticketId: currentTicket.id,
+              commentId: comment.id,
+              status: currentTicket.status,
+            },
+          },
+          { excludeUserId: userId }
+        ).catch((err) => {
+          console.error("[Tickets/Comments] Failed to create in-app admin notification:", err);
         });
       }
 
