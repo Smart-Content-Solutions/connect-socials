@@ -226,6 +226,7 @@ export default function Account() {
     (user.publicMetadata?.base_tier as string) ||
     (user.publicMetadata?.role as string) ||
     "free";
+  const isAdmin = role === "admin";
   const planName =
     (user.publicMetadata?.subscription_plan as string) ||
     (user.publicMetadata?.planName as string) ||
@@ -351,6 +352,11 @@ export default function Account() {
                   <p className="text-xs text-[#A9AAAC]">
                     Connected devices: <span className="text-[#E1C37A] font-semibold">{activeCount} / {maxAllowed}</span>
                   </p>
+                  {isAdmin && (
+                    <p className="text-[11px] text-blue-300 mt-1">
+                      Admin accounts are exempt from the 3-device limit.
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={refreshSessions}
@@ -362,7 +368,7 @@ export default function Account() {
                 </button>
               </div>
 
-              {isOverLimit && (
+              {!isAdmin && isOverLimit && (
                 <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-300">
                   Device limit reached. Sign out an old device to keep using your account.
                 </div>

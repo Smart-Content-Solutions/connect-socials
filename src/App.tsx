@@ -90,7 +90,12 @@ const queryClient = new QueryClient();
 
 // ✅ Protected Route
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, isLoaded, user } = useUser();
+  const role =
+    (user?.publicMetadata?.base_tier as string) ||
+    (user?.publicMetadata?.role as string) ||
+    "free";
+  const isAdmin = role === "admin";
   const {
     sessions,
     activeCount,
@@ -117,7 +122,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     <>
       {children}
       <SessionLimitModal
-        open={isOverLimit}
+        open={!isAdmin && isOverLimit}
         activeCount={activeCount}
         maxAllowed={maxAllowed}
         sessions={sessions}
