@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, createRoutesFromElements, Route, Navigate, Outlet, RouterProvider } from "react-router-dom";
-import { useUser, SignIn } from "@clerk/clerk-react";
+import { useUser } from "@clerk/clerk-react";
 import SocialAutomationApp from "./components/apps/SocialAutomationApp";
 import { SupportAgentProvider } from "./context/SupportAgentContext";
 
@@ -73,6 +73,9 @@ import AdminRoute from "./components/admin/AdminRoute";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import PlannerApp from "./planner_section/PlannerApp";
 import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
+import SessionLimitModal from "./components/account/SessionLimitModal";
+import { useAccountSessions } from "./hooks/useAccountSessions";
+import { toast } from "sonner";
 
 // ✅ Feedback
 import FeedbackPrompt from "./components/feedback/FeedbackPrompt";
@@ -88,6 +91,15 @@ const queryClient = new QueryClient();
 // ✅ Protected Route
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isSignedIn, isLoaded } = useUser();
+  const {
+    sessions,
+    activeCount,
+    maxAllowed,
+    loading,
+    error,
+    isOverLimit,
+    revokeSession,
+  } = useAccountSessions(isSignedIn);
 
   if (!isLoaded) {
     return (
@@ -97,7 +109,36 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  return isSignedIn ? children : <Navigate to="/login" replace />;
+  if (!isSignedIn) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return (
+    <>
+      {children}
+      <SessionLimitModal
+        open={isOverLimit}
+        activeCount={activeCount}
+        maxAllowed={maxAllowed}
+        sessions={sessions}
+        loading={loading}
+        error={error}
+        onRevoke={async (sessionId) => {
+          try {
+            await revokeSession(sessionId);
+            toast.success("Device signed out successfully.");
+          } catch (revokeError: unknown) {
+            const message =
+              revokeError instanceof Error
+                ? revokeError.message
+                : "Failed to sign out that device.";
+            toast.error(message);
+            throw revokeError;
+          }
+        }}
+      />
+    </>
+  );
 };
 
 const RootLayout = () => (

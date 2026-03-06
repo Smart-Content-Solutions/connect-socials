@@ -18,11 +18,14 @@ import {
   Minus,
   History,
   ShoppingCart,
-  Zap
+  Zap,
+  Monitor,
+  RefreshCw
 } from "lucide-react";
 import { useUser, useClerk, useSession } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useAccountSessions } from "@/hooks/useAccountSessions";
 
 // Token costs
 const TOKEN_PRICE = 0.10;
@@ -42,6 +45,21 @@ type CreditTransaction = {
   created_at: string;
 };
 
+function formatRelativeTime(dateStr: string | null): string {
+  if (!dateStr) return "Unknown activity";
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return "Unknown activity";
+
+  const diffMs = Date.now() - date.getTime();
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 export default function Account() {
   const { user, isLoaded, isSignedIn } = useUser();
   const { signOut } = useClerk();
@@ -58,6 +76,17 @@ export default function Account() {
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [grantingTokens, setGrantingTokens] = useState(false);
   const hasAttemptedGrant = React.useRef(false);
+  const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
+  const {
+    sessions: accountSessions,
+    activeCount,
+    maxAllowed,
+    loading: loadingSessions,
+    error: sessionsError,
+    isOverLimit,
+    refresh: refreshSessions,
+    revokeSession,
+  } = useAccountSessions(isSignedIn);
 
   // Fetch credits from API
   const fetchCredits = useCallback(async () => {
@@ -255,6 +284,18 @@ export default function Account() {
       " " + d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
   };
 
+  const handleRevokeSession = async (sessionId: string) => {
+    try {
+      setRevokingSessionId(sessionId);
+      await revokeSession(sessionId);
+      toast.success("Device signed out successfully.");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to sign out device");
+    } finally {
+      setRevokingSessionId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen pt-24 pb-20">
       <div className="max-w-5xl mx-auto px-6">
@@ -302,6 +343,81 @@ export default function Account() {
               <LogOut className="w-4 h-4" />
               Sign Out
             </button>
+
+            <div className="mt-6 pt-5 border-t border-[#3B3C3E]">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Current Sessions</h3>
+                  <p className="text-xs text-[#A9AAAC]">
+                    Connected devices: <span className="text-[#E1C37A] font-semibold">{activeCount} / {maxAllowed}</span>
+                  </p>
+                </div>
+                <button
+                  onClick={refreshSessions}
+                  disabled={loadingSessions}
+                  className="text-xs text-[#A9AAAC] hover:text-[#E1C37A] transition-colors inline-flex items-center gap-1"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingSessions ? "animate-spin" : ""}`} />
+                  Refresh
+                </button>
+              </div>
+
+              {isOverLimit && (
+                <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs text-amber-300">
+                  Device limit reached. Sign out an old device to keep using your account.
+                </div>
+              )}
+
+              {loadingSessions ? (
+                <div className="py-4 flex items-center justify-center">
+                  <Loader2 className="w-4 h-4 animate-spin text-[#E1C37A]" />
+                </div>
+              ) : sessionsError ? (
+                <div className="text-xs text-red-400">{sessionsError}</div>
+              ) : accountSessions.length === 0 ? (
+                <div className="text-xs text-[#5B5C60]">No active sessions found.</div>
+              ) : (
+                <div className="space-y-2">
+                  {accountSessions.slice(0, 4).map((sessionData) => (
+                    <div
+                      key={sessionData.id}
+                      className="rounded-lg border border-[#3B3C3E] bg-[#1A1A1C]/60 p-2.5"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs text-white font-medium truncate flex items-center gap-1.5">
+                            <Monitor className="w-3.5 h-3.5 text-[#A9AAAC]" />
+                            {sessionData.deviceLabel || "Browser session"}
+                          </p>
+                          <p className="text-[11px] text-[#5B5C60] mt-0.5">
+                            Active {formatRelativeTime(sessionData.lastActiveAt)}
+                          </p>
+                        </div>
+
+                        {sessionData.isCurrent ? (
+                          <span className="text-[11px] px-2 py-1 rounded-full bg-[#E1C37A]/15 text-[#E1C37A] border border-[#E1C37A]/20">
+                            Current
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleRevokeSession(sessionData.id)}
+                            disabled={revokingSessionId === sessionData.id}
+                            className="text-[11px] px-2 py-1 rounded-lg border border-[#3B3C3E] text-[#A9AAAC] hover:text-white hover:border-[#E1C37A]/40 transition-colors disabled:opacity-50"
+                          >
+                            {revokingSessionId === sessionData.id ? "Signing out..." : "Sign out device"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {accountSessions.length > 4 && (
+                    <p className="text-[11px] text-[#5B5C60]">
+                      Showing 4 of {accountSessions.length} sessions
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </motion.div>
 
           {/* ✅ SUBSCRIPTION DETAILS */}
