@@ -3,13 +3,17 @@ import BlogCard, { BlogPost } from "./BlogCard";
 
 interface BlogGridProps {
   posts: BlogPost[];
+  emptyMessage?: string;
 }
 
-export default function BlogGrid({ posts }: BlogGridProps) {
+export default function BlogGrid({
+  posts,
+  emptyMessage = "No blog posts available.",
+}: BlogGridProps) {
   if (posts.length === 0) {
     return (
       <div className="text-center py-12 text-[#A9AAAC]">
-        No blog posts available.
+        {emptyMessage}
       </div>
     );
   }

@@ -2,6 +2,7 @@ import { clerkClient } from "@clerk/clerk-sdk-node";
 import { verifyToken } from "@clerk/backend";
 import { createClient } from "@supabase/supabase-js";
 import { sendFeedbackNotification } from "./utils/feedback-notifications.js";
+import { createNotificationsForAdmins } from "./utils/admin-notifications.js";
 
 function getBearerToken(req: any): string | null {
   const header = req.headers?.authorization || req.headers?.Authorization;
@@ -204,6 +205,26 @@ export default async function handler(req: any, res: any) {
     } catch (err) {
       console.error("[Feedback] Failed to send notification:", err);
     }
+
+    await createNotificationsForAdmins(
+      supabase,
+      {
+        type: "feedback_submitted",
+        title: "New feedback submitted",
+        message: `${name || "A user"} left ${data.rating}/5 feedback in ${data.category}`,
+        entityType: "feedback",
+        entityId: data.id,
+        metadata: {
+          feedbackId: data.id,
+          rating: data.rating,
+          category: data.category,
+          pageUrl: data.page_url,
+        },
+      },
+      { excludeUserId: userId }
+    ).catch((err) => {
+      console.error("[Feedback] Failed to create in-app admin notification:", err);
+    });
 
     return res.status(201).json({ feedback: data });
   } catch (err: any) {

@@ -29,6 +29,15 @@ function getOrigin(req: any): string {
     );
 }
 
+function getSafeInternalPath(path: unknown, fallback: string): string {
+    if (typeof path !== "string") return fallback;
+    const trimmed = path.trim();
+    if (!trimmed.startsWith("/")) return fallback;
+    if (trimmed.startsWith("//")) return fallback;
+    if (trimmed.includes("\r") || trimmed.includes("\n")) return fallback;
+    return trimmed;
+}
+
 export default async function handler(req: any, res: any) {
     if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
@@ -86,6 +95,9 @@ export default async function handler(req: any, res: any) {
             tokenAmount = parseInt(tokenAmount, 10);
         }
 
+        const successPath = getSafeInternalPath(body?.successPath, "/account?tokens=success");
+        const cancelPath = getSafeInternalPath(body?.cancelPath, "/account?tokens=cancelled");
+
         if (!tokenAmount || typeof tokenAmount !== "number" || isNaN(tokenAmount) || tokenAmount < 10 || tokenAmount > 500) {
             return res.status(400).json({ error: "tokenAmount must be a number between 10 and 500" });
         }
@@ -108,8 +120,8 @@ export default async function handler(req: any, res: any) {
                 type: "token_purchase",
                 tokenAmount: String(tokenAmount),
             },
-            success_url: `${origin}/account?tokens=success`,
-            cancel_url: `${origin}/account?tokens=cancelled`,
+            success_url: `${origin}${successPath}`,
+            cancel_url: `${origin}${cancelPath}`,
         });
 
         return res.status(200).json({ url: session.url });

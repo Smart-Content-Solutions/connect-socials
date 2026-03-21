@@ -5,11 +5,15 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Lock, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { hasEntitlement, hasAccessToFeature, FEATURE_ENTITLEMENTS } from "@/lib/entitlements";
+import { userHasToolAccess, getDefaultRoleConfig } from "@/lib/roleConfig";
+
+type RoleId = "admin" | "early_access" | "pro" | "free";
 
 interface RoleProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: "admin" | "early_access" | "user";
-  allowedRoles?: Array<"admin" | "early_access" | "user">;
+  requiredRole?: RoleId;
+  allowedRoles?: RoleId[];
+  requiredToolId?: string;
   requiredEntitlement?: string;
   requiredFeature?: keyof typeof FEATURE_ENTITLEMENTS;
 }
@@ -27,6 +31,7 @@ export default function RoleProtectedRoute({
   children,
   requiredRole,
   allowedRoles,
+  requiredToolId,
   requiredEntitlement,
   requiredFeature,
 }: RoleProtectedRouteProps) {
@@ -50,14 +55,21 @@ export default function RoleProtectedRoute({
   }
 
   // Get user's role and entitlements from public metadata
-  const userRole = (user?.publicMetadata?.role as string) || "user";
-  const baseTier = (user?.publicMetadata?.base_tier as string) || userRole || "free";
+  const userRole = (user?.publicMetadata?.role as RoleId | undefined) || "free";
+  const baseTier = (user?.publicMetadata?.base_tier as RoleId | undefined) || userRole || "free";
   const entitlements = (user?.publicMetadata?.entitlements as string[]) || [];
 
   // Check if user has required access
   let hasAccess = false;
 
-  if (requiredEntitlement) {
+  if (requiredToolId) {
+    hasAccess = userHasToolAccess(
+      baseTier,
+      entitlements,
+      requiredToolId,
+      getDefaultRoleConfig()
+    );
+  } else if (requiredEntitlement) {
     // New entitlement-based check
     hasAccess = hasEntitlement(entitlements, baseTier, requiredEntitlement);
   } else if (requiredFeature) {
@@ -67,7 +79,7 @@ export default function RoleProtectedRoute({
     // Backward compatible role check
     hasAccess = baseTier === requiredRole || userRole === requiredRole;
   } else if (allowedRoles && allowedRoles.length > 0) {
-    hasAccess = allowedRoles.includes(baseTier as any) || allowedRoles.includes(userRole as any);
+    hasAccess = allowedRoles.includes(baseTier as RoleId) || allowedRoles.includes(userRole as RoleId);
   } else {
     // No role requirement specified, allow access
     hasAccess = true;
@@ -144,7 +156,7 @@ export default function RoleProtectedRoute({
               Upgrade to Early Access
             </Button>
             <Button
-              onClick={() => window.location.href = "/dashboard-preview"}
+              onClick={() => window.location.href = "/dashboard"}
               variant="outline"
               className="flex-1 border-gray-600 hover:bg-gray-800 py-6"
             >

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Tag, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, Loader2 } from "lucide-react";
 import { fetchWpPostBySlug } from "../../components/blog/blogApi";
 import { BlogPost as BlogPostType } from "../../components/blog/BlogCard";
 
@@ -149,12 +149,6 @@ export default function BlogPost() {
           <div className="flex items-center gap-2 text-[#A9AAAC] text-sm">
             <Calendar className="w-4 h-4" />
             <span>{post.date}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Tag className="w-4 h-4 text-[#E1C37A]" />
-            <span className="px-3 py-1 bg-[#E1C37A]/20 text-[#E1C37A] text-sm font-semibold rounded-full">
-              {post.category}
-            </span>
           </div>
         </div>
 

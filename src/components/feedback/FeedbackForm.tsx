@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,15 +11,31 @@ import type { FeedbackSubmission } from "@/types/feedback";
 interface FeedbackFormProps {
   onSubmitSuccess?: () => void;
   pageUrl?: string;
+  initialCategory?: FeedbackCategory;
 }
 
-export default function FeedbackForm({ onSubmitSuccess, pageUrl }: FeedbackFormProps) {
+function normalizeInitialCategory(category?: FeedbackCategory): FeedbackCategory {
+  if (!category) return "General";
+  return category;
+}
+
+export default function FeedbackForm({
+  onSubmitSuccess,
+  pageUrl,
+  initialCategory,
+}: FeedbackFormProps) {
   const { user, isSignedIn } = useUser();
   const { getToken } = useAuth();
   const [rating, setRating] = useState<number>(0);
-  const [category, setCategory] = useState<FeedbackCategory>("General");
+  const [category, setCategory] = useState<FeedbackCategory>(
+    normalizeInitialCategory(initialCategory)
+  );
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    setCategory(normalizeInitialCategory(initialCategory));
+  }, [initialCategory]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

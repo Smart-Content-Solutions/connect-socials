@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import { toast } from "sonner";
 
 import { useUser, useSession } from "@clerk/clerk-react";
-import { useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle,
@@ -32,7 +32,8 @@ import {
   FileText,
   AtSign,
   Users,
-  CalendarClock
+  CalendarClock,
+  Coins
 } from "lucide-react";
 
 import { usePostDraft } from "@/hooks/usePostDraft";
@@ -45,7 +46,8 @@ import type { ToolType } from "@/types/draft";
 import {
   initiateLinkedInAuth,
   clearLinkedInAuthData,
-  isLinkedInConnected
+  isLinkedInConnected,
+  getLinkedInAuthData
 } from "@/utils/linkedinOAuth";
 
 import {
@@ -94,6 +96,7 @@ import DashboardContent from "../social/DashboardContent";
 import InstagramDashboardContent from "../social/InstagramDashboardContent";
 import ConnectedAccountsSelector, { type ConnectedAccount } from "../ConnectedAccountsSelector";
 import ScheduledPostsTracker from "../social/ScheduledPostsTracker";
+import { ScheduleDateTimePicker } from "../social/ScheduleDateTimePicker";
 import { useScheduledPosts } from "@/hooks/useScheduledPosts";
 
 type Platform = {
@@ -103,6 +106,12 @@ type Platform = {
   connect?: () => void;
   disconnect?: () => void;
   isConnected: () => boolean;
+};
+
+type PreviewContext = {
+  caption: string;
+  tone: string;
+  tab: "create" | "video";
 };
 
 const platformColors: Record<string, string> = {
@@ -115,9 +124,22 @@ const platformColors: Record<string, string> = {
   bluesky: '#0085FF'
 };
 
+const TOKEN_PRICE = 0.10;
+const MIN_TOKENS_PURCHASE = 10;
+const MAX_TOKENS_PURCHASE = 500;
+const TOKEN_PURCHASE_STEP = 5;
+const AI_VIDEO_TOKEN_COST: Record<5 | 10, number> = {
+  5: 8,
+  10: 15,
+};
+
 export default function SocialMediaTool() {
   const { user, isSignedIn, isLoaded } = useUser();
   const { session } = useSession();
+  const [searchParams] = useSearchParams();
+  const queryTab = searchParams.get('tab');
+  const queryVideoSource = searchParams.get('videoSource');
+  const queryTokenStatus = searchParams.get('tokens');
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'create' | 'video'>('dashboard');
   const scheduledPosts = useScheduledPosts();
@@ -125,6 +147,7 @@ export default function SocialMediaTool() {
   const [caption, setCaption] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [aiEnhance, setAiEnhance] = useState(true);
+  const [lastPreviewContext, setLastPreviewContext] = useState<PreviewContext | null>(null);
 
   const [postMode, setPostMode] = useState("publish");
   const [scheduledTime, setScheduledTime] = useState("");
@@ -138,7 +161,6 @@ export default function SocialMediaTool() {
   // Legacy single-file states (for backward compatibility during transition)
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [isSuccess, setIsSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
@@ -150,6 +172,7 @@ export default function SocialMediaTool() {
 
   const [loadingPlatform, setLoadingPlatform] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const MAX_IMAGE_FILES = 10;
   const [showBlueskyModal, setShowBlueskyModal] = useState(false);
   const [showBlueskyInfo, setShowBlueskyInfo] = useState(false);
   const [blueskyUsername, setBlueskyUsername] = useState("");
@@ -169,6 +192,7 @@ export default function SocialMediaTool() {
   const [selectedTikTokAccountIds, setSelectedTikTokAccountIds] = useState<string[]>([]);
   const [connectedYouTubeChannels, setConnectedYouTubeChannels] = useState<ConnectedAccount[]>([]);
   const [selectedYouTubeChannelIds, setSelectedYouTubeChannelIds] = useState<string[]>([]);
+  const hasTriggeredVideoFirstRef = useRef(false);
 
   // Sync platforms with selected account IDs
   useEffect(() => {
@@ -248,6 +272,17 @@ export default function SocialMediaTool() {
   const [previewText, setPreviewText] = useState("");
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const effectiveTone = tone === "Custom" ? customTone.trim() : tone;
+  const hasCurrentAiPreview = useMemo(() => {
+    if (!lastPreviewContext) return false;
+    if (activeTab !== "create" && activeTab !== "video") return false;
+
+    return (
+      lastPreviewContext.caption === caption &&
+      lastPreviewContext.tone === effectiveTone &&
+      lastPreviewContext.tab === activeTab
+    );
+  }, [activeTab, caption, effectiveTone, lastPreviewContext]);
 
   // AI Video Generation State
   const [videoSource, setVideoSource] = useState<'upload' | 'generate'>('upload');
@@ -266,6 +301,54 @@ export default function SocialMediaTool() {
   const [textToVideoPrompt, setTextToVideoPrompt] = useState('');
   const [textToVideoNegativePrompt, setTextToVideoNegativePrompt] = useState('');
   const [textToVideoDuration, setTextToVideoDuration] = useState<5 | 10>(5);
+  const [tokenBalance, setTokenBalance] = useState(0);
+  const [loadingCredits, setLoadingCredits] = useState(false);
+  const [showTokenModal, setShowTokenModal] = useState(false);
+  const [purchaseAmount, setPurchaseAmount] = useState(50);
+  const [isPurchasingTokens, setIsPurchasingTokens] = useState(false);
+
+  const imageToVideoTokenCost = AI_VIDEO_TOKEN_COST[aiDuration];
+  const textToVideoTokenCost = AI_VIDEO_TOKEN_COST[textToVideoDuration];
+  const selectedAiTokenCost = aiVideoTab === 'image' ? imageToVideoTokenCost : textToVideoTokenCost;
+  const hasEnoughImageTokens = tokenBalance >= imageToVideoTokenCost;
+  const hasEnoughTextTokens = tokenBalance >= textToVideoTokenCost;
+
+  useEffect(() => {
+    const busy = loading || isGeneratingPreview || isGeneratingAiVideo || loadingCredits || isPurchasingTokens;
+    window.dispatchEvent(new CustomEvent("scs-support-signal", { detail: { busy } }));
+  }, [loading, isGeneratingPreview, isGeneratingAiVideo, loadingCredits, isPurchasingTokens]);
+
+  useEffect(() => {
+    if (activeTab !== "video" || hasTriggeredVideoFirstRef.current) return;
+    hasTriggeredVideoFirstRef.current = true;
+    window.dispatchEvent(
+      new CustomEvent("scs-support-signal", { detail: { type: "video-first-time" } })
+    );
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!errorMsg) return;
+    window.dispatchEvent(
+      new CustomEvent("scs-support-signal", { detail: { type: "validation-error" } })
+    );
+  }, [errorMsg]);
+
+  useEffect(() => {
+    if (aiJobStatus !== "failed" || !aiJobError) return;
+    window.dispatchEvent(
+      new CustomEvent("scs-support-signal", { detail: { type: "error-video" } })
+    );
+    window.dispatchEvent(
+      new CustomEvent("scs-support-signal", { detail: { type: "validation-error" } })
+    );
+  }, [aiJobStatus, aiJobError]);
+
+  useEffect(() => {
+    if (!showTikTokAccountsModal) return;
+    window.dispatchEvent(
+      new CustomEvent("scs-support-signal", { detail: { type: "connect-step" } })
+    );
+  }, [showTikTokAccountsModal]);
 
   const TONE_OPTIONS = [
     "Professional",
@@ -350,19 +433,124 @@ export default function SocialMediaTool() {
     }
   }, [draftIsLoaded, draftExists]);
 
+  const fetchCredits = useCallback(async () => {
+    if (!session) return;
+    try {
+      setLoadingCredits(true);
+      const authToken = await session.getToken();
+      if (!authToken) return;
+
+      const res = await fetch('/api/get-credits', {
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch token balance');
+      }
+
+      const data = await res.json();
+      setTokenBalance(data.balance ?? 0);
+    } catch (error) {
+      console.error('Failed to fetch token balance:', error);
+    } finally {
+      setLoadingCredits(false);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (!isSignedIn || !session) return;
+    if (activeTab === 'video' && videoSource === 'generate') {
+      fetchCredits();
+    }
+  }, [isSignedIn, session, activeTab, videoSource, fetchCredits]);
+
+  useEffect(() => {
+    if (queryTab === 'video') {
+      setActiveTab('video');
+    }
+    if (queryVideoSource === 'generate') {
+      setVideoSource('generate');
+    }
+  }, [queryTab, queryVideoSource]);
+
+  useEffect(() => {
+    if (queryTokenStatus === 'success') {
+      toast.success('Tokens purchased successfully! Your balance will update shortly.');
+      fetchCredits();
+      setTimeout(() => fetchCredits(), 2000);
+      setTimeout(() => fetchCredits(), 5000);
+    } else if (queryTokenStatus === 'cancelled') {
+      toast.info('Token purchase cancelled.');
+    }
+  }, [queryTokenStatus, fetchCredits]);
+
+  const handlePurchaseTokens = async () => {
+    if (!session || isPurchasingTokens) return;
+    try {
+      setIsPurchasingTokens(true);
+      const authToken = await session.getToken();
+      if (!authToken) {
+        toast.error('Authentication error. Please sign in again.');
+        return;
+      }
+
+      const res = await fetch('/api/create-token-checkout', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          tokenAmount: purchaseAmount,
+          successPath: '/apps/social-automation?tab=video&videoSource=generate&tokens=success',
+          cancelPath: '/apps/social-automation?tab=video&videoSource=generate&tokens=cancelled',
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to create checkout session');
+      }
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to start token purchase');
+    } finally {
+      setIsPurchasingTokens(false);
+    }
+  };
+
+  const openTokenModal = () => {
+    setShowTokenModal(true);
+    fetchCredits();
+  };
+
   const handlePreview = async () => {
     if (!caption.trim()) {
       toast.error("Please enter a caption first");
       return;
     }
 
+    if (activeTab !== "create" && activeTab !== "video") {
+      toast.error("Preview is only available in image and video tabs");
+      return;
+    }
+
+    const captionSnapshot = caption;
+    const toneSnapshot = effectiveTone;
+    const tabSnapshot = activeTab;
+
     setIsGeneratingPreview(true);
 
     try {
       const form = new FormData();
       form.append("user_id", user?.id || "");
-      form.append("caption", caption);
-      form.append("tone", tone === "Custom" ? customTone : tone);
+      form.append("caption", captionSnapshot);
+      form.append("tone", toneSnapshot);
       form.append("preview", "true");
       form.append("use_ai", "yes");
 
@@ -404,6 +592,11 @@ export default function SocialMediaTool() {
 
       if (enhancedCaption && (data.status === "success" || isPreview)) {
         setPreviewText(enhancedCaption);
+        setLastPreviewContext({
+          caption: captionSnapshot,
+          tone: toneSnapshot,
+          tab: tabSnapshot
+        });
         setShowPreviewModal(true);
       } else {
         throw new Error(data.message || "Could not generate enhanced text");
@@ -418,6 +611,13 @@ export default function SocialMediaTool() {
 
   const handleUseEnhancedText = () => {
     setCaption(previewText);
+    if (activeTab === "create" || activeTab === "video") {
+      setLastPreviewContext({
+        caption: previewText,
+        tone: effectiveTone,
+        tab: activeTab
+      });
+    }
     setShowPreviewModal(false);
     setAiEnhance(false); // Disable auto-enhance since we already used it
     toast.success("Design updated with enhanced text!");
@@ -671,10 +871,31 @@ export default function SocialMediaTool() {
 
 
   const gridRef = useRef<HTMLDivElement>(null);
+  const videoGridRef = useRef<HTMLDivElement>(null);
+  const imageWhenToPostRef = useRef<HTMLDivElement>(null);
+  const videoWhenToPostRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const motionTextareaRef = useRef<HTMLTextAreaElement>(null);
   const videoDescTextareaRef = useRef<HTMLTextAreaElement>(null);
   const [highlightStyle, setHighlightStyle] = useState({
+    opacity: 0,
+    transform: 'translate(0px, 0px)',
+    width: 0,
+    height: 0,
+  });
+  const [videoHighlightStyle, setVideoHighlightStyle] = useState({
+    opacity: 0,
+    transform: 'translate(0px, 0px)',
+    width: 0,
+    height: 0,
+  });
+  const [imageWhenToPostHighlightStyle, setImageWhenToPostHighlightStyle] = useState({
+    opacity: 0,
+    transform: 'translate(0px, 0px)',
+    width: 0,
+    height: 0,
+  });
+  const [videoWhenToPostHighlightStyle, setVideoWhenToPostHighlightStyle] = useState({
     opacity: 0,
     transform: 'translate(0px, 0px)',
     width: 0,
@@ -850,6 +1071,108 @@ export default function SocialMediaTool() {
     }
   ];
 
+  const getConnectedIdentityLabel = useCallback((platformId: string): string => {
+    const summarizeNames = (label: string, names: Array<string | null | undefined>): string | null => {
+      const uniqueNames = Array.from(
+        new Set(
+          names
+            .map(name => (typeof name === "string" ? name.trim() : ""))
+            .filter(Boolean)
+        )
+      );
+
+      if (uniqueNames.length === 0) return null;
+      if (uniqueNames.length === 1) return `${label}: ${uniqueNames[0]}`;
+      return `${label}: ${uniqueNames[0]} +${uniqueNames.length - 1} more`;
+    };
+
+    if (platformId === "facebook") {
+      if (selectedFacebookPage?.name) {
+        return `Page: ${selectedFacebookPage.name}`;
+      }
+
+      const selectedPages = connectedFacebookPages.filter(page =>
+        selectedFacebookPageIds.includes(page.id)
+      );
+      const selectedPagesLabel = summarizeNames(
+        "Pages",
+        selectedPages.length > 0 ? selectedPages.map(page => page.name) : connectedFacebookPages.map(page => page.name)
+      );
+      if (selectedPagesLabel) return selectedPagesLabel;
+
+      const facebookAuthData = getFacebookAuthData();
+      if (facebookAuthData?.name) return `Login: ${facebookAuthData.name}`;
+      return "Connected";
+    }
+
+    if (platformId === "instagram") {
+      const selectedAccounts = connectedInstagramPages.filter(account =>
+        selectedInstagramPageIds.includes(account.id)
+      );
+      const selectedAccountsLabel = summarizeNames(
+        "Accounts",
+        selectedAccounts.length > 0 ? selectedAccounts.map(account => account.nickname || account.name) : connectedInstagramPages.map(account => account.nickname || account.name)
+      );
+      if (selectedAccountsLabel) return selectedAccountsLabel;
+
+      if (instagramData?.username) return `Connected as @${instagramData.username}`;
+      if (instagramData?.name) return `Connected as ${instagramData.name}`;
+      return "Connected";
+    }
+
+    if (platformId === "linkedin") {
+      const linkedInAuthData = getLinkedInAuthData();
+      const fullName = [linkedInAuthData?.firstName, linkedInAuthData?.lastName].filter(Boolean).join(" ").trim();
+      if (fullName) return `Profile: ${fullName}`;
+      if (linkedInAuthData?.emailAddress) return `Login: ${linkedInAuthData.emailAddress}`;
+      if (linkedInAuthData?.linkedin_user_id) return `ID: ${linkedInAuthData.linkedin_user_id}`;
+      return "Connected";
+    }
+
+    if (platformId === "tiktok") {
+      const selectedAccounts = connectedTikTokAccounts.filter(account =>
+        selectedTikTokAccountIds.includes(account.id)
+      );
+      const selectedAccountsLabel = summarizeNames(
+        "Accounts",
+        selectedAccounts.length > 0 ? selectedAccounts.map(account => account.nickname || account.name) : connectedTikTokAccounts.map(account => account.nickname || account.name)
+      );
+      if (selectedAccountsLabel) return selectedAccountsLabel;
+      return "Connected";
+    }
+
+    if (platformId === "youtube") {
+      const selectedChannels = connectedYouTubeChannels.filter(channel =>
+        selectedYouTubeChannelIds.includes(channel.id)
+      );
+      const selectedChannelsLabel = summarizeNames(
+        "Channels",
+        selectedChannels.length > 0 ? selectedChannels.map(channel => channel.name) : connectedYouTubeChannels.map(channel => channel.name)
+      );
+      if (selectedChannelsLabel) return selectedChannelsLabel;
+      return "Connected";
+    }
+
+    if (platformId === "bluesky") {
+      const blueskyCredentials = getBlueskyCredentials();
+      if (blueskyCredentials?.username) return `Handle: ${blueskyCredentials.username}`;
+      return "Connected";
+    }
+
+    return "Connected";
+  }, [
+    connectedFacebookPages,
+    connectedInstagramPages,
+    connectedTikTokAccounts,
+    connectedYouTubeChannels,
+    instagramData,
+    selectedFacebookPage,
+    selectedFacebookPageIds,
+    selectedInstagramPageIds,
+    selectedTikTokAccountIds,
+    selectedYouTubeChannelIds,
+  ]);
+
   const handleCardMouseEnter = useCallback((e: React.MouseEvent) => {
     const card = e.currentTarget;
     const container = gridRef.current;
@@ -870,6 +1193,66 @@ export default function SocialMediaTool() {
     setHighlightStyle(prev => ({ ...prev, opacity: 0 }));
   }, []);
 
+  const handleVideoCardMouseEnter = useCallback((e: React.MouseEvent) => {
+    const card = e.currentTarget;
+    const container = videoGridRef.current;
+    if (!container || !card) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+
+    setVideoHighlightStyle({
+      opacity: 1,
+      transform: `translate(${cardRect.left - containerRect.left}px, ${cardRect.top - containerRect.top}px)`,
+      width: cardRect.width,
+      height: cardRect.height,
+    });
+  }, []);
+
+  const handleVideoGridMouseLeave = useCallback(() => {
+    setVideoHighlightStyle(prev => ({ ...prev, opacity: 0 }));
+  }, []);
+
+  const handleImageWhenToPostCardMouseEnter = useCallback((e: React.MouseEvent) => {
+    const card = e.currentTarget;
+    const container = imageWhenToPostRef.current;
+    if (!container || !card) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+
+    setImageWhenToPostHighlightStyle({
+      opacity: 1,
+      transform: `translate(${cardRect.left - containerRect.left}px, ${cardRect.top - containerRect.top}px)`,
+      width: cardRect.width,
+      height: cardRect.height,
+    });
+  }, []);
+
+  const handleImageWhenToPostMouseLeave = useCallback(() => {
+    setImageWhenToPostHighlightStyle(prev => ({ ...prev, opacity: 0 }));
+  }, []);
+
+  const handleVideoWhenToPostCardMouseEnter = useCallback((e: React.MouseEvent) => {
+    const card = e.currentTarget;
+    const container = videoWhenToPostRef.current;
+    if (!container || !card) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+
+    setVideoWhenToPostHighlightStyle({
+      opacity: 1,
+      transform: `translate(${cardRect.left - containerRect.left}px, ${cardRect.top - containerRect.top}px)`,
+      width: cardRect.width,
+      height: cardRect.height,
+    });
+  }, []);
+
+  const handleVideoWhenToPostMouseLeave = useCallback(() => {
+    setVideoWhenToPostHighlightStyle(prev => ({ ...prev, opacity: 0 }));
+  }, []);
+
   const isSelected = (id: string) => selectedPlatforms.includes(id);
 
   const togglePlatform = (id: string, connected: boolean) => {
@@ -883,24 +1266,32 @@ export default function SocialMediaTool() {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
 
-    // Limit to 10 images max
-    const maxFiles = 10;
-    const selectedFiles = files.slice(0, maxFiles);
-
-    if (files.length > maxFiles) {
-      toast.warning(`Only ${maxFiles} images can be uploaded at once. Using the first ${maxFiles}.`);
+    const remainingSlots = Math.max(0, MAX_IMAGE_FILES - imageFiles.length);
+    if (remainingSlots === 0) {
+      toast.warning(`Maximum of ${MAX_IMAGE_FILES} images reached.`);
+      e.target.value = '';
+      return;
     }
 
-    setImageFiles(prev => [...prev, ...selectedFiles].slice(0, maxFiles));
+    const selectedFiles = files.slice(0, remainingSlots);
+
+    if (files.length > remainingSlots) {
+      toast.warning(`Only ${remainingSlots} image${remainingSlots === 1 ? '' : 's'} can be added. Maximum is ${MAX_IMAGE_FILES}.`);
+    }
+
+    setImageFiles(prev => [...prev, ...selectedFiles]);
 
     // Generate previews for all selected files
     selectedFiles.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreviews(prev => [...prev, String(reader.result)].slice(0, maxFiles));
+        setImagePreviews(prev => [...prev, String(reader.result)]);
       };
       reader.readAsDataURL(file);
     });
+
+    // Allow re-selecting the same file from the file picker.
+    e.target.value = '';
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -911,21 +1302,25 @@ export default function SocialMediaTool() {
 
     if (imageFilesDropped.length === 0) return;
 
-    // Limit to 10 images max
-    const maxFiles = 10;
-    const selectedFiles = imageFilesDropped.slice(0, maxFiles);
-
-    if (imageFilesDropped.length > maxFiles) {
-      toast.warning(`Only ${maxFiles} images can be uploaded at once. Using the first ${maxFiles}.`);
+    const remainingSlots = Math.max(0, MAX_IMAGE_FILES - imageFiles.length);
+    if (remainingSlots === 0) {
+      toast.warning(`Maximum of ${MAX_IMAGE_FILES} images reached.`);
+      return;
     }
 
-    setImageFiles(prev => [...prev, ...selectedFiles].slice(0, maxFiles));
+    const selectedFiles = imageFilesDropped.slice(0, remainingSlots);
+
+    if (imageFilesDropped.length > remainingSlots) {
+      toast.warning(`Only ${remainingSlots} image${remainingSlots === 1 ? '' : 's'} can be added. Maximum is ${MAX_IMAGE_FILES}.`);
+    }
+
+    setImageFiles(prev => [...prev, ...selectedFiles]);
 
     // Generate previews for all selected files
     selectedFiles.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreviews(prev => [...prev, String(reader.result)].slice(0, maxFiles));
+        setImagePreviews(prev => [...prev, String(reader.result)]);
       };
       reader.readAsDataURL(file);
     });
@@ -1047,6 +1442,9 @@ export default function SocialMediaTool() {
 
     if (videoFilesSelected.length === 0) {
       toast.error('Please upload valid video files');
+      window.dispatchEvent(
+        new CustomEvent("scs-support-signal", { detail: { type: "validation-error" } })
+      );
       return;
     }
 
@@ -1099,6 +1497,9 @@ export default function SocialMediaTool() {
 
     if (!f.type.startsWith('image/')) {
       toast.error('Please upload a valid image file');
+      window.dispatchEvent(
+        new CustomEvent("scs-support-signal", { detail: { type: "validation-error" } })
+      );
       return;
     }
 
@@ -1117,8 +1518,7 @@ export default function SocialMediaTool() {
       return;
     }
 
-    // Token cost: 5s = 8 tokens, 10s = 15 tokens
-    const tokenCost = aiDuration === 5 ? 8 : 15;
+    const tokenCost = imageToVideoTokenCost;
 
     // Deduct tokens before starting generation
     try {
@@ -1143,11 +1543,11 @@ export default function SocialMediaTool() {
       if (!deductRes.ok) {
         if (deductData.error === 'insufficient_credits') {
           toast.error(
-            `Not enough tokens! You need ${tokenCost} but have ${deductData.balance || 0}. Purchase more from your Account page.`,
+            `Not enough tokens! You need ${tokenCost} but have ${deductData.balance || 0}. Purchase more tokens to continue.`,
             {
               action: {
                 label: 'Buy Tokens',
-                onClick: () => window.location.href = '/account',
+                onClick: openTokenModal,
               },
               duration: 8000,
             }
@@ -1157,6 +1557,7 @@ export default function SocialMediaTool() {
         }
         return;
       }
+      setTokenBalance((prev) => (typeof deductData.newBalance === 'number' ? deductData.newBalance : Math.max(prev - tokenCost, 0)));
       toast.success(`${tokenCost} tokens deducted (${deductData.newBalance} remaining)`);
     } catch (deductErr: any) {
       toast.error('Failed to check token balance. Please try again.');
@@ -1269,8 +1670,7 @@ export default function SocialMediaTool() {
       return;
     }
 
-    // Token cost: 5s = 8 tokens, 10s = 15 tokens
-    const tokenCost = textToVideoDuration === 5 ? 8 : 15;
+    const tokenCost = textToVideoTokenCost;
 
     // Deduct tokens before starting generation
     try {
@@ -1295,11 +1695,11 @@ export default function SocialMediaTool() {
       if (!deductRes.ok) {
         if (deductData.error === 'insufficient_credits') {
           toast.error(
-            `Not enough tokens! You need ${tokenCost} but have ${deductData.balance || 0}. Purchase more from your Account page.`,
+            `Not enough tokens! You need ${tokenCost} but have ${deductData.balance || 0}. Purchase more tokens to continue.`,
             {
               action: {
                 label: 'Buy Tokens',
-                onClick: () => window.location.href = '/account',
+                onClick: openTokenModal,
               },
               duration: 8000,
             }
@@ -1309,6 +1709,7 @@ export default function SocialMediaTool() {
         }
         return;
       }
+      setTokenBalance((prev) => (typeof deductData.newBalance === 'number' ? deductData.newBalance : Math.max(prev - tokenCost, 0)));
       toast.success(`${tokenCost} tokens deducted (${deductData.newBalance} remaining)`);
     } catch (deductErr: any) {
       toast.error('Failed to check token balance. Please try again.');
@@ -1625,8 +2026,19 @@ export default function SocialMediaTool() {
     if (!caption.trim())
       return setErrorMsg("Caption is required.");
 
+    if (aiEnhance && activeTab !== "dashboard" && !hasCurrentAiPreview) {
+      setErrorMsg("Please preview the AI-enhanced caption before continuing.");
+      toast.info("Preview is required before publishing.");
+      await handlePreview();
+      return;
+    }
+
     if (selectedPlatforms.length === 0)
       return setErrorMsg("Select at least one connected platform.");
+
+    if (postMode === "schedule" && !scheduledTime) {
+      return setErrorMsg("Please choose a schedule date and time, then click Confirm.");
+    }
 
     // Validate that Facebook/Instagram accounts are selected if those platforms are chosen
     if (selectedPlatforms.includes('facebook') && selectedFacebookPageIds.length === 0) {
@@ -1675,12 +2087,11 @@ export default function SocialMediaTool() {
         await sendToBackend();
       }
 
-      setIsSuccess(true);
       setShowSuccessModal(true);
-      toast.success(postMode === "publish" ? "Post successfully published!" : "Post successfully scheduled!");
 
       // Clear all state
       setCaption("");
+      setLastPreviewContext(null);
 
       // Clear legacy single-file states
       setImageFile(null);
@@ -1702,8 +2113,6 @@ export default function SocialMediaTool() {
       });
 
       setSelectedPlatforms([]);
-
-      setTimeout(() => setIsSuccess(false), 5000);
     } catch (err: any) {
 
       setErrorMsg(err.message);
@@ -1727,6 +2136,8 @@ export default function SocialMediaTool() {
     );
 
   const connectedCount = ALL_PLATFORMS.filter(p => p.isConnected()).length;
+  const imageSupportedPlatforms = new Set(['facebook', 'instagram', 'linkedin', 'bluesky']);
+  const videoSupportedPlatforms = new Set(['facebook', 'instagram', 'linkedin', 'tiktok', 'youtube']);
 
   return (
     <div className="min-h-screen pt-24 pb-20 bg-[#1A1A1C] text-[#D6D7D8]">
@@ -2418,24 +2829,6 @@ export default function SocialMediaTool() {
           </div>
         </div>
 
-        {isSuccess && (
-          <div className="mb-6 p-4 rounded-xl bg-[#E1C37A]/10 border border-[#E1C37A]/20 flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-green-400 mt-0.5" />
-            <div>
-              <p className="text-[#D6D7D8] font-medium">
-                Success! content {postMode === 'publish' ? 'published' : 'scheduled'}.
-                {activeTab === 'video' && ' Your automated post should be visible within a minute.'}
-              </p>
-              {selectedFacebookPage && selectedPlatforms.includes('facebook') && (
-                <p className="text-[#A9AAAC] text-xs mt-1">
-                  Posted to <b>{selectedFacebookPage.name}</b> (ID: {selectedFacebookPage.id}) using
-                  <code>pages_manage_posts</code> permission.
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
         {errorMsg && (
           <div ref={errorRef} className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
             {errorMsg}
@@ -2526,6 +2919,7 @@ export default function SocialMediaTool() {
                     const connected = p.isConnected();
                     const Icon = p.icon;
                     const color = platformColors[p.id] || '#E1C37A';
+                    const isComingSoon = !imageSupportedPlatforms.has(p.id);
 
                     return (
                       <div
@@ -2533,6 +2927,13 @@ export default function SocialMediaTool() {
                         onMouseEnter={handleCardMouseEnter}
                         className="relative z-10 p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 hover:border-[#E1C37A]/20 transition-all duration-300"
                       >
+                        {isComingSoon && (
+                          <div className="absolute inset-0 z-20 rounded-2xl bg-[#1A1A1C]/70 backdrop-blur-[2px] flex items-center justify-center pointer-events-auto">
+                            <span className="px-3 py-1 rounded-full border border-[#E1C37A]/40 bg-[#E1C37A]/15 text-[#E1C37A] text-xs font-semibold tracking-wide uppercase">
+                              Coming Soon
+                            </span>
+                          </div>
+                        )}
                         <div className="flex items-start justify-between mb-4">
                           <div
                             className="w-12 h-12 rounded-xl flex items-center justify-center"
@@ -2564,15 +2965,11 @@ export default function SocialMediaTool() {
                         <h3 className="text-[#D6D7D8] font-semibold text-lg mb-1">{p.name}</h3>
                         <p className="text-[#5B5C60] text-sm mb-4">
                           {connected
-                            ? (p.id === 'facebook' && selectedFacebookPage
-                              ? `Page: ${selectedFacebookPage.name}`
-                              : p.id === 'instagram'
-                                ? `Connected as @${instagramData?.username || 'User'}`
-                                : 'Connected')
+                            ? getConnectedIdentityLabel(p.id)
                             : 'Not connected'}
                         </p>
 
-                        {p.connect && (
+                        {p.connect && !isComingSoon && (
                           <div className="space-y-2">
                             {connected && p.id === 'facebook' ? (
                               <>
@@ -2664,12 +3061,29 @@ export default function SocialMediaTool() {
                 <p className="text-sm text-[#A9AAAC] mb-6">Manage accounts for short-form video posting</p>
 
                 <div
+                  ref={videoGridRef}
                   className="relative grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+                  onMouseLeave={handleVideoGridMouseLeave}
                 >
+                  <div
+                    className="absolute pointer-events-none rounded-2xl hidden md:block"
+                    style={{
+                      opacity: videoHighlightStyle.opacity,
+                      transform: videoHighlightStyle.transform,
+                      width: videoHighlightStyle.width,
+                      height: videoHighlightStyle.height,
+                      background: 'linear-gradient(135deg, rgba(225, 195, 122, 0.15) 0%, rgba(182, 148, 76, 0.1) 100%)',
+                      boxShadow: '0 0 40px rgba(225, 195, 122, 0.35), 0 0 80px rgba(212, 175, 55, 0.2)',
+                      border: '1px solid rgba(225, 195, 122, 0.25)',
+                      transition: 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      zIndex: 0,
+                    }}
+                  />
                   {ALL_PLATFORMS.filter(p => ['facebook', 'instagram', 'tiktok', 'youtube', 'linkedin', 'x'].includes(p.id)).map((p) => {
                     const connected = p.isConnected();
                     const Icon = p.icon;
                     const color = platformColors[p.id] || '#E1C37A';
+                    const isComingSoon = !videoSupportedPlatforms.has(p.id);
 
                     // Rename for video context
                     let displayName = p.name;
@@ -2681,8 +3095,16 @@ export default function SocialMediaTool() {
                     return (
                       <div
                         key={p.id}
+                        onMouseEnter={handleVideoCardMouseEnter}
                         className="relative z-10 p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5 hover:border-[#E1C37A]/20 transition-all duration-300"
                       >
+                        {isComingSoon && (
+                          <div className="absolute inset-0 z-20 rounded-2xl bg-[#1A1A1C]/70 backdrop-blur-[2px] flex items-center justify-center pointer-events-auto">
+                            <span className="px-3 py-1 rounded-full border border-[#E1C37A]/40 bg-[#E1C37A]/15 text-[#E1C37A] text-xs font-semibold tracking-wide uppercase">
+                              Coming Soon
+                            </span>
+                          </div>
+                        )}
                         <div className="flex items-start justify-between mb-4">
                           <div
                             className="w-12 h-12 rounded-xl flex items-center justify-center"
@@ -2714,15 +3136,11 @@ export default function SocialMediaTool() {
                         <h3 className="text-[#D6D7D8] font-semibold text-lg mb-1">{displayName}</h3>
                         <p className="text-[#5B5C60] text-sm mb-4">
                           {connected
-                            ? (p.id === 'facebook' && selectedFacebookPage
-                              ? `Page: ${selectedFacebookPage.name}`
-                              : p.id === 'instagram'
-                                ? `Connected as @${instagramData?.username || 'User'}`
-                                : 'Connected')
+                            ? getConnectedIdentityLabel(p.id)
                             : 'Not connected'}
                         </p>
 
-                        {p.connect && (
+                        {p.connect && !isComingSoon && (
                           <div className="space-y-2">
                             {connected && p.id === 'facebook' ? (
                               <>
@@ -2933,7 +3351,20 @@ export default function SocialMediaTool() {
                 </div>
               </div>
 
-              <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (imagePreviews.length < MAX_IMAGE_FILES) {
+                    setIsDragging(true);
+                  }
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                className={`p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border transition-colors ${isDragging
+                  ? 'border-[#E1C37A]/60 bg-[#E1C37A]/5'
+                  : 'border-white/5'
+                  }`}
+              >
                 <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">
                   Media <span className="text-[#5B5C60] font-normal">({imageFiles.length > 0 ? `${imageFiles.length} images` : imagePreview ? '1 image' : 'optional'})</span>
                 </h3>
@@ -3037,9 +3468,6 @@ export default function SocialMediaTool() {
                   </div>
                 ) : (
                   <div
-                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={handleDrop}
                     onClick={() => document.getElementById('file-upload')?.click()}
                     className={`cursor-pointer rounded-xl border-2 border-dashed p-12 text-center transition-all duration-300 ${isDragging
                       ? 'border-[#E1C37A] bg-[#E1C37A]/5'
@@ -3187,14 +3615,19 @@ export default function SocialMediaTool() {
                           <button
                             onClick={handlePreview}
                             disabled={isGeneratingPreview || !caption.trim()}
-                            className="text-xs bg-[#E1C37A]/10 text-[#E1C37A] border border-[#E1C37A]/30 px-3 py-1 rounded-lg hover:bg-[#E1C37A]/20 transition-colors flex items-center gap-1.5"
+                            className={`text-xs border px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5 ${hasCurrentAiPreview
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                              : "bg-[#E1C37A]/10 text-[#E1C37A] border-[#E1C37A]/30 hover:bg-[#E1C37A]/20"
+                              }`}
                           >
                             {isGeneratingPreview ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : hasCurrentAiPreview ? (
+                              <CheckCircle className="w-3 h-3" />
                             ) : (
                               <Eye className="w-3 h-3" />
                             )}
-                            Preview
+                            {hasCurrentAiPreview ? "Previewed" : "Preview"}
                           </button>
                         )}
                         <button
@@ -3211,10 +3644,29 @@ export default function SocialMediaTool() {
 
               <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
                 <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">When to Post</h3>
-                <div className="grid grid-cols-2 gap-3 mb-4">
+                <div
+                  ref={imageWhenToPostRef}
+                  className="relative grid grid-cols-2 gap-3 mb-4"
+                  onMouseLeave={handleImageWhenToPostMouseLeave}
+                >
+                  <div
+                    className="absolute pointer-events-none rounded-xl hidden md:block"
+                    style={{
+                      opacity: imageWhenToPostHighlightStyle.opacity,
+                      transform: imageWhenToPostHighlightStyle.transform,
+                      width: imageWhenToPostHighlightStyle.width,
+                      height: imageWhenToPostHighlightStyle.height,
+                      background: 'linear-gradient(135deg, rgba(225, 195, 122, 0.15) 0%, rgba(182, 148, 76, 0.1) 100%)',
+                      boxShadow: '0 0 40px rgba(225, 195, 122, 0.35), 0 0 80px rgba(212, 175, 55, 0.2)',
+                      border: '1px solid rgba(225, 195, 122, 0.25)',
+                      transition: 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      zIndex: 0,
+                    }}
+                  />
                   <button
                     onClick={() => setPostMode('publish')}
-                    className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
+                    onMouseEnter={handleImageWhenToPostCardMouseEnter}
+                    className={`relative z-10 p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
                       ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
                       : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
                       }`}
@@ -3233,7 +3685,8 @@ export default function SocialMediaTool() {
 
                   <button
                     onClick={() => setPostMode('schedule')}
-                    className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
+                    onMouseEnter={handleImageWhenToPostCardMouseEnter}
+                    className={`relative z-10 p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
                       ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
                       : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
                       }`}
@@ -3252,12 +3705,10 @@ export default function SocialMediaTool() {
                 </div>
 
                 {postMode === 'schedule' && (
-                  <input
-                    type="datetime-local"
-                    className="w-full bg-[#3B3C3E]/50 border border-white/10 p-3 rounded-xl text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20"
+                  <ScheduleDateTimePicker
                     value={scheduledTime}
-                    onChange={(e) => setScheduledTime(e.target.value)}
-                    style={{ colorScheme: 'dark' }}
+                    onChange={setScheduledTime}
+                    minDateTime={new Date()}
                   />
                 )}
               </div>
@@ -3266,6 +3717,7 @@ export default function SocialMediaTool() {
                 <button
                   onClick={() => {
                     setCaption("");
+                    setLastPreviewContext(null);
                     setImageFile(null);
                     setImagePreview(null);
                     setImageFiles([]);
@@ -3929,6 +4381,45 @@ export default function SocialMediaTool() {
 
 
 
+                    <div className="mb-4 rounded-xl border border-[#E1C37A]/20 bg-[#1A1A1C]/60 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-[#A9AAAC]">Available Tokens</p>
+                          {loadingCredits ? (
+                            <p className="text-sm text-[#D6D7D8] mt-1 flex items-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin text-[#E1C37A]" />
+                              Loading token balance...
+                            </p>
+                          ) : (
+                            <p className="text-xl font-bold text-[#E1C37A] mt-1">{tokenBalance}</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={openTokenModal}
+                          className="px-4 py-2 rounded-lg border border-[#E1C37A]/40 text-[#E1C37A] text-sm font-medium hover:bg-[#E1C37A]/10 transition-colors"
+                        >
+                          Manage / Buy Tokens
+                        </button>
+                      </div>
+                      <div className="mt-3 text-xs text-[#A9AAAC] space-y-1">
+                        <p>
+                          Selected generation cost: <span className="text-[#E1C37A] font-semibold">{selectedAiTokenCost} tokens</span>
+                        </p>
+                        <p>
+                          {tokenBalance >= selectedAiTokenCost ? (
+                            <>
+                              Remaining after generate: <span className="text-green-400 font-semibold">{tokenBalance - selectedAiTokenCost} tokens</span>
+                            </>
+                          ) : (
+                            <>
+                              Need <span className="text-red-400 font-semibold">{selectedAiTokenCost - tokenBalance} more tokens</span> to generate.
+                            </>
+                          )}
+                        </p>
+                        <p>1 Token = £{TOKEN_PRICE.toFixed(2)}</p>
+                      </div>
+                    </div>
+
                     {/* Image → Video Tab */}
 
                     {aiVideoTab === 'image' && (
@@ -4088,7 +4579,7 @@ export default function SocialMediaTool() {
 
                           onClick={handleGenerateAiVideo}
 
-                          disabled={!aiSourceImage || isGeneratingAiVideo}
+                          disabled={!aiSourceImage || isGeneratingAiVideo || loadingCredits || !hasEnoughImageTokens}
 
                           className="w-full py-4 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
 
@@ -4117,6 +4608,18 @@ export default function SocialMediaTool() {
                           )}
 
                         </button>
+
+                        {!loadingCredits && !hasEnoughImageTokens && (
+                          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center justify-between gap-3">
+                            <span>You need {imageToVideoTokenCost} tokens to generate this video.</span>
+                            <button
+                              onClick={openTokenModal}
+                              className="px-3 py-1 rounded-md border border-red-400/30 hover:bg-red-500/10 transition-colors text-xs font-semibold"
+                            >
+                              Buy Tokens
+                            </button>
+                          </div>
+                        )}
 
 
 
@@ -4223,7 +4726,7 @@ export default function SocialMediaTool() {
                         {/* Generate Button */}
                         <button
                           onClick={handleGenerateTextToVideo}
-                          disabled={!textToVideoPrompt.trim() || isGeneratingAiVideo}
+                          disabled={!textToVideoPrompt.trim() || isGeneratingAiVideo || loadingCredits || !hasEnoughTextTokens}
                           className="w-full py-4 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_20px_rgba(225,195,122,0.3)] transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           {isGeneratingAiVideo ? (
@@ -4238,6 +4741,18 @@ export default function SocialMediaTool() {
                             </>
                           )}
                         </button>
+
+                        {!loadingCredits && !hasEnoughTextTokens && (
+                          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center justify-between gap-3">
+                            <span>You need {textToVideoTokenCost} tokens to generate this video.</span>
+                            <button
+                              onClick={openTokenModal}
+                              className="px-3 py-1 rounded-md border border-red-400/30 hover:bg-red-500/10 transition-colors text-xs font-semibold"
+                            >
+                              Buy Tokens
+                            </button>
+                          </div>
+                        )}
 
                         {/* Status Messages */}
                         {aiJobStatus === 'pending' && (
@@ -4482,14 +4997,19 @@ export default function SocialMediaTool() {
                           <button
                             onClick={handlePreview}
                             disabled={isGeneratingPreview || !caption.trim()}
-                            className="text-xs bg-[#E1C37A]/10 text-[#E1C37A] border border-[#E1C37A]/30 px-3 py-1 rounded-lg hover:bg-[#E1C37A]/20 transition-colors flex items-center gap-1.5"
+                            className={`text-xs border px-3 py-1 rounded-lg transition-colors flex items-center gap-1.5 ${hasCurrentAiPreview
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20"
+                              : "bg-[#E1C37A]/10 text-[#E1C37A] border-[#E1C37A]/30 hover:bg-[#E1C37A]/20"
+                              }`}
                           >
                             {isGeneratingPreview ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : hasCurrentAiPreview ? (
+                              <CheckCircle className="w-3 h-3" />
                             ) : (
                               <Eye className="w-3 h-3" />
                             )}
-                            Preview
+                            {hasCurrentAiPreview ? "Previewed" : "Preview"}
                           </button>
                         )}
                         <button
@@ -4506,10 +5026,29 @@ export default function SocialMediaTool() {
 
               <div className="p-6 rounded-2xl bg-[#3B3C3E]/30 backdrop-blur-[20px] border border-white/5">
                 <h3 className="text-sm font-semibold text-[#D6D7D8] mb-4">When to Post</h3>
-                <div className="grid grid-cols-2 gap-3 mb-4">
+                <div
+                  ref={videoWhenToPostRef}
+                  className="relative grid grid-cols-2 gap-3 mb-4"
+                  onMouseLeave={handleVideoWhenToPostMouseLeave}
+                >
+                  <div
+                    className="absolute pointer-events-none rounded-xl hidden md:block"
+                    style={{
+                      opacity: videoWhenToPostHighlightStyle.opacity,
+                      transform: videoWhenToPostHighlightStyle.transform,
+                      width: videoWhenToPostHighlightStyle.width,
+                      height: videoWhenToPostHighlightStyle.height,
+                      background: 'linear-gradient(135deg, rgba(225, 195, 122, 0.15) 0%, rgba(182, 148, 76, 0.1) 100%)',
+                      boxShadow: '0 0 40px rgba(225, 195, 122, 0.35), 0 0 80px rgba(212, 175, 55, 0.2)',
+                      border: '1px solid rgba(225, 195, 122, 0.25)',
+                      transition: 'opacity 0.3s ease, transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1), height 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      zIndex: 0,
+                    }}
+                  />
                   <button
                     onClick={() => setPostMode('publish')}
-                    className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
+                    onMouseEnter={handleVideoWhenToPostCardMouseEnter}
+                    className={`relative z-10 p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'publish'
                       ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
                       : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
                       }`}
@@ -4528,7 +5067,8 @@ export default function SocialMediaTool() {
 
                   <button
                     onClick={() => setPostMode('schedule')}
-                    className={`p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
+                    onMouseEnter={handleVideoWhenToPostCardMouseEnter}
+                    className={`relative z-10 p-4 rounded-xl border transition-all duration-300 flex items-center gap-3 ${postMode === 'schedule'
                       ? 'bg-[#E1C37A]/10 border-[#E1C37A]/50'
                       : 'bg-[#3B3C3E]/30 border-white/5 hover:border-white/20'
                       }`}
@@ -4547,12 +5087,10 @@ export default function SocialMediaTool() {
                 </div>
 
                 {postMode === 'schedule' && (
-                  <input
-                    type="datetime-local"
-                    className="w-full bg-[#3B3C3E]/50 border border-white/10 p-3 rounded-xl text-[#D6D7D8] focus:border-[#E1C37A]/50 focus:ring-2 focus:ring-[#E1C37A]/20"
+                  <ScheduleDateTimePicker
                     value={scheduledTime}
-                    onChange={(e) => setScheduledTime(e.target.value)}
-                    style={{ colorScheme: 'dark' }}
+                    onChange={setScheduledTime}
+                    minDateTime={new Date()}
                   />
                 )}
               </div>
@@ -4561,6 +5099,7 @@ export default function SocialMediaTool() {
                 <button
                   onClick={() => {
                     setCaption("");
+                    setLastPreviewContext(null);
                     setVideoFile(null);
                     setVideoPreview(null);
                     setVideoFiles([]);
@@ -4651,6 +5190,112 @@ export default function SocialMediaTool() {
               maxSizeMB={MAX_VIDEO_SIZE_MB}
             />
           )}
+          <AnimatePresence>
+            {showTokenModal && (
+              <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                  className="bg-[#3B3C3E] rounded-2xl w-full max-w-xl border border-[#E1C37A]/30 shadow-2xl relative overflow-hidden"
+                >
+                  <div className="flex items-center justify-between p-6 border-b border-white/10 bg-[#2C2C2E]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-[#E1C37A]/10 flex items-center justify-center">
+                        <Coins className="w-5 h-5 text-[#E1C37A]" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-[#D6D7D8]">Tokens</h3>
+                        <p className="text-xs text-[#A9AAAC]">Buy tokens without leaving post video</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setShowTokenModal(false)}
+                      className="w-8 h-8 rounded-lg hover:bg-white/10 flex items-center justify-center transition-colors"
+                    >
+                      <X className="w-5 h-5 text-[#A9AAAC]" />
+                    </button>
+                  </div>
+
+                  <div className="p-6 space-y-5">
+                    <div className="rounded-xl bg-[#1A1A1C]/70 border border-[#E1C37A]/15 p-4 flex items-center justify-between">
+                      <p className="text-sm text-[#A9AAAC]">Current balance</p>
+                      <p className="text-xl font-bold text-[#E1C37A]">
+                        {loadingCredits ? '...' : tokenBalance} tokens
+                      </p>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between mb-2 text-xs text-[#A9AAAC]">
+                        <span>{MIN_TOKENS_PURCHASE} tokens</span>
+                        <span>{MAX_TOKENS_PURCHASE} tokens</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={MIN_TOKENS_PURCHASE}
+                        max={MAX_TOKENS_PURCHASE}
+                        step={TOKEN_PURCHASE_STEP}
+                        value={purchaseAmount}
+                        onChange={(e) => setPurchaseAmount(Number(e.target.value))}
+                        className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                        style={{
+                          background: `linear-gradient(to right, #E1C37A 0%, #B6934C ${((purchaseAmount - MIN_TOKENS_PURCHASE) / (MAX_TOKENS_PURCHASE - MIN_TOKENS_PURCHASE)) * 100}%, #3B3C3E ${((purchaseAmount - MIN_TOKENS_PURCHASE) / (MAX_TOKENS_PURCHASE - MIN_TOKENS_PURCHASE)) * 100}%, #3B3C3E 100%)`,
+                        }}
+                      />
+                      <div className="flex gap-2 mt-4 flex-wrap">
+                        {[10, 25, 50, 100, 200, 500].map((amt) => (
+                          <button
+                            key={amt}
+                            onClick={() => setPurchaseAmount(amt)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${purchaseAmount === amt
+                              ? "bg-[#E1C37A]/20 text-[#E1C37A] border border-[#E1C37A]/40"
+                              : "bg-[#3B3C3E]/50 text-[#A9AAAC] border border-[#3B3C3E] hover:border-[#E1C37A]/20 hover:text-[#E1C37A]"
+                              }`}
+                          >
+                            {amt}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl bg-[#1A1A1C]/60 border border-white/10 p-4 flex items-center justify-between">
+                      <p className="text-sm text-[#A9AAAC]">
+                        <span className="text-white font-semibold">{purchaseAmount}</span> tokens
+                      </p>
+                      <p className="text-lg font-bold text-[#E1C37A]">£{(purchaseAmount * TOKEN_PRICE).toFixed(2)}</p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => {
+                          setShowTokenModal(false);
+                          window.location.href = '/account';
+                        }}
+                        className="flex-1 px-4 py-3 rounded-xl border border-white/10 text-[#D6D7D8] hover:bg-white/5 transition-colors text-sm"
+                      >
+                        Go To Account
+                      </button>
+                      <button
+                        onClick={handlePurchaseTokens}
+                        disabled={isPurchasingTokens}
+                        className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-[#E1C37A] to-[#B6934C] text-[#1A1A1C] font-bold hover:shadow-[0_0_15px_rgba(225,195,122,0.3)] transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {isPurchasingTokens ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Redirecting...
+                          </>
+                        ) : (
+                          `Buy ${purchaseAmount} Tokens`
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
           {/* AI Preview Modal */}
           <AnimatePresence>
             {showPreviewModal && (

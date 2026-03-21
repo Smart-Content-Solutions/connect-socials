@@ -28,7 +28,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
   const { isAuthenticated, login } = useSubscription();
 
   const navLinks = [
-    { name: "Dashboard", href: "/dashboard-preview" },
+    { name: "Dashboard", href: "/dashboard" },
     { name: "Core Tools", href: "/core-tools" },
     { name: "Corporate", href: "/corporate-tools" },
     { name: "Pricing", href: "/pricing" },
@@ -205,6 +205,18 @@ function LayoutContent({ children }: { children: ReactNode }) {
                 </Link>
                 <Link to="/contact" className="block text-sm text-[#A9AAAC] hover:text-white">
                   Book a Call
+                </Link>
+                <Link
+                  to="/contact?feedback=bug#feedback"
+                  className="block text-sm text-[#A9AAAC] hover:text-white"
+                >
+                  Report a Bug
+                </Link>
+                <Link
+                  to="/contact?feedback=feature#feedback"
+                  className="block text-sm text-[#A9AAAC] hover:text-white"
+                >
+                  Request a Feature
                 </Link>
               </div>
             </div>

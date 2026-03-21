@@ -33,7 +33,7 @@ export default function Tool() {
 
   // ✅ Invalid slug → dashboard (only redirect if there IS a slug but tool not found)
   if (!tool) {
-    return <Navigate to="/dashboard-preview" replace />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   // ✅ DO NOT redirect normal users anymore

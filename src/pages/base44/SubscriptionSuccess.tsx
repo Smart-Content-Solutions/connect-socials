@@ -20,7 +20,7 @@ export default function SubscriptionSuccess() {
       );
 
       if (alreadyProcessed) {
-        navigate("/dashboard-preview", { replace: true });
+        navigate("/dashboard", { replace: true });
         return;
       }
 
@@ -54,7 +54,7 @@ export default function SubscriptionSuccess() {
 
   const handleRedirect = () => {
     setShowModal(false);
-    navigate("/dashboard-preview", { replace: true });
+    navigate("/dashboard", { replace: true });
   };
 
   return (

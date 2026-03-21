@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useSubscription } from "../subscription/useSubscription";
 
 interface LockedToolCardProps {
+  toolId?: string;
   icon: React.ElementType;
   title: string;
   description: string;
@@ -16,6 +17,7 @@ interface LockedToolCardProps {
 }
 
 export default function LockedToolCard({
+  toolId,
   icon: Icon,
   title,
   description,
@@ -31,8 +33,9 @@ export default function LockedToolCard({
   const isEarlyAccess = user?.base_tier === "early_access";
   const isPro = user?.base_tier === "pro";
 
-  // hasAccessToTool now correctly handles early_access/pro via entitlements
-  const hasAccess = isAdmin || isEarlyAccess || isPro || hasAccessToTool(planRequired);
+  // hasAccessToTool expects a tool ID; fall back to planRequired only for legacy callers.
+  const accessKey = toolId || planRequired;
+  const hasAccess = isAdmin || isEarlyAccess || isPro || hasAccessToTool(accessKey);
 
   const CardWrapper: React.ElementType = slug ? Link : "div";
   const cardProps = slug ? { to: `/tool?slug=${slug}` } : {};

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Mail,
@@ -20,10 +20,23 @@ import { useUser } from "@clerk/clerk-react";
 import { Link, useLocation } from "react-router-dom";
 import FeedbackForm from "../../components/feedback/FeedbackForm";
 import { MessageCircle } from "lucide-react";
+import type { FeedbackCategory } from "@/types/feedback";
+
+function getFeedbackCategoryFromQuery(value: string | null): FeedbackCategory {
+  if (!value) return "General";
+
+  const normalized = value.toLowerCase();
+  if (normalized === "bug") return "Bug";
+  if (normalized === "feature") return "Feature";
+  if (normalized === "billing") return "Billing";
+  return "General";
+}
 
 export default function Contact() {
   const { isSignedIn, isLoaded } = useUser();
   const location = useLocation();
+  const feedbackParam = new URLSearchParams(location.search).get("feedback");
+  const initialFeedbackCategory = getFeedbackCategoryFromQuery(feedbackParam);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -36,6 +49,20 @@ export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState([]);
+
+  useEffect(() => {
+    const shouldScrollToFeedback =
+      location.hash === "#feedback" || feedbackParam !== null;
+
+    if (!shouldScrollToFeedback) return;
+
+    const timeoutId = window.setTimeout(() => {
+      const feedbackSection = document.getElementById("feedback");
+      feedbackSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [location.hash, feedbackParam]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -131,15 +158,15 @@ export default function Contact() {
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
                   <Mail className="w-5 h-5" />
-                  <p className="text-[#D6D7D8]">hello@smartcontentsolutions.co</p>
+                  <p className="text-[#D6D7D8]">support@smartcontentsolutions.co.uk</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <Phone className="w-5 h-5" />
-                  <p className="text-[#D6D7D8]">+1 (555) 123-4567</p>
+                  <p className="text-[#D6D7D8]">+447904455177</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <MapPin className="w-5 h-5" />
-                  <p className="text-[#D6D7D8]">London, UK (Remote-first)</p>
+                  <p className="text-[#D6D7D8]">Cheshire</p>
                 </div>
               </div>
             </motion.div>
@@ -304,7 +331,7 @@ export default function Contact() {
       </section>
 
       {/* FEEDBACK SECTION */}
-      <section className="py-12">
+      <section id="feedback" className="py-12">
         <div className="max-w-6xl mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -319,7 +346,10 @@ export default function Contact() {
             <p className="text-[#A9AAAC] mb-6">
               Help us improve Smart Content Solutions by sharing your feedback.
             </p>
-            <FeedbackForm pageUrl={`${window.location.origin}${location.pathname}${location.search}`} />
+            <FeedbackForm
+              initialCategory={initialFeedbackCategory}
+              pageUrl={`${window.location.origin}${location.pathname}${location.search}`}
+            />
           </motion.div>
         </div>
       </section>

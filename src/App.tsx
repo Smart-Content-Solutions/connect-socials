@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createBrowserRouter, createRoutesFromElements, Route, Navigate, Outlet, RouterProvider } from "react-router-dom";
-import { useUser, SignIn } from "@clerk/clerk-react";
+import { useUser } from "@clerk/clerk-react";
 import SocialAutomationApp from "./components/apps/SocialAutomationApp";
 import { SupportAgentProvider } from "./context/SupportAgentContext";
 
@@ -25,6 +25,7 @@ import Account from "./pages/base44/Account";
 
 // ✅ Platform Pages
 import DashboardPreview from "./pages/base44/DashboardPreview";
+import Dashboard from "./pages/base44/Dashboard";
 import CoreTools from "./pages/base44/CoreTools";
 import CorporateTools from "./pages/base44/CorporateTools";
 import Pricing from "./pages/base44/Pricing";
@@ -72,6 +73,9 @@ import AdminRoute from "./components/admin/AdminRoute";
 import { AdminLayout } from "./components/admin/AdminLayout";
 import PlannerApp from "./planner_section/PlannerApp";
 import RoleProtectedRoute from "./components/auth/RoleProtectedRoute";
+import SessionLimitModal from "./components/account/SessionLimitModal";
+import { useAccountSessions } from "./hooks/useAccountSessions";
+import { toast } from "sonner";
 
 // ✅ Feedback
 import FeedbackPrompt from "./components/feedback/FeedbackPrompt";
@@ -86,7 +90,21 @@ const queryClient = new QueryClient();
 
 // ✅ Protected Route
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, isLoaded, user } = useUser();
+  const role =
+    (user?.publicMetadata?.base_tier as string) ||
+    (user?.publicMetadata?.role as string) ||
+    "free";
+  const isAdmin = role === "admin";
+  const {
+    sessions,
+    activeCount,
+    maxAllowed,
+    loading,
+    error,
+    isOverLimit,
+    revokeSession,
+  } = useAccountSessions(isSignedIn);
 
   if (!isLoaded) {
     return (
@@ -96,7 +114,36 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     );
   }
 
-  return isSignedIn ? children : <Navigate to="/login" replace />;
+  if (!isSignedIn) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return (
+    <>
+      {children}
+      <SessionLimitModal
+        open={!isAdmin && isOverLimit}
+        activeCount={activeCount}
+        maxAllowed={maxAllowed}
+        sessions={sessions}
+        loading={loading}
+        error={error}
+        onRevoke={async (sessionId) => {
+          try {
+            await revokeSession(sessionId);
+            toast.success("Device signed out successfully.");
+          } catch (revokeError: unknown) {
+            const message =
+              revokeError instanceof Error
+                ? revokeError.message
+                : "Failed to sign out that device.";
+            toast.error(message);
+            throw revokeError;
+          }
+        }}
+      />
+    </>
+  );
 };
 
 const RootLayout = () => (
@@ -207,6 +254,16 @@ const router = createBrowserRouter(
       />
 
       {/* ✅ PLATFORM ROUTES */}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Dashboard />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/dashboard-preview"
         element={
@@ -326,7 +383,7 @@ const router = createBrowserRouter(
         path="/social-posts"
         element={
           <ProtectedRoute>
-            <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
+            <RoleProtectedRoute requiredToolId="social-automation">
               <SocialMediaTool />
             </RoleProtectedRoute>
           </ProtectedRoute>
@@ -422,7 +479,7 @@ const router = createBrowserRouter(
         path="/apps/social-automation"
         element={
           <ProtectedRoute>
-            <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
+            <RoleProtectedRoute requiredToolId="social-automation">
               <Layout>
                 <SocialAutomationApp />
               </Layout>
@@ -434,7 +491,7 @@ const router = createBrowserRouter(
         path="/apps/wordpress-seo"
         element={
           <ProtectedRoute>
-            <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
+            <RoleProtectedRoute requiredToolId="wordpress-seo">
               <Layout>
                 <WordpressAutomationApp />
               </Layout>
@@ -446,7 +503,7 @@ const router = createBrowserRouter(
         path="/apps/ai-agent"
         element={
           <ProtectedRoute>
-            <RoleProtectedRoute allowedRoles={["early_access", "admin"]}>
+            <RoleProtectedRoute requiredToolId="ai-agent">
               <Layout>
                 <AIAgentTool />
               </Layout>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -25,20 +25,25 @@ export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(true);
   const [loadingPlan, setLoadingPlan] = useState<PlanName>(null);
   const [error, setError] = useState<string | null>(null);
+  const whatsIncludedRef = useRef<HTMLElement | null>(null);
+  const faqRef = useRef<HTMLElement | null>(null);
 
   const params = new URLSearchParams(location.search);
   const checkoutCancelled = params.get("checkout") === "cancelled";
 
   const handleSubscribe = async (planName: PlanName) => {
     setError(null);
+    window.dispatchEvent(new CustomEvent("scs-support-signal", { detail: { busy: true } }));
 
     if (planName === "Enterprise") {
       navigate("/contact");
+      window.dispatchEvent(new CustomEvent("scs-support-signal", { detail: { busy: false } }));
       return;
     }
 
     if (!user) {
       navigate("/login");
+      window.dispatchEvent(new CustomEvent("scs-support-signal", { detail: { busy: false } }));
       return;
     }
 
@@ -67,14 +72,48 @@ export default function Pricing() {
       }
 
       if (data?.url) {
+        window.dispatchEvent(
+          new CustomEvent("scs-support-signal", { detail: { pageCompleted: "/pricing" } })
+        );
         window.location.href = data.url;
       }
     } catch (err: any) {
       setError(err.message || "Something went wrong. Please try again.");
     } finally {
       setLoadingPlan(null);
+      window.dispatchEvent(new CustomEvent("scs-support-signal", { detail: { busy: false } }));
     }
   };
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          if (entry.target === whatsIncludedRef.current || entry.target === faqRef.current) {
+            window.dispatchEvent(
+              new CustomEvent("scs-support-signal", { detail: { type: "pricing-faq" } })
+            );
+          }
+        });
+      },
+      { threshold: 0.35 }
+    );
+
+    if (whatsIncludedRef.current) observer.observe(whatsIncludedRef.current);
+    if (faqRef.current) observer.observe(faqRef.current);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      window.dispatchEvent(
+        new CustomEvent("scs-support-signal", { detail: { type: "pricing-long" } })
+      );
+    }, 20000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const plans = [
     {
@@ -204,7 +243,7 @@ export default function Pricing() {
       />
 
       {/* WHAT'S INCLUDED */}
-      <section className="py-24">
+      <section ref={whatsIncludedRef} className="py-24">
         <div className="max-w-4xl mx-auto px-6">
           <SectionHeading
             badge="What You Get"
@@ -241,7 +280,7 @@ export default function Pricing() {
       </section>
 
       {/* FAQ */}
-      <section className="py-24">
+      <section ref={faqRef} className="py-24">
         <div className="max-w-3xl mx-auto px-6">
           <SectionHeading badge="FAQs" title="Questions? Answers." />
 
