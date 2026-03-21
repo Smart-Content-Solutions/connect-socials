@@ -25,11 +25,9 @@ export default async function handler(req: any, res: any) {
 
         const { createClient } = await import('@supabase/supabase-js');
         
-        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
-            process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiaGZiY3FjZWZibnNqdnFtanRlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDE2NTY2MiwiZXhwIjoyMDc5NzQxNjYyfQ.0AT9XjB1GHDr94wY5Tm-oIhE8uBxvRafhgAx7akNrV8";
+        const supabaseUrl = "https://wbhfbcqcefbnsjvqmjte.supabase.co";
+        const serviceKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiaGZiY3FjZWZibnNqdnFtanRlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDE2NTY2MiwiZXhwIjoyMDc5NzQxNjYyfQ.0AT9XjB1GHDr94wY5Tm-oIhE8uBxvRafhgAx7akNrV8";
 
-        const supabaseUrl = process.env.SUPABASE_SCS_URL || "https://wbhfbcqcefbnsjvqmjte.supabase.co";
         const supabase = createClient(supabaseUrl, serviceKey);
 
         if (platform) {
@@ -40,7 +38,6 @@ export default async function handler(req: any, res: any) {
                 .eq('platform', platform);
 
             if (error) {
-                console.error('Supabase error:', error);
                 return res.status(200).json({
                     success: true,
                     connected: false,
@@ -71,7 +68,6 @@ export default async function handler(req: any, res: any) {
                 .eq('user_id', user_id);
 
             if (error) {
-                console.error('Supabase error:', error);
                 return res.status(200).json({
                     success: true,
                     connected: false,
