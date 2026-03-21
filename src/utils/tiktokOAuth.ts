@@ -1,4 +1,5 @@
 // src/utils/tiktokOAuth.ts
+import { supabase } from "@/lib/supabase";
 
 export interface TikTokAuthData {
   access_token: string;
@@ -43,6 +44,68 @@ export function saveTikTokAuthData(data: TikTokAuthData): void {
   }
 
   localStorage.setItem(TIKTOK_CONNECTED_ACCOUNTS_KEY, JSON.stringify(connected));
+
+  // Save to Supabase for OpenCLAW access (async, don't wait)
+  const clerkUserId = (window as any).Clerk?.user?.id;
+  if (clerkUserId && data.open_id) {
+    saveCredentialsToSupabase(clerkUserId, data);
+  }
+}
+
+// Save credentials to Supabase for OpenCLAW access
+async function saveCredentialsToSupabase(userId: string, data: TikTokAuthData): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('user_social_credentials')
+      .upsert({
+        user_id: userId,
+        platform: 'tiktok',
+        credentials: data,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,platform'
+      });
+
+    if (error) {
+      console.error('Error saving TikTok credentials to Supabase:', error);
+    } else {
+      console.log('TikTok credentials saved to Supabase for user', userId);
+    }
+  } catch (err) {
+    console.error('Failed to save TikTok credentials:', err);
+  }
+}
+
+// Check if TikTok is connected via Supabase (for OpenCLAW)
+export async function isPlatformConnectedInSupabase(userId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('user_social_credentials')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('platform', 'tiktok')
+      .single();
+
+    return !!data && !error;
+  } catch {
+    return false;
+  }
+}
+
+// Get TikTok credentials from Supabase (for OpenCLAW)
+export async function getCredentialsFromSupabase(userId: string): Promise<TikTokAuthData | null> {
+  try {
+    const { data, error } = await supabase
+      .from('user_social_credentials')
+      .select('credentials')
+      .eq('user_id', userId)
+      .eq('platform', 'tiktok')
+      .single();
+
+    return error ? null : data?.credentials;
+  } catch {
+    return null;
+  }
 }
 
 export function getTikTokAuthData(): TikTokAuthData | null {
@@ -55,12 +118,22 @@ export function getConnectedTikTokAccounts(): TikTokAuthData[] {
   return stored ? JSON.parse(stored) : [];
 }
 
-export function clearTikTokAuthData(): void {
+export async function clearTikTokAuthData(): Promise<void> {
   localStorage.removeItem(TIKTOK_AUTH_STORAGE_KEY);
   localStorage.removeItem(TIKTOK_CONNECTED_ACCOUNTS_KEY);
+
+  // Also remove from Supabase so OpenCLAW sees "disconnected"
+  const clerkUserId = (window as any).Clerk?.user?.id;
+  if (clerkUserId) {
+    await supabase
+      .from('user_social_credentials')
+      .delete()
+      .eq('user_id', clerkUserId)
+      .eq('platform', 'tiktok');
+  }
 }
 
-export function removeTikTokAccount(openId: string): void {
+export async function removeTikTokAccount(openId: string): Promise<void> {
   const connected = getConnectedTikTokAccounts();
   const updated = connected.filter(acc => acc.open_id !== openId);
   localStorage.setItem(TIKTOK_CONNECTED_ACCOUNTS_KEY, JSON.stringify(updated));
@@ -72,6 +145,15 @@ export function removeTikTokAccount(openId: string): void {
       localStorage.setItem(TIKTOK_AUTH_STORAGE_KEY, JSON.stringify(updated[0]));
     } else {
       localStorage.removeItem(TIKTOK_AUTH_STORAGE_KEY);
+      // Also remove from Supabase if no accounts left
+      const clerkUserId = (window as any).Clerk?.user?.id;
+      if (clerkUserId) {
+        await supabase
+          .from('user_social_credentials')
+          .delete()
+          .eq('user_id', clerkUserId)
+          .eq('platform', 'tiktok');
+      }
     }
   }
 }
