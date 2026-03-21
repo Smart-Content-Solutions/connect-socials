@@ -28,7 +28,7 @@ export default async function handler(req: any, res: any) {
         }
 
         const supabaseUrl = process.env.SUPABASE_SCS_URL || "https://bgwmonmfulmmdwlbdekz.supabase.co";
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
         if (!supabaseServiceKey) {
             return res.status(500).json({ success: false, error: 'Server configuration error' });
