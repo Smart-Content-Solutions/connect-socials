@@ -23,25 +23,33 @@ export default async function handler(req: any, res: any) {
             return res.status(400).json({ success: false, error: 'user_id is required' });
         }
 
-        const supabaseUrl = process.env.SUPABASE_SCS_URL || "https://wbhfbcqcefbnsjvqmjte.supabase.co";
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiaGZiY3FjZWZibnNqdnFtanRlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDE2NTY2MiwiZXhwIjoyMDc5NzQxNjYyfQ.0AT9XjB1GHDr94wY5Tm-oIhE8uBxvRafhgAx7akNrV8";
-
-        if (!supabaseServiceKey) {
-            return res.status(500).json({ success: false, error: 'Server configuration error' });
-        }
-
         const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+            process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || 
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiaGZiY3FjZWZibnNqdnFtanRlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDE2NTY2MiwiZXhwIjoyMDc5NzQxNjYyfQ.0AT9XjB1GHDr94wY5Tm-oIhE8uBxvRafhgAx7akNrV8";
+
+        const supabaseUrl = process.env.SUPABASE_SCS_URL || "https://wbhfbcqcefbnsjvqmjte.supabase.co";
+        const supabase = createClient(supabaseUrl, serviceKey);
 
         if (platform) {
             const { data, error } = await supabase
                 .from('user_social_credentials')
                 .select('*')
                 .eq('user_id', user_id)
-                .eq('platform', platform)
-                .single();
+                .eq('platform', platform);
 
-            if (error || !data) {
+            if (error) {
+                console.error('Supabase error:', error);
+                return res.status(200).json({
+                    success: true,
+                    connected: false,
+                    platform,
+                    error: error.message
+                });
+            }
+
+            if (!data || data.length === 0) {
                 return res.status(200).json({
                     success: true,
                     connected: false,
@@ -53,8 +61,8 @@ export default async function handler(req: any, res: any) {
                 success: true,
                 connected: true,
                 platform,
-                credentials: data.credentials,
-                updated_at: data.updated_at
+                credentials: data[0].credentials,
+                updated_at: data[0].updated_at
             });
         } else {
             const { data, error } = await supabase
@@ -63,10 +71,12 @@ export default async function handler(req: any, res: any) {
                 .eq('user_id', user_id);
 
             if (error) {
+                console.error('Supabase error:', error);
                 return res.status(200).json({
                     success: true,
                     connected: false,
-                    platforms: []
+                    platforms: [],
+                    error: error.message
                 });
             }
 
@@ -86,7 +96,7 @@ export default async function handler(req: any, res: any) {
         console.error('Error getting credentials:', error);
         return res.status(500).json({
             success: false,
-            error: error.message || 'Failed to get credentials'
+            error: error.message
         });
     }
 }
