@@ -1,4 +1,6 @@
 // src/utils/instagramOAuth.ts
+import { supabase } from "@/lib/supabase";
+
 export interface InstagramAuthData {
   access_token: string;
   expires_in?: number;
@@ -40,8 +42,18 @@ export function getInstagramAuthData(): InstagramAuthData | null {
   return raw ? JSON.parse(raw) : null;
 }
 
-export function clearInstagramAuthData(): void {
+export async function clearInstagramAuthData(): Promise<void> {
   localStorage.removeItem(INSTAGRAM_AUTH_STORAGE_KEY);
+
+  // Also remove from Supabase so OpenCLAW sees "disconnected"
+  const clerkUserId = (window as any).Clerk?.user?.id;
+  if (clerkUserId) {
+    await supabase
+      .from('user_social_credentials')
+      .delete()
+      .eq('user_id', clerkUserId)
+      .eq('platform', 'instagram');
+  }
 }
 
 export function isInstagramConnected(): boolean {
@@ -125,7 +137,67 @@ export async function completeInstagramAuth(): Promise<InstagramAuthData> {
   if (!authData) throw new Error("Invalid response from OAuth callback");
 
   saveInstagramAuthData(authData);
+  
+  // ALSO save to Supabase so OpenCLAW on remote server can access it
+  await saveCredentialsToSupabase(userId, 'instagram', authData);
+
   localStorage.removeItem(OAUTH_INITIATOR_USER_KEY);
 
   return authData;
+}
+
+// Save credentials to Supabase for OpenCLAW access
+async function saveCredentialsToSupabase(userId: string, platform: string, data: any): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('user_social_credentials')
+      .upsert({
+        user_id: userId,
+        platform: platform,
+        credentials: data,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,platform'
+      });
+
+    if (error) {
+      console.error(`Error saving ${platform} credentials to Supabase:`, error);
+    } else {
+      console.log(`${platform} credentials saved to Supabase for user ${userId}`);
+    }
+  } catch (err) {
+    console.error(`Failed to save ${platform} credentials:`, err);
+  }
+}
+
+// Check if platform is connected via Supabase (for OpenCLAW)
+export async function isPlatformConnectedInSupabase(userId: string, platform: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .from('user_social_credentials')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('platform', platform)
+      .single();
+
+    return !!data && !error;
+  } catch {
+    return false;
+  }
+}
+
+// Get credentials from Supabase (for OpenCLAW)
+export async function getCredentialsFromSupabase(userId: string, platform: string): Promise<any> {
+  try {
+    const { data, error } = await supabase
+      .from('user_social_credentials')
+      .select('credentials')
+      .eq('user_id', userId)
+      .eq('platform', platform)
+      .single();
+
+    return error ? null : data?.credentials;
+  } catch {
+    return null;
+  }
 }

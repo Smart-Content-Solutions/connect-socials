@@ -232,10 +232,16 @@ export default function ConnectedAccounts({ user }) {
                     className={`w-full ${
                       connected ? "btn-outline" : "btn-gold"
                     }`}
-                    disabled={isLoading}
-                    onClick={
-                      connected ? acc.disconnect : acc.start
-                    }
+                    disabled={!!loadingPlatform}
+                    onClick={async () => {
+                      if (connected && acc.disconnect) {
+                        setLoadingPlatform(acc.id);
+                        await acc.disconnect();
+                        setLoadingPlatform(null);
+                      } else {
+                        acc.start?.();
+                      }
+                    }}
                   >
                     {isLoading ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

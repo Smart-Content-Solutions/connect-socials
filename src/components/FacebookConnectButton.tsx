@@ -244,8 +244,8 @@ export function FacebookConnectButton() {
     }
   };
 
-  const handleDisconnect = () => {
-    clearFacebookAuthData();
+  const handleDisconnect = async () => {
+    await clearFacebookAuthData();
     localStorage.removeItem("facebook_connected_pages");
     localStorage.removeItem("facebook_selected_page"); // Clean up old key too
     setAuthData(null);
