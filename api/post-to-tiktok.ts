@@ -21,28 +21,23 @@ export default async function handler(req: any, res: any) {
             return res.status(400).json({ success: false, error: 'title is required' });
         }
 
-        const supabaseUrl = process.env.SUPABASE_SCS_URL || "https://wbhfbcqcefbnsjvqmjte.supabase.co";
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiaGZiY3FjZWZibnNqdnFtanRlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDE2NTY2MiwiZXhwIjoyMDc5NzQxNjYyfQ.0AT9XjB1GHDr94wY5Tm-oIhE8uBxvRafhgAx7akNrV8";
-
-        if (!supabaseServiceKey) {
-            return res.status(500).json({ success: false, error: 'Server configuration error' });
-        }
+        const supabaseUrl = "https://wbhfbcqcefbnsjvqmjte.supabase.co";
+        const serviceKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiaGZiY3FjZWZibnNqdnFtanRlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDE2NTY2MiwiZXhwIjoyMDc5NzQxNjYyfQ.0AT9XjB1GHDr94wY5Tm-oIhE8uBxvRafhgAx7akNrV8";
 
         const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        const supabase = createClient(supabaseUrl, serviceKey);
 
         const { data: credData, error: credError } = await supabase
             .from('user_social_credentials')
             .select('credentials')
             .eq('user_id', user_id)
-            .eq('platform', 'tiktok')
-            .single();
+            .eq('platform', 'tiktok');
 
-        if (credError || !credData) {
+        if (credError || !credData || credData.length === 0) {
             return res.status(404).json({ success: false, error: 'TikTok not connected' });
         }
 
-        const credentials = credData.credentials;
+        const credentials = credData[0].credentials;
         const accessToken = credentials.access_token;
         const openId = credentials.open_id;
 
