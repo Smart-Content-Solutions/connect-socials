@@ -3,11 +3,6 @@ import { createClerkClient } from "@clerk/backend";
 
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
 
-/**
- * API endpoint to create Stripe checkout sessions
- * This handles subscription purchases and assigns the early_access role via webhook
- */
-
 async function readJsonBody(req: any): Promise<any> {
     if (req.body && typeof req.body === "object") return req.body;
     if (req.body && typeof req.body === "string") {

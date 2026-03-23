@@ -6,8 +6,6 @@ import { getSubscriptionConfirmationEmail } from "./emails/subscription-confirma
 import { getSubscriptionCancellationEmail } from "./emails/subscription-cancellation.js";
 
 const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
-
-// Supabase client for token credit operations
 const supabaseUrl = process.env.SUPABASE_SCS_URL || "https://bgwmonmfulmmdwlbdekz.supabase.co";
 const supabaseServiceKey = process.env.SUPABASE_SCS_SERVICE_ROLE_KEY || "";
 
