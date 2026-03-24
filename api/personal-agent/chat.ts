@@ -429,11 +429,17 @@ async function executeToolCall(
       }
       
       const accessToken = credData.credentials?.access_token;
+      const linkedinPersonId = (credData as Record<string, unknown>).account_id as string | undefined;
       console.log('[LINKEDIN POST] accessToken exists:', !!accessToken);
+      console.log('[LINKEDIN POST] account_id (person ID):', linkedinPersonId);
+      console.log('[LINKEDIN POST] full credData:', JSON.stringify(credData));
+      
+      const authorUrn = linkedinPersonId ? `urn:li:person:${linkedinPersonId}` : `urn:li:person:${userId}`;
+      console.log('[LINKEDIN POST] Using author URN:', authorUrn);
       
       try {
         const postPayload: Record<string, unknown> = {
-          author: `urn:li:person:${userId}`,
+          author: authorUrn,
           lifecycleState: 'PUBLISHED',
           specificContent: {
             'com.linkedin.ugc.ShareContent': {
@@ -445,6 +451,8 @@ async function executeToolCall(
             'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC',
           },
         };
+        
+        console.log('[LINKEDIN POST] Full payload:', JSON.stringify(postPayload));
         
         if (media_url) {
           (postPayload.specificContent as Record<string, unknown>)['com.linkedin.ugc.ShareContent'] = {
