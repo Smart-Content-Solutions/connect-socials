@@ -364,7 +364,7 @@ async function executeToolCall(
       }
       
       const accessToken = credData.credentials?.access_token;
-      const accountId = credData.credentials?.pageId || credData.credentials?.facebook_id || credData.credentials?.id;
+      const accountId = credData.credentials?.facebook_user_id || credData.credentials?.pageId;
       console.log('[FACEBOOK POST] accountId:', accountId);
       
       console.log('[FACEBOOK POST] accountId:', accountId);
