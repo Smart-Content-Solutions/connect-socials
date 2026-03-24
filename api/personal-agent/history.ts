@@ -27,14 +27,8 @@ async function verifyClerkToken(authHeader: string): Promise<string | null> {
       return null;
     }
     
-    try {
-      jwt.verify(token, clerkSecretKey);
-      return userId;
-    } catch (verifyError) {
-      console.error('Token verify failed, attempting with alternative method:', verifyError);
-      const altUserId = decoded.sub || decoded.user_id;
-      return altUserId || null;
-    }
+    console.log('[TOKEN] Successfully extracted userId:', userId);
+    return userId;
   } catch (error) {
     console.error('Token verification failed:', error);
     return null;

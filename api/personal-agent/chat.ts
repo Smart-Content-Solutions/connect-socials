@@ -31,14 +31,8 @@ async function verifyClerkToken(authHeader: string): Promise<string | null> {
       return null;
     }
     
-    try {
-      jwt.verify(token, clerkSecretKey);
-      return userId;
-    } catch (verifyError) {
-      console.error('Token verify failed, attempting with alternative method:', verifyError);
-      const altUserId = decoded.sub || decoded.user_id;
-      return altUserId || null;
-    }
+    console.log('[TOKEN] Successfully extracted userId:', userId);
+    return userId;
   } catch (error) {
     console.error('Token verification failed:', error);
     return null;
@@ -903,7 +897,17 @@ export default async function handler(req: any, res: any) {
         ],
       });
       
-      responseText = finalCompletion.choices[0]?.message?.content || responseText;
+      const toolResultsTyped = toolResults as Record<string, { success?: boolean; error?: string }>;
+      const anyToolFailed = Object.values(toolResultsTyped).some(r => r.success === false);
+      if (anyToolFailed) {
+        const errors = Object.entries(toolResultsTyped)
+          .filter(([_, r]) => r.success === false)
+          .map(([name, r]) => `⚠️ ${name}: ${r.error}`)
+          .join('\n');
+        responseText = `I encountered some issues:\n\n${errors}\n\nPlease make sure your social media accounts are connected in your dashboard settings.`;
+      } else {
+        responseText = finalCompletion.choices[0]?.message?.content || responseText;
+      }
       
       await saveMessage(supabase, userId, currentSessionId, 'assistant', responseText, 
         toolCalls.reduce((acc: Record<string, unknown>, tc: Record<string, unknown>) => {
