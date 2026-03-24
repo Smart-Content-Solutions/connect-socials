@@ -429,12 +429,11 @@ async function executeToolCall(
       }
       
       const accessToken = credData.credentials?.access_token;
-      const linkedinPersonId = (credData as Record<string, unknown>).account_id as string | undefined;
+      const linkedinUserId = credData.credentials?.linkedin_user_id;
       console.log('[LINKEDIN POST] accessToken exists:', !!accessToken);
-      console.log('[LINKEDIN POST] account_id (person ID):', linkedinPersonId);
-      console.log('[LINKEDIN POST] full credData:', JSON.stringify(credData));
+      console.log('[LINKEDIN POST] linkedin_user_id from credentials:', linkedinUserId);
       
-      const authorUrn = linkedinPersonId ? `urn:li:person:${linkedinPersonId}` : `urn:li:person:${userId}`;
+      const authorUrn = linkedinUserId ? `urn:li:person:${linkedinUserId}` : `urn:li:person:${userId}`;
       console.log('[LINKEDIN POST] Using author URN:', authorUrn);
       
       try {
