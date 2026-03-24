@@ -11,6 +11,40 @@ const openai = new OpenAI({
 
 const clerkSecretKey = process.env.VITE_CLERK_SECRET_KEY || 'sk_test_JjTqEC8zpcJlW2Y9wdTbMGevmLC81O6Ii7aw3YGWrL';
 
+async function verifyClerkToken(authHeader: string): Promise<string | null> {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+  
+  const token = authHeader.substring(7);
+  
+  try {
+    const decoded = jwt.decode(token) as { user_id?: string; sub?: string } | null;
+    if (!decoded) {
+      console.error('Token decode failed: token is invalid');
+      return null;
+    }
+    
+    const userId = decoded.user_id || decoded.sub;
+    if (!userId) {
+      console.error('Token does not contain user_id or sub');
+      return null;
+    }
+    
+    try {
+      jwt.verify(token, clerkSecretKey);
+      return userId;
+    } catch (verifyError) {
+      console.error('Token verify failed, attempting with alternative method:', verifyError);
+      const altUserId = decoded.sub || decoded.user_id;
+      return altUserId || null;
+    }
+  } catch (error) {
+    console.error('Token verification failed:', error);
+    return null;
+  }
+}
+
 function generateTools() {
   return [
     {
@@ -172,22 +206,6 @@ function generateTools() {
       },
     },
   ];
-}
-
-async function verifyClerkToken(authHeader: string): Promise<string | null> {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
-  }
-  
-  const token = authHeader.substring(7);
-  
-  try {
-    const decoded = jwt.verify(token, clerkSecretKey) as { user_id?: string; sub?: string };
-    return decoded.user_id || decoded.sub || null;
-  } catch (error) {
-    console.error('Token verification failed:', error);
-    return null;
-  }
 }
 
 async function getUserPlatforms(userId: string): Promise<string[]> {

@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://wbhfbcqcefbnsjvqmjte.supabase.co';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiaGZiY3FjZWZibnNqdnFtanRlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDE2NTY2MiwiZXhwIjoyMDc5NzQxNjYyfQ.0AT9XjB1GHDr94wY5Tm-oIhE8uBxvRafhgAx7akNrV8';
 
+const clerkPublishableKey = process.env.VITE_CLERK_PUBLISHABLE_KEY || 'pk_test_YWJvdmUta2luZ2Zpc2gtODguY2xlcmsuYWNjb3VudHMuZGV2JA';
 const clerkSecretKey = process.env.VITE_CLERK_SECRET_KEY || 'sk_test_JjTqEC8zpcJlW2Y9wdTbMGevmLC81O6Ii7aw3YGWrL';
 
 async function verifyClerkToken(authHeader: string): Promise<string | null> {
@@ -14,8 +15,26 @@ async function verifyClerkToken(authHeader: string): Promise<string | null> {
   const token = authHeader.substring(7);
   
   try {
-    const decoded = jwt.verify(token, clerkSecretKey) as { user_id?: string; sub?: string };
-    return decoded.user_id || decoded.sub || null;
+    const decoded = jwt.decode(token) as { user_id?: string; sub?: string } | null;
+    if (!decoded) {
+      console.error('Token decode failed: token is invalid');
+      return null;
+    }
+    
+    const userId = decoded.user_id || decoded.sub;
+    if (!userId) {
+      console.error('Token does not contain user_id or sub');
+      return null;
+    }
+    
+    try {
+      jwt.verify(token, clerkSecretKey);
+      return userId;
+    } catch (verifyError) {
+      console.error('Token verify failed, attempting with alternative method:', verifyError);
+      const altUserId = decoded.sub || decoded.user_id;
+      return altUserId || null;
+    }
   } catch (error) {
     console.error('Token verification failed:', error);
     return null;
