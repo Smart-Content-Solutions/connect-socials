@@ -243,38 +243,55 @@ async function executeToolCall(
 ): Promise<Record<string, unknown>> {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
   
+  console.log(`[TOOL CALL] ${toolName} called with args:`, JSON.stringify(args, null, 2));
+  console.log(`[USER ID] ${userId}`);
+  
   switch (toolName) {
     case 'get_user_platforms': {
       sendProgress('Checking connected platforms...');
       const platforms = await getUserPlatforms(userId);
+      console.log(`[GET USER PLATFORMS] Result:`, platforms);
       return { platforms, message: `Connected platforms: ${platforms.join(', ') || 'None'}` };
     }
     
     case 'get_user_info': {
       sendProgress('Getting user info...');
       const info = await getUserInfo(userId);
+      console.log(`[GET USER INFO] Result:`, info);
       return { info, message: 'User information retrieved' };
     }
     
     case 'post_to_instagram': {
+      console.log('[INSTAGRAM POST] Starting...');
       sendProgress('Posting to Instagram...');
       const { image_url, caption } = args;
       
-      const { data: credData } = await supabase
+      console.log('[INSTAGRAM POST] image_url:', image_url);
+      console.log('[INSTAGRAM POST] caption:', caption);
+      
+      const { data: credData, error: credError } = await supabase
         .from('user_social_credentials')
         .select('credentials, account_id')
         .eq('user_id', userId)
         .eq('platform', 'instagram')
         .single();
       
+      console.log('[INSTAGRAM POST] credData:', credData);
+      console.log('[INSTAGRAM POST] credError:', credError);
+      
       if (!credData) {
+        console.log('[INSTAGRAM POST] No credentials found for user');
         return { success: false, error: 'Instagram not connected' };
       }
       
       const accessToken = credData.credentials?.access_token;
       const accountId = credData.account_id;
       
+      console.log('[INSTAGRAM POST] accountId:', accountId);
+      console.log('[INSTAGRAM POST] accessToken exists:', !!accessToken);
+      
       try {
+        console.log('[INSTAGRAM POST] Creating media container...');
         const containerResponse = await fetch(
           `https://graph.facebook.com/v19.0/${accountId}/media`,
           {
@@ -289,11 +306,14 @@ async function executeToolCall(
         );
         
         const containerResult = await containerResponse.json();
+        console.log('[INSTAGRAM POST] Container response:', containerResult);
         
         if (containerResult.error) {
+          console.log('[INSTAGRAM POST] Container error:', containerResult.error);
           return { success: false, error: containerResult.error.message };
         }
         
+        console.log('[INSTAGRAM POST] Publishing media...');
         const publishResponse = await fetch(
           `https://graph.facebook.com/v19.0/${accountId}/media_publish`,
           {
@@ -307,36 +327,51 @@ async function executeToolCall(
         );
         
         const publishResult = await publishResponse.json();
+        console.log('[INSTAGRAM POST] Publish response:', publishResult);
         
         if (publishResult.error) {
+          console.log('[INSTAGRAM POST] Publish error:', publishResult.error);
           return { success: false, error: publishResult.error.message };
         }
         
         sendProgress('Posted to Instagram! ✅');
+        console.log('[INSTAGRAM POST] Success!');
         return { success: true, media_id: containerResult.id };
       } catch (error: unknown) {
+        console.log('[INSTAGRAM POST] Catch error:', error);
         const errMsg = error instanceof Error ? error.message : 'Failed to post';
         return { success: false, error: errMsg };
       }
     }
     
     case 'post_to_facebook': {
+      console.log('[FACEBOOK POST] Starting...');
       sendProgress('Posting to Facebook...');
       const { message, image_url } = args;
       
-      const { data: credData } = await supabase
+      console.log('[FACEBOOK POST] message:', message);
+      console.log('[FACEBOOK POST] image_url:', image_url);
+      
+      const { data: credData, error: credError } = await supabase
         .from('user_social_credentials')
         .select('credentials, account_id')
         .eq('user_id', userId)
         .eq('platform', 'facebook')
         .single();
       
+      console.log('[FACEBOOK POST] credData:', credData);
+      console.log('[FACEBOOK POST] credError:', credError);
+      
       if (!credData) {
+        console.log('[FACEBOOK POST] No credentials found for user');
         return { success: false, error: 'Facebook not connected' };
       }
       
       const accessToken = credData.credentials?.access_token;
       const accountId = credData.account_id;
+      
+      console.log('[FACEBOOK POST] accountId:', accountId);
+      console.log('[FACEBOOK POST] accessToken exists:', !!accessToken);
       
       try {
         const postData: Record<string, unknown> = {
@@ -348,6 +383,7 @@ async function executeToolCall(
           postData.url = image_url;
         }
         
+        console.log('[FACEBOOK POST] Posting to API...');
         const response = await fetch(
           `https://graph.facebook.com/v19.0/${accountId}/feed`,
           {
@@ -358,35 +394,48 @@ async function executeToolCall(
         );
         
         const result = await response.json();
+        console.log('[FACEBOOK POST] Response:', result);
         
         if (result.error) {
+          console.log('[FACEBOOK POST] Error:', result.error);
           return { success: false, error: result.error.message };
         }
         
         sendProgress('Posted to Facebook! ✅');
+        console.log('[FACEBOOK POST] Success! post_id:', result.id);
         return { success: true, post_id: result.id };
       } catch (error: unknown) {
+        console.log('[FACEBOOK POST] Catch error:', error);
         const errMsg = error instanceof Error ? error.message : 'Failed to post';
         return { success: false, error: errMsg };
       }
     }
     
     case 'post_to_linkedin': {
+      console.log('[LINKEDIN POST] Starting...');
       sendProgress('Posting to LinkedIn...');
       const { content, media_url } = args;
       
-      const { data: credData } = await supabase
+      console.log('[LINKEDIN POST] content:', content);
+      console.log('[LINKEDIN POST] media_url:', media_url);
+      
+      const { data: credData, error: credError } = await supabase
         .from('user_social_credentials')
         .select('credentials')
         .eq('user_id', userId)
         .eq('platform', 'linkedin')
         .single();
       
+      console.log('[LINKEDIN POST] credData:', credData);
+      console.log('[LINKEDIN POST] credError:', credError);
+      
       if (!credData) {
+        console.log('[LINKEDIN POST] No credentials found for user');
         return { success: false, error: 'LinkedIn not connected' };
       }
       
       const accessToken = credData.credentials?.access_token;
+      console.log('[LINKEDIN POST] accessToken exists:', !!accessToken);
       
       try {
         const postPayload: Record<string, unknown> = {
@@ -411,6 +460,7 @@ async function executeToolCall(
           };
         }
         
+        console.log('[LINKEDIN POST] Posting to API...');
         const response = await fetch(
           'https://api.linkedin.com/v2/ugcPosts',
           {
@@ -424,37 +474,51 @@ async function executeToolCall(
         );
         
         const result = await response.json();
+        console.log('[LINKEDIN POST] Response:', result);
         
         if (result.error) {
+          console.log('[LINKEDIN POST] Error:', result.message || result.error);
           return { success: false, error: result.message || 'LinkedIn API error' };
         }
         
         sendProgress('Posted to LinkedIn! ✅');
+        console.log('[LINKEDIN POST] Success! post_id:', result.id);
         return { success: true, post_id: result.id };
       } catch (error: unknown) {
+        console.log('[LINKEDIN POST] Catch error:', error);
         const errMsg = error instanceof Error ? error.message : 'Failed to post';
         return { success: false, error: errMsg };
       }
     }
     
     case 'post_to_tiktok': {
+      console.log('[TIKTOK POST] Starting...');
       sendProgress('Posting to TikTok...');
       const { video_url, caption } = args;
       
-      const { data: credData } = await supabase
+      console.log('[TIKTOK POST] video_url:', video_url);
+      console.log('[TIKTOK POST] caption:', caption);
+      
+      const { data: credData, error: credError } = await supabase
         .from('user_social_credentials')
         .select('credentials')
         .eq('user_id', userId)
         .eq('platform', 'tiktok')
         .single();
       
+      console.log('[TIKTOK POST] credData:', credData);
+      console.log('[TIKTOK POST] credError:', credError);
+      
       if (!credData) {
+        console.log('[TIKTOK POST] No credentials found for user');
         return { success: false, error: 'TikTok not connected' };
       }
       
       const accessToken = credData.credentials?.access_token;
+      console.log('[TIKTOK POST] accessToken exists:', !!accessToken);
       
       try {
+        console.log('[TIKTOK POST] Posting to API...');
         const response = await fetch(
           `https://open.tiktokapis.com/v2/post/publish/video/init/`,
           {
@@ -474,14 +538,18 @@ async function executeToolCall(
         );
         
         const result = await response.json();
+        console.log('[TIKTOK POST] Response:', result);
         
         if (result.error) {
+          console.log('[TIKTOK POST] Error:', result.error);
           return { success: false, error: result.error.message };
         }
         
         sendProgress('Posted to TikTok! ✅');
+        console.log('[TIKTOK POST] Success! post_id:', result.post_id);
         return { success: true, post_id: result.post_id };
       } catch (error: unknown) {
+        console.log('[TIKTOK POST] Catch error:', error);
         const errMsg = error instanceof Error ? error.message : 'Failed to post';
         return { success: false, error: errMsg };
       }
