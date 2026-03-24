@@ -778,14 +778,20 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   
+  console.log('[CHAT] Request received');
   const authHeader = req.headers.authorization;
+  console.log('[CHAT] Auth header present:', !!authHeader);
+  
   const userId = await verifyClerkToken(authHeader);
+  console.log('[CHAT] User ID:', userId);
   
   if (!userId) {
+    console.log('[CHAT] Returning 401 - no userId');
     return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
   
   const { message, session_id } = req.body;
+  console.log('[CHAT] Message:', message);
   
   if (!message) {
     return res.status(400).json({ error: 'Message is required' });
@@ -888,10 +894,11 @@ export default async function handler(req: any, res: any) {
           ...historyMessages,
           { role: 'user', content: message },
           { role: 'assistant', content: responseText, tool_calls: toolCalls },
-          ...Object.entries(toolResults).map(([toolName, result]) => ({
+          ...Object.entries(toolResults).map(([toolName, result], index) => ({
             role: 'tool' as const,
             content: JSON.stringify(result),
             name: toolName,
+            tool_call_id: (toolCalls[index] as { id?: string })?.id || `call_${index}`,
           })),
         ],
       });

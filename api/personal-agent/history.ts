@@ -42,6 +42,9 @@ async function verifyClerkToken(authHeader: string): Promise<string | null> {
 }
 
 export default async function handler(req: any, res: any) {
+  console.log('[HISTORY] Request received, method:', req.method);
+  console.log('[HISTORY] Auth header:', req.headers.authorization ? 'present' : 'missing');
+  
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -51,11 +54,16 @@ export default async function handler(req: any, res: any) {
   }
   
   const authHeader = req.headers.authorization;
+  console.log('[HISTORY] Verifying token...');
   const userId = await verifyClerkToken(authHeader);
+  console.log('[HISTORY] User ID after verification:', userId);
   
   if (!userId) {
+    console.log('[HISTORY] Token verification failed, returning 401');
     return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
+  
+  console.log('[HISTORY] Token verified successfully for user:', userId);
   
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
   
