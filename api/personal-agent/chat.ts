@@ -469,15 +469,22 @@ async function executeToolCall(
         
         const result = await response.json();
         console.log('[LINKEDIN POST] Response:', result);
+        console.log('[LINKEDIN POST] Response status:', response.status);
         
         if (result.error) {
           console.log('[LINKEDIN POST] Error:', result.message || result.error);
-          return { success: false, error: result.message || 'LinkedIn API error' };
+          return { success: false, error: result.message || result.error?.message || 'LinkedIn API error' };
+        }
+        
+        if (response.status >= 400) {
+          console.log('[LINKEDIN POST] HTTP Error:', response.status);
+          return { success: false, error: `LinkedIn API error: ${response.status}` };
         }
         
         sendProgress('Posted to LinkedIn! ✅');
-        console.log('[LINKEDIN POST] Success! post_id:', result.id);
-        return { success: true, post_id: result.id };
+        const postId = result.id || result.urn || 'unknown';
+        console.log('[LINKEDIN POST] Success! post_id:', postId);
+        return { success: true, post_id: postId };
       } catch (error: unknown) {
         console.log('[LINKEDIN POST] Catch error:', error);
         const errMsg = error instanceof Error ? error.message : 'Failed to post';
@@ -817,24 +824,22 @@ export default async function handler(req: any, res: any) {
     sendSSE(JSON.stringify({ type: 'start', session_id: currentSessionId }));
     sendProgress('Starting...');
     
-    const systemMessage = `You are a helpful personal AI assistant for SmartContentSolutions.co.uk.
-    You help users manage their social media, schedule posts, create content, and more.
-    Be friendly, concise, and proactive.
-    You can take actions on their behalf when they ask.
+    const systemMessage = `You are an AI agent for SmartContentSolutions. You MUST use tools to perform actions.
     
-    Available actions (USE THESE TOOLS AUTOMATICALLY when user asks):
-    - post_to_linkedin: Post content to LinkedIn - use immediately when user asks to post to LinkedIn
-    - post_to_facebook: Post content to Facebook - use immediately when user asks to post to Facebook  
-    - post_to_instagram: Post content to Instagram - use immediately when user asks to post to Instagram
-    - post_to_tiktok: Post content to TikTok - use immediately when user asks to post to TikTok
-    - get_user_platforms: Check which platforms user has connected
-    - schedule_post: Schedule posts for later
-    - wordpress_create_post: Create WordPress blog posts
-    - enhance_caption: Enhance captions with AI
-    - get_scheduled_posts: View scheduled posts
-    - cancel_scheduled_post: Cancel scheduled posts
+    STRICT RULES:
+    1. If user asks to post to social media, you MUST call the tool - not just talk about it
+    2. NEVER say "I've posted" or "Done" unless the tool actually ran and returned success
+    3. If the tool returns an error (like "not connected"), you must tell the user the truth
     
-    IMPORTANT: When user asks to post something to a social media platform, IMMEDIATELY use the appropriate tool without asking for confirmation. Do not say "I will post to LinkedIn" - actually call the tool right away.`;
+    EXACT TOOL CALL FORMAT:
+    When user says "post hello to linkedin", respond with ONLY a tool call, like:
+    {"name": "post_to_linkedin", "arguments": {"content": "hello"}}
+    
+    Available tools:
+    - post_to_linkedin(content: string) 
+    - post_to_facebook(message: string, image_url?: string)
+    - post_to_instagram(image_url: string, caption: string)
+    - get_user_platforms()`;
     
     const historyMessages = chatHistory.map((msg: Record<string, unknown>) => ({
       role: msg.role,
