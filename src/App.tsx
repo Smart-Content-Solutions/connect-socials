@@ -7,6 +7,7 @@ import { createBrowserRouter, createRoutesFromElements, Route, Navigate, Outlet,
 import { useUser } from "@clerk/clerk-react";
 import SocialAutomationApp from "./components/apps/SocialAutomationApp";
 import { SupportAgentProvider } from "./context/SupportAgentContext";
+import { PersonalAgentProvider } from "./context/PersonalAgentContext";
 
 // ✅ Layout
 import Layout from "./pages/base44/Layout";
@@ -80,6 +81,7 @@ import { toast } from "sonner";
 // ✅ Feedback
 import FeedbackPrompt from "./components/feedback/FeedbackPrompt";
 import SupportChat from "./components/support-chat/SupportChat";
+import PersonalAgentChat from "./components/personal-agent/PersonalAgentChat";
 
 
 // ✅ NEW: Stripe success / cancel pages
@@ -149,13 +151,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const RootLayout = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <SupportAgentProvider>
-        <Toaster />
-        <Sonner />
-        <Outlet />
-        <FeedbackPrompt />
-        <SupportChat />
-      </SupportAgentProvider>
+      <PersonalAgentProvider>
+        <SupportAgentProvider>
+          <Toaster />
+          <Sonner />
+          <Outlet />
+          <FeedbackPrompt />
+          <SupportChat />
+          <PersonalAgentChat />
+        </SupportAgentProvider>
+      </PersonalAgentProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
