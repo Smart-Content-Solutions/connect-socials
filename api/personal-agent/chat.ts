@@ -265,7 +265,7 @@ async function executeToolCall(
       
       const { data: credData, error: credError } = await supabase
         .from('user_social_credentials')
-        .select('credentials, account_id')
+        .select('*')
         .eq('user_id', userId)
         .eq('platform', 'instagram')
         .single();
@@ -273,13 +273,13 @@ async function executeToolCall(
       console.log('[INSTAGRAM POST] credData:', credData);
       console.log('[INSTAGRAM POST] credError:', credError);
       
-      if (!credData) {
+      if (!credData || credError) {
         console.log('[INSTAGRAM POST] No credentials found for user');
         return { success: false, error: 'Instagram not connected' };
       }
       
       const accessToken = credData.credentials?.access_token;
-      const accountId = credData.account_id;
+      const accountId = credData.credentials?.instagram_id || credData.credentials?.id;
       
       console.log('[INSTAGRAM POST] accountId:', accountId);
       console.log('[INSTAGRAM POST] accessToken exists:', !!accessToken);
@@ -348,7 +348,7 @@ async function executeToolCall(
       
       const { data: credData, error: credError } = await supabase
         .from('user_social_credentials')
-        .select('credentials, account_id')
+        .select('*')
         .eq('user_id', userId)
         .eq('platform', 'facebook')
         .single();
@@ -356,13 +356,13 @@ async function executeToolCall(
       console.log('[FACEBOOK POST] credData:', credData);
       console.log('[FACEBOOK POST] credError:', credError);
       
-      if (!credData) {
+      if (!credData || credError) {
         console.log('[FACEBOOK POST] No credentials found for user');
         return { success: false, error: 'Facebook not connected' };
       }
       
       const accessToken = credData.credentials?.access_token;
-      const accountId = credData.account_id;
+      const accountId = credData.credentials?.facebook_id || credData.credentials?.id;
       
       console.log('[FACEBOOK POST] accountId:', accountId);
       console.log('[FACEBOOK POST] accessToken exists:', !!accessToken);
@@ -433,7 +433,12 @@ async function executeToolCall(
       console.log('[LINKEDIN POST] accessToken exists:', !!accessToken);
       console.log('[LINKEDIN POST] linkedin_user_id from credentials:', linkedinUserId);
       
-      const authorUrn = linkedinUserId ? `urn:li:person:${linkedinUserId}` : `urn:li:person:${userId}`;
+      if (!linkedinUserId) {
+        console.log('[LINKEDIN POST] No linkedin_user_id in credentials');
+        return { success: false, error: 'LinkedIn account ID not found. Please reconnect LinkedIn.' };
+      }
+      
+      const authorUrn = `urn:li:person:${linkedinUserId}`;
       console.log('[LINKEDIN POST] Using author URN:', authorUrn);
       
       try {
@@ -909,7 +914,7 @@ export default async function handler(req: any, res: any) {
         ],
       });
       
-      const toolResultsTyped = toolResults as Record<string, { success?: boolean; error?: string }>;
+      const toolResultsTyped = toolResults as Record<string, { success?: boolean; error?: string; post_id?: string }>;
       const anyToolFailed = Object.values(toolResultsTyped).some(r => r.success === false);
       if (anyToolFailed) {
         const errors = Object.entries(toolResultsTyped)
@@ -918,7 +923,16 @@ export default async function handler(req: any, res: any) {
           .join('\n');
         responseText = `I encountered some issues:\n\n${errors}\n\nPlease make sure your social media accounts are connected in your dashboard settings.`;
       } else {
-        responseText = finalCompletion.choices[0]?.message?.content || responseText;
+        const successMessages = Object.entries(toolResultsTyped)
+          .filter(([_, r]) => r.success === true)
+          .map(([name, r]) => {
+            if (name === 'post_to_linkedin') return '✅ Successfully posted to your LinkedIn!';
+            if (name === 'post_to_facebook') return '✅ Successfully posted to your Facebook!';
+            if (name === 'post_to_instagram') return '✅ Successfully posted to your Instagram!';
+            if (name === 'post_to_tiktok') return '✅ Successfully posted to your TikTok!';
+            return `✅ ${name} completed successfully`;
+          });
+        responseText = successMessages.join('\n');
       }
       
       await saveMessage(supabase, userId, currentSessionId, 'assistant', responseText, 
