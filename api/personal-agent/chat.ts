@@ -279,7 +279,9 @@ async function executeToolCall(
       }
       
       const accessToken = credData.credentials?.access_token;
-      const accountId = credData.credentials?.instagram_id || credData.credentials?.id;
+      console.log('[INSTAGRAM POST] Full credentials:', JSON.stringify(credData.credentials, null, 2));
+      const accountId = credData.credentials?.instagram_user_id || credData.credentials?.pageId;
+      console.log('[INSTAGRAM POST] accountId:', accountId);
       
       console.log('[INSTAGRAM POST] accountId:', accountId);
       console.log('[INSTAGRAM POST] accessToken exists:', !!accessToken);
@@ -362,7 +364,8 @@ async function executeToolCall(
       }
       
       const accessToken = credData.credentials?.access_token;
-      const accountId = credData.credentials?.facebook_id || credData.credentials?.id;
+      const accountId = credData.credentials?.pageId || credData.credentials?.facebook_id || credData.credentials?.id;
+      console.log('[FACEBOOK POST] accountId:', accountId);
       
       console.log('[FACEBOOK POST] accountId:', accountId);
       console.log('[FACEBOOK POST] accessToken exists:', !!accessToken);
