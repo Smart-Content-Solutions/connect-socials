@@ -1,11 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+
+export type MediaItem = {
+  id: string;
+  type: 'image' | 'video';
+  url: string;
+  name: string;
+  file?: File;
+};
 
 type Message = {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  media?: MediaItem[];
   tool_calls?: string[];
   tool_results?: Record<string, unknown>;
 };
@@ -21,12 +32,14 @@ type PersonalAgentContextType = {
   messages: Message[];
   progressSteps: ProgressStep[];
   isProcessing: boolean;
+  isUploading: boolean;
   sessionId: string | null;
   openChat: () => void;
   closeChat: () => void;
-  sendMessage: (message: string) => Promise<void>;
+  sendMessage: (message: string, media?: MediaItem[]) => Promise<void>;
   clearHistory: () => Promise<void>;
   loadHistory: () => Promise<void>;
+  uploadMedia: (files: FileList | File[]) => Promise<MediaItem[]>;
 };
 
 const PersonalAgentContext = createContext<PersonalAgentContextType | undefined>(undefined);
@@ -40,6 +53,7 @@ export function PersonalAgentProvider({ children }: { children: React.ReactNode 
   const [messages, setMessages] = useState<Message[]>([]);
   const [progressSteps, setProgressSteps] = useState<ProgressStep[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -79,7 +93,72 @@ export function PersonalAgentProvider({ children }: { children: React.ReactNode 
     }
   }, []);
 
-  const sendMessage = useCallback(async (message: string) => {
+  const uploadMedia = useCallback(async (files: FileList | File[]): Promise<MediaItem[]> => {
+    if (!isUserLoaded || !user) {
+      console.error('User not loaded');
+      return [];
+    }
+
+    const fileArray = Array.from(files);
+    const validFiles = fileArray.filter(file => {
+      const isImage = file.type.startsWith('image/');
+      const isVideo = file.type.startsWith('video/');
+      if (!isImage && !isVideo) {
+        toast.error(`${file.name} is not a valid image or video`);
+        return false;
+      }
+      if (file.size > 100 * 1024 * 1024) {
+        toast.error(`${file.name} is too large (max 100MB)`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return [];
+
+    setIsUploading(true);
+    const uploadedMedia: MediaItem[] = [];
+
+    try {
+      for (const file of validFiles) {
+        const isVideo = file.type.startsWith('video/');
+        const fileName = `personal-agent/${user.id}/${Date.now()}-${file.name}`;
+        
+        const { data, error } = await supabase.storage
+          .from('social-media')
+          .upload(fileName, file);
+
+        if (error) {
+          console.error('Upload error:', error);
+          toast.error(`Failed to upload ${file.name}`);
+          continue;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('social-media')
+          .getPublicUrl(fileName);
+
+        uploadedMedia.push({
+          id: `media_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: isVideo ? 'video' : 'image',
+          url: publicUrl,
+          name: file.name,
+          file: file,
+        });
+      }
+
+      toast.success(`Uploaded ${uploadedMedia.length} file(s)`);
+      return uploadedMedia;
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload media');
+      return [];
+    } finally {
+      setIsUploading(false);
+    }
+  }, [user, isUserLoaded]);
+
+  const sendMessage = useCallback(async (message: string, media?: MediaItem[]) => {
     if (!isUserLoaded || !user) {
       console.error('User not loaded');
       return;
@@ -90,6 +169,7 @@ export function PersonalAgentProvider({ children }: { children: React.ReactNode 
       role: 'user',
       content: message,
       timestamp: new Date(),
+      media: media,
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -281,12 +361,14 @@ export function PersonalAgentProvider({ children }: { children: React.ReactNode 
         messages,
         progressSteps,
         isProcessing,
+        isUploading,
         sessionId,
         openChat,
         closeChat,
         sendMessage,
         clearHistory,
         loadHistory,
+        uploadMedia,
       }}
     >
       {children}
