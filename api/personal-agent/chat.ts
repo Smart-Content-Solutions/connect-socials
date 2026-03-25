@@ -295,7 +295,7 @@ async function executeToolCall(
           return { success: false, error: 'Instagram requires an image. Please provide an image URL.' };
         }
         
-        const igFormData = new URLSearchParams();
+        const igFormData = new FormData();
         igFormData.append('user_id', userId);
         igFormData.append('caption', String(caption));
         igFormData.append('platforms[]', 'instagram');
@@ -306,8 +306,7 @@ async function executeToolCall(
         
         const n8nResponse = await fetch(`${n8nWebhookUrl}social-media`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: igFormData.toString(),
+          body: igFormData,
         });
         
         // If webhook not found (404), give helpful error
@@ -380,7 +379,7 @@ async function executeToolCall(
         
         console.log('[FACEBOOK POST] Calling n8n webhook...');
         
-        const fbFormData = new URLSearchParams();
+        const fbFormData = new FormData();
         fbFormData.append('user_id', userId);
         fbFormData.append('caption', String(message));
         fbFormData.append('platforms[]', 'facebook');
@@ -391,8 +390,7 @@ async function executeToolCall(
         
         const n8nResponse = await fetch(`${n8nWebhookUrl}social-media`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: fbFormData.toString(),
+          body: fbFormData,
         });
         
         // If webhook not found (404), give helpful error
@@ -486,7 +484,7 @@ async function executeToolCall(
         
         console.log('[LINKEDIN POST] Calling n8n webhook...');
         
-        const formData = new URLSearchParams();
+        const formData = new FormData();
         formData.append('user_id', userId);
         formData.append('caption', String(content));
         formData.append('platforms[]', 'linkedin');
@@ -497,8 +495,7 @@ async function executeToolCall(
         
         const n8nResponse = await fetch(`${n8nWebhookUrl}social-media`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: formData.toString(),
+          body: formData,
         });
         
         // If webhook not found (404), give helpful error
@@ -562,7 +559,7 @@ async function executeToolCall(
           return { success: false, error: 'TikTok requires a video. Please provide a video URL.' };
         }
         
-        const ttFormData = new URLSearchParams();
+        const ttFormData = new FormData();
         ttFormData.append('user_id', userId);
         ttFormData.append('caption', String(caption));
         ttFormData.append('platforms[]', 'tiktok');
@@ -572,8 +569,7 @@ async function executeToolCall(
         
         const n8nResponse = await fetch(`${n8nWebhookUrl}social-media-video`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: ttFormData.toString(),
+          body: ttFormData,
         });
         
         const n8nResult = await n8nResponse.json();
