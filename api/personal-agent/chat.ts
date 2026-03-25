@@ -298,6 +298,8 @@ async function executeToolCall(
             platforms: ['instagram'],
             post_mode: 'publish',
             user_id: userId,
+            media_url: '',
+            media_type: 'none',
           }),
         });
         
@@ -378,6 +380,8 @@ async function executeToolCall(
             platforms: ['facebook'],
             post_mode: 'publish',
             user_id: userId,
+            media_url: '',
+            media_type: 'none',
           }),
         });
         
@@ -479,6 +483,8 @@ async function executeToolCall(
             platforms: ['linkedin'],
             post_mode: 'publish',
             user_id: userId,
+            media_url: '',
+            media_type: 'none',
           }),
         });
         
@@ -838,21 +844,31 @@ export default async function handler(req: any, res: any) {
     
     const systemMessage = `You are an AI agent for SmartContentSolutions. You MUST use tools to perform actions.
     
+    IMPORTANT PLATFORM LIMITATIONS:
+    - Instagram: REQUIRES an image/video. Cannot post text-only. User must provide an image URL.
+    - Facebook: Supports text-only posts
+    - LinkedIn: Supports text-only posts
+    - TikTok: REQUIRES a video. Cannot post text-only. User must provide a video URL.
+    
     STRICT RULES:
     1. If user asks about connected platforms or what accounts they have, you MUST call get_user_platforms tool
-    2. If user asks to post to social media, you MUST call the appropriate tool - not just talk about it
-    3. NEVER say "I've posted" or "Done" unless the tool actually ran and returned success
-    4. If the tool returns an error (like "not connected"), you must tell the user the truth
+    2. If user asks to post to Instagram without providing an image, tell them Instagram requires an image
+    3. If user asks to post to TikTok without providing a video, tell them TikTok requires a video
+    4. If user asks to post to social media, you MUST call the appropriate tool - not just talk about it
+    5. NEVER say "I've posted" or "Done" unless the tool actually ran and returned success
+    6. If the tool returns an error (like "not connected"), you must tell the user the truth
     
     EXACT TOOL CALL FORMAT:
     When user asks "what platforms do I have connected" -> call get_user_platforms with {} (empty arguments)
     When user says "post hello to linkedin" -> call post_to_linkedin with {"content": "hello"}
+    When user asks "post to instagram" without image -> Tell user Instagram requires an image
     
     Available tools:
     - get_user_platforms() - use when user asks about connected platforms
     - post_to_linkedin(content: string) 
     - post_to_facebook(message: string, image_url?: string)
-    - post_to_instagram(image_url: string, caption: string)`;
+    - post_to_instagram(image_url: string, caption: string) - REQUIRES image_url
+    - post_to_tiktok(video_url: string, caption: string) - REQUIRES video_url`;
     
     const historyMessages = chatHistory.map((msg: Record<string, unknown>) => ({
       role: msg.role,
