@@ -74,12 +74,12 @@ function generateTools() {
       type: 'function',
       function: {
         name: 'post_to_facebook',
-        description: 'Post content to Facebook',
+        description: 'Post content to Facebook - will ask which page to post to if multiple pages connected',
         parameters: {
           type: 'object',
           properties: {
             message: { type: 'string', description: 'Message content' },
-            image_url: { type: 'string', description: 'URL of the image to post (optional)' },
+            page_id: { type: 'string', description: 'Facebook page ID to post to (optional - will ask user if not provided)' },
           },
           required: ['message'],
         },
@@ -339,43 +339,49 @@ async function executeToolCall(
     
     case 'post_to_facebook': {
       console.log('[FACEBOOK POST] Starting...');
-      sendProgress('Posting to Facebook...');
-      const { message, image_url } = args;
+      sendProgress('Getting Facebook pages...');
+      const { message, page_id } = args;
       
-      console.log('[FACEBOOK POST] message:', message);
-      console.log('[FACEBOOK POST] image_url:', image_url);
-      
-      const { data: credData, error: credError } = await supabase
+      // First get Facebook credentials to check connected pages
+      const { data: fbCredData, error: fbCredError } = await supabase
         .from('user_social_credentials')
-        .select('*')
+        .select('credentials')
         .eq('user_id', userId)
         .eq('platform', 'facebook')
         .single();
       
-      console.log('[FACEBOOK POST] credData:', credData);
-      console.log('[FACEBOOK POST] credError:', credError);
+      console.log('[FACEBOOK POST] credData:', fbCredData);
+      console.log('[FACEBOOK POST] credError:', fbCredError);
       
-      if (!credData || credError) {
-        console.log('[FACEBOOK POST] No credentials found for user');
+      if (!fbCredData || fbCredError) {
         return { success: false, error: 'Facebook not connected' };
       }
       
-      const accessToken = credData.credentials?.access_token;
-      const accountId = credData.credentials?.facebook_user_id || credData.credentials?.pageId;
-      console.log('[FACEBOOK POST] accountId:', accountId);
+      const pages = fbCredData.credentials?.pages || [];
+      console.log('[FACEBOOK POST] Available pages:', JSON.stringify(pages));
       
-      console.log('[FACEBOOK POST] accountId:', accountId);
-      console.log('[FACEBOOK POST] accessToken exists:', !!accessToken);
+      // If no page_id specified and there are multiple pages, ask user to choose
+      if (!page_id && pages.length > 0) {
+        const pageOptions = pages.map((p: Record<string, unknown>) => `${p.id}: ${p.name}`).join('\n');
+        return { 
+          success: false, 
+          needs_page_selection: true,
+          pages: pages,
+          message: `You have ${pages.length} Facebook page(s). Which one would you like to post to?\n\n${pageOptions}\n\nPlease reply with the page number or name.` 
+        };
+      }
+      
+      // If page_id provided, use it; otherwise use first page
+      const selectedPage = page_id ? pages.find((p: Record<string, unknown>) => p.id === page_id) : pages[0];
+      
+      if (!selectedPage) {
+        return { success: false, error: 'Selected Facebook page not found. Please reconnect Facebook.' };
+      }
+      
+      sendProgress(`Posting to Facebook page: ${selectedPage.name}...`);
+      console.log('[FACEBOOK POST] Posting to page:', selectedPage.name, selectedPage.id);
       
       try {
-        const postData: Record<string, unknown> = {
-          message,
-          access_token: accessToken,
-        };
-        
-        if (image_url) {
-          postData.url = image_url;
-        }
         
         console.log('[FACEBOOK POST] Calling n8n webhook...');
         
@@ -862,7 +868,7 @@ export default async function handler(req: any, res: any) {
     
     IMPORTANT PLATFORM LIMITATIONS:
     - Instagram: REQUIRES an image/video. Cannot post text-only. User must provide an image URL.
-    - Facebook: Supports text-only posts
+    - Facebook: When user asks to post to Facebook, ALWAYS ask "Which Facebook page would you like to post to?" and wait for their response. Do NOT post immediately. Present the available pages and let them choose.
     - LinkedIn: Supports text-only posts
     - TikTok: REQUIRES a video. Cannot post text-only. User must provide a video URL.
     
@@ -870,9 +876,10 @@ export default async function handler(req: any, res: any) {
     1. If user asks about connected platforms or what accounts they have, you MUST call get_user_platforms tool
     2. If user asks to post to Instagram without providing an image, tell them Instagram requires an image
     3. If user asks to post to TikTok without providing a video, tell them TikTok requires a video
-    4. If user asks to post to social media, you MUST call the appropriate tool - not just talk about it
-    5. NEVER say "I've posted" or "Done" unless the tool actually ran and returned success
-    6. If the tool returns an error (like "not connected"), you must tell the user the truth
+    4. If user asks to post to Facebook: FIRST ask which page, then call post_to_facebook with page_id
+    5. If user asks to post to social media, you MUST call the appropriate tool - not just talk about it
+    6. NEVER say "I've posted" or "Done" unless the tool actually ran and returned success
+    7. If the tool returns an error (like "not connected"), you must tell the user the truth
     
     EXACT TOOL CALL FORMAT:
     When user asks "what platforms do I have connected" -> call get_user_platforms with {} (empty arguments)
