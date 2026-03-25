@@ -427,12 +427,18 @@ async function executeToolCall(
         selectedPage = pages[0];
       }
       
-      if (!selectedPage) {
-        return { success: false, error: 'Selected Facebook page not found. Please reconnect Facebook.' };
+      // Skip page selection for now - post to all pages (n8n needs update to support single page)
+      if (!selectedPage && pages.length > 0) {
+        // Default to first page if none selected
+        selectedPage = pages[0];
       }
       
-      sendProgress(`Posting to Facebook page: ${selectedPage.name}...`);
-      console.log('[FACEBOOK POST] Posting to page:', selectedPage.name, selectedPage.id);
+      if (!selectedPage) {
+        return { success: false, error: 'No Facebook pages found. Please reconnect Facebook.' };
+      }
+      
+      sendProgress(`Posting to Facebook...`);
+      console.log('[FACEBOOK POST] Posting to Facebook...');
       
       try {
         
@@ -447,8 +453,9 @@ async function executeToolCall(
         fbFormData.append('type', 'none');
         fbFormData.append('is_story', 'false');
         // Send specific page info to n8n so it posts to only that page
-        fbFormData.append('facebook_page_id', String(selectedPage.id));
-        fbFormData.append('facebook_page_access_token', String(selectedPage.access_token));
+        if (selectedPage) {
+          fbFormData.append('facebook_page_ids[]', String(selectedPage.id));
+        }
         
         const n8nResponse = await fetch(`${n8nWebhookUrl}social-media`, {
           method: 'POST',
