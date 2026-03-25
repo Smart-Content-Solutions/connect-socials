@@ -11,6 +11,8 @@ const openai = new OpenAI({
 
 const clerkSecretKey = process.env.VITE_CLERK_SECRET_KEY || 'sk_test_JjTqEC8zpcJlW2Y9wdTbMGevmLC81O6Ii7aw3YGWrL';
 
+const n8nWebhookUrl = process.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.smartcontentsolutions.co.uk/webhook/';
+
 async function verifyClerkToken(authHeader: string): Promise<string | null> {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
@@ -287,52 +289,29 @@ async function executeToolCall(
       console.log('[INSTAGRAM POST] accessToken exists:', !!accessToken);
       
       try {
-        console.log('[INSTAGRAM POST] Creating media container...');
-        const containerResponse = await fetch(
-          `https://graph.facebook.com/v19.0/${accountId}/media`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              image_url,
-              caption,
-              access_token: accessToken,
-            }),
-          }
-        );
+        console.log('[INSTAGRAM POST] Calling n8n webhook...');
+        const n8nResponse = await fetch(`${n8nWebhookUrl}instagram-post`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image_url,
+            caption,
+            access_token: accessToken,
+            account_id: accountId,
+          }),
+        });
         
-        const containerResult = await containerResponse.json();
-        console.log('[INSTAGRAM POST] Container response:', containerResult);
+        const n8nResult = await n8nResponse.json();
+        console.log('[INSTAGRAM POST] n8n Response:', n8nResult);
         
-        if (containerResult.error) {
-          console.log('[INSTAGRAM POST] Container error:', containerResult.error);
-          return { success: false, error: containerResult.error.message };
-        }
-        
-        console.log('[INSTAGRAM POST] Publishing media...');
-        const publishResponse = await fetch(
-          `https://graph.facebook.com/v19.0/${accountId}/media_publish`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              creation_id: containerResult.id,
-              access_token: accessToken,
-            }),
-          }
-        );
-        
-        const publishResult = await publishResponse.json();
-        console.log('[INSTAGRAM POST] Publish response:', publishResult);
-        
-        if (publishResult.error) {
-          console.log('[INSTAGRAM POST] Publish error:', publishResult.error);
-          return { success: false, error: publishResult.error.message };
+        if (n8nResponse.status >= 400 || n8nResult?.error) {
+          console.log('[INSTAGRAM POST] n8n Error:', n8nResult?.error || n8nResult);
+          return { success: false, error: n8nResult?.error || n8nResult?.message || 'Failed to post via n8n' };
         }
         
         sendProgress('Posted to Instagram! ✅');
         console.log('[INSTAGRAM POST] Success!');
-        return { success: true, media_id: containerResult.id };
+        return { success: true, media_id: n8nResult?.id || 'sent' };
       } catch (error: unknown) {
         console.log('[INSTAGRAM POST] Catch error:', error);
         const errMsg = error instanceof Error ? error.message : 'Failed to post';
@@ -380,27 +359,29 @@ async function executeToolCall(
           postData.url = image_url;
         }
         
-        console.log('[FACEBOOK POST] Posting to API...');
-        const response = await fetch(
-          `https://graph.facebook.com/v19.0/${accountId}/feed`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(postData),
-          }
-        );
+        console.log('[FACEBOOK POST] Calling n8n webhook...');
+        const n8nResponse = await fetch(`${n8nWebhookUrl}facebook-post`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message,
+            image_url,
+            access_token: accessToken,
+            account_id: accountId,
+          }),
+        });
         
-        const result = await response.json();
-        console.log('[FACEBOOK POST] Response:', result);
+        const n8nResult = await n8nResponse.json();
+        console.log('[FACEBOOK POST] n8n Response:', n8nResult);
         
-        if (result.error) {
-          console.log('[FACEBOOK POST] Error:', result.error);
-          return { success: false, error: result.error.message };
+        if (n8nResponse.status >= 400 || n8nResult?.error) {
+          console.log('[FACEBOOK POST] n8n Error:', n8nResult?.error || n8nResult);
+          return { success: false, error: n8nResult?.error || n8nResult?.message || 'Failed to post via n8n' };
         }
         
         sendProgress('Posted to Facebook! ✅');
-        console.log('[FACEBOOK POST] Success! post_id:', result.id);
-        return { success: true, post_id: result.id };
+        console.log('[FACEBOOK POST] Success!');
+        return { success: true, post_id: n8nResult?.id || 'sent' };
       } catch (error: unknown) {
         console.log('[FACEBOOK POST] Catch error:', error);
         const errMsg = error instanceof Error ? error.message : 'Failed to post';
@@ -469,37 +450,29 @@ async function executeToolCall(
           };
         }
         
-        console.log('[LINKEDIN POST] Posting to API...');
-        const response = await fetch(
-          'https://api.linkedin.com/v2/ugcPosts',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify(postPayload),
-          }
-        );
+        console.log('[LINKEDIN POST] Calling n8n webhook...');
+        const n8nResponse = await fetch(`${n8nWebhookUrl}linkedin-post`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content,
+            media_url,
+            access_token: accessToken,
+            author_urn: authorUrn,
+          }),
+        });
         
-        const result = await response.json();
-        console.log('[LINKEDIN POST] Response:', result);
-        console.log('[LINKEDIN POST] Response status:', response.status);
+        const n8nResult = await n8nResponse.json();
+        console.log('[LINKEDIN POST] n8n Response:', n8nResult);
         
-        if (result.error) {
-          console.log('[LINKEDIN POST] Error:', result.message || result.error);
-          return { success: false, error: result.message || result.error?.message || 'LinkedIn API error' };
-        }
-        
-        if (response.status >= 400) {
-          console.log('[LINKEDIN POST] HTTP Error:', response.status);
-          return { success: false, error: `LinkedIn API error: ${response.status}` };
+        if (n8nResponse.status >= 400 || n8nResult?.error) {
+          console.log('[LINKEDIN POST] n8n Error:', n8nResult?.error || n8nResult);
+          return { success: false, error: n8nResult?.error || n8nResult?.message || 'Failed to post via n8n' };
         }
         
         sendProgress('Posted to LinkedIn! ✅');
-        const postId = result.id || result.urn || 'unknown';
-        console.log('[LINKEDIN POST] Success! post_id:', postId);
-        return { success: true, post_id: postId };
+        console.log('[LINKEDIN POST] Success!');
+        return { success: true, post_id: n8nResult?.id || 'sent' };
       } catch (error: unknown) {
         console.log('[LINKEDIN POST] Catch error:', error);
         const errMsg = error instanceof Error ? error.message : 'Failed to post';
@@ -534,36 +507,28 @@ async function executeToolCall(
       console.log('[TIKTOK POST] accessToken exists:', !!accessToken);
       
       try {
-        console.log('[TIKTOK POST] Posting to API...');
-        const response = await fetch(
-          `https://open.tiktokapis.com/v2/post/publish/video/init/`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({
-              source_info: {
-                source: 'PULL_FROM_URL',
-                video_url,
-                caption,
-              },
-            }),
-          }
-        );
+        console.log('[TIKTOK POST] Calling n8n webhook...');
+        const n8nResponse = await fetch(`${n8nWebhookUrl}tiktok-post`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            video_url,
+            caption,
+            access_token: accessToken,
+          }),
+        });
         
-        const result = await response.json();
-        console.log('[TIKTOK POST] Response:', result);
+        const n8nResult = await n8nResponse.json();
+        console.log('[TIKTOK POST] n8n Response:', n8nResult);
         
-        if (result.error) {
-          console.log('[TIKTOK POST] Error:', result.error);
-          return { success: false, error: result.error.message };
+        if (n8nResponse.status >= 400 || n8nResult?.error) {
+          console.log('[TIKTOK POST] n8n Error:', n8nResult?.error || n8nResult);
+          return { success: false, error: n8nResult?.error || n8nResult?.message || 'Failed to post via n8n' };
         }
         
         sendProgress('Posted to TikTok! ✅');
-        console.log('[TIKTOK POST] Success! post_id:', result.post_id);
-        return { success: true, post_id: result.post_id };
+        console.log('[TIKTOK POST] Success!');
+        return { success: true, post_id: n8nResult?.post_id || 'sent' };
       } catch (error: unknown) {
         console.log('[TIKTOK POST] Catch error:', error);
         const errMsg = error instanceof Error ? error.message : 'Failed to post';
