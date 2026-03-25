@@ -306,10 +306,30 @@ async function handleToolCall(
       
       if (video_url) {
         formData.append('type', 'video');
-        formData.append('media_url', video_url);
+        try {
+          const videoResponse = await fetch(video_url);
+          if (videoResponse.ok) {
+            const videoBlob = await videoResponse.blob();
+            const urlParts = video_url.split('/');
+            const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'video.mp4');
+            formData.append('video', new File([videoBlob], fileName, { type: videoBlob.type }));
+          } else {
+            formData.append('media_url', video_url);
+          }
+        } catch { formData.append('media_url', video_url); }
       } else if (image_url) {
         formData.append('type', 'image');
-        formData.append('media_url', image_url);
+        try {
+          const imageResponse = await fetch(image_url);
+          if (imageResponse.ok) {
+            const imageBlob = await imageResponse.blob();
+            const urlParts = image_url.split('/');
+            const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'image.png');
+            formData.append('image', new File([imageBlob], fileName, { type: imageBlob.type }));
+          } else {
+            formData.append('media_url', image_url);
+          }
+        } catch { formData.append('media_url', image_url); }
       } else {
         formData.append('type', 'none');
       }
@@ -371,11 +391,32 @@ async function handleToolCall(
       
       if (video_url) {
         formData.append('type', 'video');
-        formData.append('media_url', video_url);
+        try {
+          const videoResponse = await fetch(video_url);
+          if (videoResponse.ok) {
+            const videoBlob = await videoResponse.blob();
+            const urlParts = video_url.split('/');
+            const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'video.mp4');
+            formData.append('video', new File([videoBlob], fileName, { type: videoBlob.type }));
+          } else {
+            formData.append('media_url', video_url);
+          }
+        } catch { formData.append('media_url', video_url); }
         formData.append('instagram_post_types', JSON.stringify({ feed: false, reel: true, story: false }));
       } else {
         formData.append('type', 'image');
-        formData.append('media_url', image_url || '');
+        const imgUrl = image_url || '';
+        try {
+          const imageResponse = await fetch(imgUrl);
+          if (imageResponse.ok) {
+            const imageBlob = await imageResponse.blob();
+            const urlParts = imgUrl.split('/');
+            const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'image.png');
+            formData.append('image', new File([imageBlob], fileName, { type: imageBlob.type }));
+          } else {
+            formData.append('media_url', imgUrl);
+          }
+        } catch { formData.append('media_url', imgUrl); }
         
         const postTypes = post_type === 'story' 
           ? { feed: false, reel: false, story: true }
@@ -433,7 +474,27 @@ async function handleToolCall(
       
       if (media_url) {
         formData.append('type', 'image');
-        formData.append('media_url', media_url);
+        
+        // Download the image from Supabase and send as binary
+        try {
+          const imageResponse = await fetch(media_url);
+          if (!imageResponse.ok) {
+            throw new Error('Failed to download image');
+          }
+          const imageBlob = await imageResponse.blob();
+          
+          // Extract filename from URL
+          const urlParts = media_url.split('/');
+          const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'image.png');
+          
+          // Create a File object from the blob
+          const imageFile = new File([imageBlob], fileName, { type: imageBlob.type });
+          formData.append('image', imageFile);
+        } catch (downloadError) {
+          console.error('Failed to download image:', downloadError);
+          // Fallback to URL if download fails
+          formData.append('media_url', media_url);
+        }
       } else {
         formData.append('type', 'none');
       }
@@ -484,7 +545,19 @@ async function handleToolCall(
       formData.append('platforms[]', 'tiktok');
       formData.append('post_mode', 'publish');
       formData.append('use_ai', 'no');
-      formData.append('media_url', video_url);
+      
+      // Send video as binary
+      try {
+        const videoResponse = await fetch(video_url);
+        if (videoResponse.ok) {
+          const videoBlob = await videoResponse.blob();
+          const urlParts = video_url.split('/');
+          const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'video.mp4');
+          formData.append('video', new File([videoBlob], fileName, { type: videoBlob.type }));
+        } else {
+          formData.append('media_url', video_url);
+        }
+      } catch { formData.append('media_url', video_url); }
       
       try {
         const response = await fetch(n8nVideoWebhook, { method: 'POST', body: formData });
@@ -526,8 +599,20 @@ async function handleToolCall(
       formData.append('platforms[]', 'youtube');
       formData.append('post_mode', 'publish');
       formData.append('use_ai', 'no');
-      formData.append('media_url', video_url);
       formData.append('privacy', privacy || 'private');
+      
+      // Send video as binary
+      try {
+        const videoResponse = await fetch(video_url);
+        if (videoResponse.ok) {
+          const videoBlob = await videoResponse.blob();
+          const urlParts = video_url.split('/');
+          const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'video.mp4');
+          formData.append('video', new File([videoBlob], fileName, { type: videoBlob.type }));
+        } else {
+          formData.append('media_url', video_url);
+        }
+      } catch { formData.append('media_url', video_url); }
       
       if (tags) {
         formData.append('tags', tags);
@@ -577,7 +662,17 @@ async function handleToolCall(
       
       if (image_url) {
         formData.append('type', 'image');
-        formData.append('media_url', image_url);
+        try {
+          const imageResponse = await fetch(image_url);
+          if (imageResponse.ok) {
+            const imageBlob = await imageResponse.blob();
+            const urlParts = image_url.split('/');
+            const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'image.png');
+            formData.append('image', new File([imageBlob], fileName, { type: imageBlob.type }));
+          } else {
+            formData.append('media_url', image_url);
+          }
+        } catch { formData.append('media_url', image_url); }
       } else {
         formData.append('type', 'none');
       }
@@ -628,11 +723,31 @@ async function handleToolCall(
       formData.append('use_ai', 'no');
       
       if (video_url) {
-        formData.append('media_url', video_url);
         formData.append('type', 'video');
+        try {
+          const videoResponse = await fetch(video_url);
+          if (videoResponse.ok) {
+            const videoBlob = await videoResponse.blob();
+            const urlParts = video_url.split('/');
+            const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'video.mp4');
+            formData.append('video', new File([videoBlob], fileName, { type: videoBlob.type }));
+          } else {
+            formData.append('media_url', video_url);
+          }
+        } catch { formData.append('media_url', video_url); }
       } else if (image_url) {
-        formData.append('media_url', image_url);
         formData.append('type', 'image');
+        try {
+          const imageResponse = await fetch(image_url);
+          if (imageResponse.ok) {
+            const imageBlob = await imageResponse.blob();
+            const urlParts = image_url.split('/');
+            const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'image.png');
+            formData.append('image', new File([imageBlob], fileName, { type: imageBlob.type }));
+          } else {
+            formData.append('media_url', image_url);
+          }
+        } catch { formData.append('media_url', image_url); }
       } else {
         formData.append('type', 'none');
       }
