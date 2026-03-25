@@ -67,14 +67,14 @@ function generateTools(): ChatCompletionTool[] {
       type: 'function',
       function: {
         name: 'post_to_facebook',
-        description: 'Post content to Facebook (text, image, or video). Platform supports: text posts, single image, multiple images (carousel), videos, and stories',
+        description: 'Post content to Facebook (text, image, or video). Platform supports: text posts, single image, multiple images, videos, and stories. IMPORTANT: Call get_facebook_pages first to get available pages. If user has multiple pages, ask which one to use. Pass the page name as page_id parameter.',
         parameters: {
           type: 'object',
           properties: {
             message: { type: 'string', description: 'The text content/caption of the post' },
-            image_url: { type: 'string', description: 'URL of image to post (optional)' },
+            image_url: { type: 'string', description: 'URL of image to post. For multiple images, separate URLs with commas (optional)' },
             video_url: { type: 'string', description: 'URL of video to post (optional - use instead of image_url for video posts)' },
-            page_id: { type: 'string', description: 'Specific Facebook page ID to post to (optional)' },
+            page_id: { type: 'string', description: 'Specific Facebook page name or ID to post to (REQUIRED if user has multiple pages)' },
             is_story: { type: 'boolean', description: 'Whether to post as a story (default: false)' },
           },
           required: ['message'],
@@ -919,7 +919,7 @@ IMPORTANT RULES:
 3. When user wants to post to YouTube - they MUST provide a video URL and title
 4. When user wants to post to Facebook - text is optional if they provide media
 5. If user asks to "post" without specifying platform - ask which platform OR post to all connected platforms
-6. Always confirm what you're posting before doing it
+6. NEVER ask for confirmation - just post directly when user says to post
 7. CRITICAL: When user attaches images/videos (shown as "[Attached image/video: filename]"), you MUST extract the URL from the message and pass it to the posting tool. Look for lines starting with "http" in the Attached Media section and use that URL as image_url, video_url, or media_url parameter.
 8. MULTIPLE IMAGES AND STORY HANDLING:
    - If user says "story" or "as story" → set is_story: true
@@ -930,6 +930,7 @@ IMPORTANT RULES:
    - Example: "post to Instagram story" → is_story: true
    - Example: "post to Instagram" (no story mentioned) → is_story: false (feed)
    - Example: 3 images to Instagram → image_url: "url1,url2,url3" (creates carousel)
+9. FACEBOOK PAGE SELECTION: When posting to Facebook, ALWAYS call get_facebook_pages first to get the user's pages. If they have multiple pages, ask which page to use. If they have one page, use that page automatically. Pass the page name or ID to the post_to_facebook tool as page_id parameter.
 
 When user asks about connected platforms -> call get_user_platforms
 When user asks which Facebook pages they have -> call get_facebook_pages
