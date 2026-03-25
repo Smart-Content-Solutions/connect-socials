@@ -763,6 +763,7 @@ IMPORTANT RULES:
 4. When user wants to post to Facebook - text is optional if they provide media
 5. If user asks to "post" without specifying platform - ask which platform OR post to all connected platforms
 6. Always confirm what you're posting before doing it
+7. CRITICAL: When user attaches images/videos (shown as "[Attached image/video: filename]"), you MUST extract the URL from the message and pass it to the posting tool. Look for lines starting with "http" in the Attached Media section and use that URL as image_url, video_url, or media_url parameter.
 
 When user asks about connected platforms -> call get_user_platforms
 When user asks which Facebook pages they have -> call get_facebook_pages
@@ -800,11 +801,11 @@ Tools available:
     let userMessageContent = message || '';
     if (media && Array.isArray(media) && media.length > 0) {
       const mediaDescriptions = media.map((m: { type: string; url: string; name: string }) => {
-        const typeLabel = m.type === 'video' ? 'video' : 'image';
-        return `[Attached ${typeLabel}: ${m.name}]\n${m.url}`;
+        const typeLabel = m.type === 'video' ? 'VIDEO' : 'IMAGE';
+        return `[Attached ${typeLabel}: ${m.name}]\nURL: ${m.url}`;
       }).join('\n\n');
       
-      userMessageContent = `${userMessageContent}\n\n--- Attached Media ---\n${mediaDescriptions}`;
+      userMessageContent = `${userMessageContent}\n\n=== MEDIA ATTACHED ===\n${mediaDescriptions}\n\nIMPORTANT: When calling post_to_linkedin, post_to_facebook, post_to_instagram, or post_to_twitter, you MUST use the URL from the Attached Media section above as the image_url/media_url parameter. The URL starts with "https://wbhfbcqcefbnsjvqmjte.supabase.co/".`;
       console.log('[CHAT] User message with media:', userMessageContent);
     }
     
