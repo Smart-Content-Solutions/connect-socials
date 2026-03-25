@@ -290,17 +290,24 @@ async function executeToolCall(
       
       try {
         console.log('[INSTAGRAM POST] Calling n8n webhook...');
+        
+        if (!image_url) {
+          return { success: false, error: 'Instagram requires an image. Please provide an image URL.' };
+        }
+        
+        const igFormData = new URLSearchParams();
+        igFormData.append('user_id', userId);
+        igFormData.append('caption', String(caption));
+        igFormData.append('platforms[]', 'instagram');
+        igFormData.append('post_mode', 'publish');
+        igFormData.append('use_ai', 'no');
+        igFormData.append('type', 'image');
+        igFormData.append('is_story', 'false');
+        
         const n8nResponse = await fetch(`${n8nWebhookUrl}social-media`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            caption: caption || '',
-            platforms: ['instagram'],
-            post_mode: 'publish',
-            user_id: userId,
-            media_url: '',
-            media_type: 'none',
-          }),
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: igFormData.toString(),
         });
         
         // If webhook not found (404), give helpful error
@@ -372,17 +379,20 @@ async function executeToolCall(
         }
         
         console.log('[FACEBOOK POST] Calling n8n webhook...');
+        
+        const fbFormData = new URLSearchParams();
+        fbFormData.append('user_id', userId);
+        fbFormData.append('caption', String(message));
+        fbFormData.append('platforms[]', 'facebook');
+        fbFormData.append('post_mode', 'publish');
+        fbFormData.append('use_ai', 'no');
+        fbFormData.append('type', 'none');
+        fbFormData.append('is_story', 'false');
+        
         const n8nResponse = await fetch(`${n8nWebhookUrl}social-media`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            caption: message,
-            platforms: ['facebook'],
-            post_mode: 'publish',
-            user_id: userId,
-            media_url: '',
-            media_type: 'none',
-          }),
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: fbFormData.toString(),
         });
         
         // If webhook not found (404), give helpful error
@@ -475,17 +485,20 @@ async function executeToolCall(
         }
         
         console.log('[LINKEDIN POST] Calling n8n webhook...');
+        
+        const formData = new URLSearchParams();
+        formData.append('user_id', userId);
+        formData.append('caption', String(content));
+        formData.append('platforms[]', 'linkedin');
+        formData.append('post_mode', 'publish');
+        formData.append('use_ai', 'no');
+        formData.append('type', 'none');
+        formData.append('is_story', 'false');
+        
         const n8nResponse = await fetch(`${n8nWebhookUrl}social-media`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            caption: content,
-            platforms: ['linkedin'],
-            post_mode: 'publish',
-            user_id: userId,
-            media_url: '',
-            media_type: 'none',
-          }),
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: formData.toString(),
         });
         
         // If webhook not found (404), give helpful error
@@ -544,16 +557,23 @@ async function executeToolCall(
       
       try {
         console.log('[TIKTOK POST] Calling n8n webhook...');
+        
+        if (!video_url) {
+          return { success: false, error: 'TikTok requires a video. Please provide a video URL.' };
+        }
+        
+        const ttFormData = new URLSearchParams();
+        ttFormData.append('user_id', userId);
+        ttFormData.append('caption', String(caption));
+        ttFormData.append('platforms[]', 'tiktok');
+        ttFormData.append('post_mode', 'publish');
+        ttFormData.append('use_ai', 'no');
+        ttFormData.append('media_url', String(video_url));
+        
         const n8nResponse = await fetch(`${n8nWebhookUrl}social-media-video`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            caption: caption || '',
-            platforms: ['tiktok'],
-            post_mode: 'publish',
-            user_id: userId,
-            media_url: video_url,
-          }),
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: ttFormData.toString(),
         });
         
         const n8nResult = await n8nResponse.json();
