@@ -725,8 +725,9 @@ export default async function handler(req: any, res: any) {
     return res.status(401).json({ error: 'Unauthorized: Invalid token' });
   }
   
-  const { message, session_id } = req.body;
+  const { message, session_id, media } = req.body;
   console.log('[CHAT] Message:', message);
+  console.log('[CHAT] Media:', media);
   
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
   const currentSessionId = session_id || `session_${Date.now()}`;
@@ -795,12 +796,24 @@ Tools available:
     
     console.log('[CHAT] Sending request to OpenAI with message:', message);
     
+    // Build user message with media context
+    let userMessageContent = message || '';
+    if (media && Array.isArray(media) && media.length > 0) {
+      const mediaDescriptions = media.map((m: { type: string; url: string; name: string }) => {
+        const typeLabel = m.type === 'video' ? 'video' : 'image';
+        return `[Attached ${typeLabel}: ${m.name}]\n${m.url}`;
+      }).join('\n\n');
+      
+      userMessageContent = `${userMessageContent}\n\n--- Attached Media ---\n${mediaDescriptions}`;
+      console.log('[CHAT] User message with media:', userMessageContent);
+    }
+    
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemMessage },
         ...historyMessages,
-        { role: 'user', content: message },
+        { role: 'user', content: userMessageContent },
       ],
       tools: generateTools(),
     });

@@ -186,6 +186,7 @@ export function PersonalAgentProvider({ children }: { children: React.ReactNode 
         body: JSON.stringify({
           message,
           session_id: sessionId,
+          media: media ? media.map(m => ({ type: m.type, url: m.url, name: m.name })) : [],
         }),
       });
 
