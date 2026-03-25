@@ -362,7 +362,7 @@ async function executeToolCall(
       
       // If no page_id specified and there are multiple pages, ask user to choose
       if (!page_id && pages.length > 0) {
-        const pageOptions = pages.map((p: Record<string, unknown>) => `${p.id}: ${p.name}`).join('\n');
+        const pageOptions = pages.map((p: Record<string, unknown>, index: number) => `${index + 1}. ${p.name}`).join('\n');
         return { 
           success: false, 
           needs_page_selection: true,
@@ -371,8 +371,26 @@ async function executeToolCall(
         };
       }
       
-      // If page_id provided, use it; otherwise use first page
-      const selectedPage = page_id ? pages.find((p: Record<string, unknown>) => p.id === page_id) : pages[0];
+      // If page_id provided (could be name or number), find the matching page
+      let selectedPage: Record<string, unknown> | undefined;
+      
+      if (page_id) {
+        // Try matching by id first
+        selectedPage = pages.find((p: Record<string, unknown>) => p.id === page_id);
+        // Then try matching by name
+        if (!selectedPage) {
+          selectedPage = pages.find((p: Record<string, unknown>) => (p.name as string)?.toLowerCase() === (page_id as string).toLowerCase());
+        }
+        // Then try matching by number
+        if (!selectedPage) {
+          const pageNum = parseInt(page_id as string);
+          if (!isNaN(pageNum) && pageNum > 0 && pageNum <= pages.length) {
+            selectedPage = pages[pageNum - 1];
+          }
+        }
+      } else if (pages.length === 1) {
+        selectedPage = pages[0];
+      }
       
       if (!selectedPage) {
         return { success: false, error: 'Selected Facebook page not found. Please reconnect Facebook.' };
