@@ -290,16 +290,27 @@ async function executeToolCall(
       
       try {
         console.log('[INSTAGRAM POST] Calling n8n webhook...');
-        const n8nResponse = await fetch(`${n8nWebhookUrl}instagram-post`, {
+        const n8nResponse = await fetch(`${n8nWebhookUrl}social-media`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            action: 'instagram',
             image_url,
             caption,
             access_token: accessToken,
             account_id: accountId,
           }),
         });
+        
+        // If webhook not found (404), give helpful error
+        if (n8nResponse.status === 404) {
+          const errorText = await n8nResponse.text();
+          console.log('[INSTAGRAM POST] n8n 404 Error:', errorText);
+          return { 
+            success: false, 
+            error: 'Instagram posting webhook not found. Please activate the Instagram posting workflow in your n8n dashboard.' 
+          };
+        }
         
         const n8nResult = await n8nResponse.json();
         console.log('[INSTAGRAM POST] n8n Response:', n8nResult);
@@ -360,16 +371,27 @@ async function executeToolCall(
         }
         
         console.log('[FACEBOOK POST] Calling n8n webhook...');
-        const n8nResponse = await fetch(`${n8nWebhookUrl}facebook-post`, {
+        const n8nResponse = await fetch(`${n8nWebhookUrl}social-media`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            action: 'facebook',
             message,
             image_url,
             access_token: accessToken,
             account_id: accountId,
           }),
         });
+        
+        // If webhook not found (404), give helpful error
+        if (n8nResponse.status === 404) {
+          const errorText = await n8nResponse.text();
+          console.log('[FACEBOOK POST] n8n 404 Error:', errorText);
+          return { 
+            success: false, 
+            error: 'Facebook posting webhook not found. Please activate the Facebook posting workflow in your n8n dashboard.' 
+          };
+        }
         
         const n8nResult = await n8nResponse.json();
         console.log('[FACEBOOK POST] n8n Response:', n8nResult);
@@ -451,16 +473,27 @@ async function executeToolCall(
         }
         
         console.log('[LINKEDIN POST] Calling n8n webhook...');
-        const n8nResponse = await fetch(`${n8nWebhookUrl}linkedin-post`, {
+        const n8nResponse = await fetch(`${n8nWebhookUrl}social-media`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            action: 'linkedin',
             content,
             media_url,
             access_token: accessToken,
             author_urn: authorUrn,
           }),
         });
+        
+        // If webhook not found (404), give helpful error
+        if (n8nResponse.status === 404) {
+          const errorText = await n8nResponse.text();
+          console.log('[LINKEDIN POST] n8n 404 Error:', errorText);
+          return { 
+            success: false, 
+            error: 'LinkedIn posting webhook not found. Please activate the LinkedIn posting workflow in your n8n dashboard.' 
+          };
+        }
         
         const n8nResult = await n8nResponse.json();
         console.log('[LINKEDIN POST] n8n Response:', n8nResult);
@@ -508,7 +541,7 @@ async function executeToolCall(
       
       try {
         console.log('[TIKTOK POST] Calling n8n webhook...');
-        const n8nResponse = await fetch(`${n8nWebhookUrl}tiktok-post`, {
+        const n8nResponse = await fetch(`${n8nWebhookUrl}social-media-video`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
