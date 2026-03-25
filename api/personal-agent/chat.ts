@@ -58,6 +58,18 @@ function generateTools() {
     {
       type: 'function',
       function: {
+        name: 'get_facebook_pages',
+        description: 'Get the Facebook pages the user has connected - use when user asks which Facebook pages they have',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
         name: 'post_to_instagram',
         description: 'Post content to Instagram',
         parameters: {
@@ -250,6 +262,29 @@ async function executeToolCall(
       return { platforms, message: `Connected platforms: ${platforms.join(', ') || 'None'}` };
     }
     
+    case 'get_facebook_pages': {
+      sendProgress('Getting Facebook pages...');
+      const { data: fbData } = await supabase
+        .from('user_social_credentials')
+        .select('credentials')
+        .eq('user_id', userId)
+        .eq('platform', 'facebook')
+        .single();
+      
+      const pages = fbData?.credentials?.pages || [];
+      console.log(`[GET FACEBOOK PAGES] Result:`, pages);
+      
+      if (pages.length === 0) {
+        return { pages: [], message: 'No Facebook pages connected' };
+      }
+      
+      const pageList = pages.map((p: Record<string, unknown>, i: number) => `${i + 1}. ${p.name} (${p.category})`).join('\n');
+      return { 
+        pages, 
+        message: `You have ${pages.length} Facebook page(s):\n\n${pageList}` 
+      };
+    }
+    
     case 'get_user_info': {
       sendProgress('Getting user info...');
       const info = await getUserInfo(userId);
@@ -411,6 +446,9 @@ async function executeToolCall(
         fbFormData.append('use_ai', 'no');
         fbFormData.append('type', 'none');
         fbFormData.append('is_story', 'false');
+        // Send specific page info to n8n so it posts to only that page
+        fbFormData.append('facebook_page_id', String(selectedPage.id));
+        fbFormData.append('facebook_page_access_token', String(selectedPage.access_token));
         
         const n8nResponse = await fetch(`${n8nWebhookUrl}social-media`, {
           method: 'POST',
@@ -891,16 +929,18 @@ export default async function handler(req: any, res: any) {
     - TikTok: REQUIRES a video. Cannot post text-only. User must provide a video URL.
     
     STRICT RULES:
-    1. If user asks about connected platforms or what accounts they have, you MUST call get_user_platforms tool
-    2. If user asks to post to Instagram without providing an image, tell them Instagram requires an image
-    3. If user asks to post to TikTok without providing a video, tell them TikTok requires a video
-    4. If user asks to post to Facebook: FIRST ask which page, then call post_to_facebook with page_id
-    5. If user asks to post to social media, you MUST call the appropriate tool - not just talk about it
-    6. NEVER say "I've posted" or "Done" unless the tool actually ran and returned success
-    7. If the tool returns an error (like "not connected"), you must tell the user the truth
+    1. If user asks about connected platforms or what accounts they have, call get_user_platforms tool
+    2. If user asks specifically about "Facebook pages" or "which pages" for Facebook, call get_facebook_pages tool
+    3. If user asks to post to Instagram without providing an image, tell them Instagram requires an image
+    4. If user asks to post to TikTok without providing a video, tell them TikTok requires a video
+    5. If user asks to post to Facebook: FIRST ask which page, then call post_to_facebook with page_id
+    6. If user asks to post to social media, you MUST call the appropriate tool - not just talk about it
+    7. NEVER say "I've posted" or "Done" unless the tool actually ran and returned success
+    8. If the tool returns an error (like "not connected"), you must tell the user the truth
     
     EXACT TOOL CALL FORMAT:
     When user asks "what platforms do I have connected" -> call get_user_platforms with {} (empty arguments)
+    When user asks "what Facebook pages do I have" or "which facebook pages" -> call get_facebook_pages with {} (empty arguments)
     When user says "post hello to linkedin" -> call post_to_linkedin with {"content": "hello"}
     When user asks "post to instagram" without image -> Tell user Instagram requires an image
     
@@ -990,13 +1030,19 @@ export default async function handler(req: any, res: any) {
           } else {
             responseText = `You don't have any social media platforms connected yet. Go to your dashboard to connect Facebook, Instagram, LinkedIn, or TikTok.`;
           }
+        } else if (toolResultsTyped['get_facebook_pages']) {
+          // Handle get_facebook_pages result
+          const fbResult = toolResultsTyped['get_facebook_pages'] as { message?: string } | undefined;
+          if (fbResult?.message) {
+            responseText = fbResult.message;
+          }
         } else {
           // Handle posting tools
           const successMessages = Object.entries(toolResultsTyped)
             .filter(([_, r]) => r.success === true)
             .map(([name, r]) => {
               if (name === 'post_to_linkedin') return '✅ Successfully posted to your LinkedIn!';
-              if (name === 'post_to_facebook') return '✅ Successfully posted to your Facebook!';
+              if (name === 'post_to_facebook') return '✅ Successfully posted to your Facebook page!';
               if (name === 'post_to_instagram') return '✅ Successfully posted to your Instagram!';
               if (name === 'post_to_tiktok') return '✅ Successfully posted to your TikTok!';
               return `✅ ${name} completed successfully`;
