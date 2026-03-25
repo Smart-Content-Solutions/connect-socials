@@ -67,7 +67,7 @@ function generateTools(): ChatCompletionTool[] {
       type: 'function',
       function: {
         name: 'post_to_facebook',
-        description: 'Post content to Facebook (text, image, or video). Platform supports: text posts, single image, multiple images, videos, and stories. IMPORTANT: Call get_facebook_pages first to get available pages. If user has multiple pages, ask which one to use. Pass the page name as page_id parameter.',
+        description: 'Post content to Facebook (text, image, or video). Platform supports: text posts, single image, multiple images, videos, stories, and posting to both feed and story simultaneously. IMPORTANT: Call get_facebook_pages first to get available pages. If user has multiple pages, ask which one to use. Pass the page name as page_id parameter.',
         parameters: {
           type: 'object',
           properties: {
@@ -76,6 +76,7 @@ function generateTools(): ChatCompletionTool[] {
             video_url: { type: 'string', description: 'URL of video to post (optional - use instead of image_url for video posts)' },
             page_id: { type: 'string', description: 'Specific Facebook page name or ID to post to (REQUIRED if user has multiple pages)' },
             is_story: { type: 'boolean', description: 'Whether to post as a story (default: false)' },
+            post_to_both_feed_and_story: { type: 'boolean', description: 'Whether to post to both feed and story simultaneously (default: false)' },
           },
           required: ['message'],
         },
@@ -85,7 +86,7 @@ function generateTools(): ChatCompletionTool[] {
       type: 'function',
       function: {
         name: 'post_to_instagram',
-        description: 'Post content to Instagram. REQUIRED: Must provide image_url(s) or video_url. Instagram does NOT support text-only posts. Supports: single image, multiple images (carousel), videos/reels, and stories. IMPORTANT: For carousel, pass ALL image URLs as a comma-separated string in image_url parameter.',
+        description: 'Post content to Instagram. REQUIRED: Must provide image_url(s) or video_url. Instagram does NOT support text-only posts. Supports: single image, multiple images (carousel), videos/reels, stories, and posting to both feed and story simultaneously. IMPORTANT: For carousel, pass ALL image URLs as a comma-separated string in image_url parameter.',
         parameters: {
           type: 'object',
           properties: {
@@ -94,6 +95,7 @@ function generateTools(): ChatCompletionTool[] {
             caption: { type: 'string', description: 'Caption for the post' },
             post_type: { type: 'string', enum: ['feed', 'reel', 'story'], description: 'Type of post: feed, reel, or story (default: feed)' },
             is_story: { type: 'boolean', description: 'Whether to post as a story (default: false)' },
+            post_to_both_feed_and_story: { type: 'boolean', description: 'Whether to post to both feed and story simultaneously (default: false)' },
           },
           required: [],
         },
@@ -103,7 +105,7 @@ function generateTools(): ChatCompletionTool[] {
       type: 'function',
       function: {
         name: 'post_to_linkedin',
-        description: 'Post content to LinkedIn. Supports: text posts, single image, document/posts with multiple images (carousel), and videos',
+        description: 'Post content to LinkedIn. Supports: text posts, single image, and multiple images (carousel). IMPORTANT: For carousel, pass ALL image URLs as a comma-separated string in media_url parameter.',
         parameters: {
           type: 'object',
           properties: {
@@ -209,6 +211,7 @@ interface ToolArgs {
   page_id?: string;
   post_type?: string;
   is_story?: boolean;
+  post_to_both_feed_and_story?: boolean;
   platforms?: string;
   scheduled_time?: string;
   title?: string;
@@ -278,7 +281,7 @@ async function handleToolCall(
     }
     
     case 'post_to_facebook': {
-      const { message, image_url, video_url, page_id, is_story } = args;
+      const { message, image_url, video_url, page_id, is_story, post_to_both_feed_and_story } = args;
       sendProgress('Posting to Facebook...');
       
       const { data: fbData } = await supabase
@@ -359,6 +362,11 @@ async function handleToolCall(
         formData.append('is_story', 'true');
       }
       
+      // Support for posting to both feed and story simultaneously
+      if (post_to_both_feed_and_story) {
+        formData.append('post_to_both_feed_and_story', 'true');
+      }
+      
       if (selectedPage?.id) {
         formData.append('facebook_page_ids[]', String(selectedPage.id));
       }
@@ -384,7 +392,7 @@ async function handleToolCall(
     }
     
     case 'post_to_instagram': {
-      const { image_url, video_url, caption, post_type, is_story } = args;
+      const { image_url, video_url, caption, post_type, is_story, post_to_both_feed_and_story } = args;
       
       if (!image_url && !video_url) {
         return { success: false, error: 'Instagram requires an image or video. Please provide image_url or video_url.' };
@@ -472,6 +480,11 @@ async function handleToolCall(
         formData.append('is_story', 'true');
       }
       
+      // Support for posting to both feed and story simultaneously
+      if (post_to_both_feed_and_story) {
+        formData.append('post_to_both_feed_and_story', 'true');
+      }
+      
       try {
         const response = await fetch(n8nImageWebhook, { method: 'POST', body: formData });
         
@@ -517,25 +530,41 @@ async function handleToolCall(
       if (media_url) {
         formData.append('type', 'image');
         
-        // Download the image from Supabase and send as binary
-        try {
-          const imageResponse = await fetch(media_url);
-          if (!imageResponse.ok) {
-            throw new Error('Failed to download image');
+        // Handle multiple images (comma-separated URLs for carousel)
+        const mediaUrls = media_url.split(',').map(url => url.trim()).filter(Boolean);
+        
+        if (mediaUrls.length > 1) {
+          // Multiple images - append each as media[0], media[1], etc. for carousel
+          for (let i = 0; i < mediaUrls.length; i++) {
+            const imgUrl = mediaUrls[i];
+            try {
+              const imageResponse = await fetch(imgUrl);
+              if (imageResponse.ok) {
+                const imageBlob = await imageResponse.blob();
+                const urlParts = imgUrl.split('/');
+                const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || `image_${i}.png`);
+                formData.append(`media[${i}]`, new File([imageBlob], fileName, { type: imageBlob.type }));
+              }
+            } catch { /* Skip failed images */ }
           }
-          const imageBlob = await imageResponse.blob();
-          
-          // Extract filename from URL
-          const urlParts = media_url.split('/');
-          const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'image.png');
-          
-          // Create a File object from the blob
-          const imageFile = new File([imageBlob], fileName, { type: imageBlob.type });
-          formData.append('image', imageFile);
-        } catch (downloadError) {
-          console.error('Failed to download image:', downloadError);
-          // Fallback to URL if download fails
-          formData.append('media_url', media_url);
+        } else {
+          // Single image
+          try {
+            const imageResponse = await fetch(media_url);
+            if (!imageResponse.ok) {
+              throw new Error('Failed to download image');
+            }
+            const imageBlob = await imageResponse.blob();
+            
+            const urlParts = media_url.split('/');
+            const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'image.png');
+            
+            const imageFile = new File([imageBlob], fileName, { type: imageBlob.type });
+            formData.append('image', imageFile);
+          } catch (downloadError) {
+            console.error('Failed to download image:', downloadError);
+            formData.append('media_url', media_url);
+          }
         }
       } else {
         formData.append('type', 'none');
@@ -906,9 +935,9 @@ export default async function handler(req: any, res: any) {
     const systemMessage = `You are a helpful AI assistant for SmartContentSolutions. Your job is to help users manage their social media presence.
 
 PLATFORM CAPABILITIES - Remember these rules:
-- Facebook: Text posts ✅, Images ✅, Videos ✅, Stories ✅, Scheduling ✅
-- Instagram: REQUIRES media (image or video). No text-only posts ❌. Stories ✅, Reels ✅
-- LinkedIn: Text posts ✅, Images ✅, Videos ✅, Documents ✅, Scheduling ✅
+- Facebook: Text posts ✅, Images ✅, Videos ✅, Stories ✅, Scheduling ✅, Multi-image posts ✅, Post to both feed and story ✅
+- Instagram: REQUIRES media (image or video). No text-only posts ❌. Stories ✅, Reels ✅, Carousel (multiple images) ✅, Post to both feed and story ✅
+- LinkedIn: Text posts ✅, Images ✅, Videos ✅, Documents ✅, Scheduling ✅, Carousel (multiple images) ✅
 - TikTok: REQUIRES video ❌. No text-only or image-only ❌
 - YouTube: REQUIRES video and title ❌. Videos only ✅
 - Twitter/X: Text posts ✅, Images ✅
@@ -923,13 +952,17 @@ IMPORTANT RULES:
 7. CRITICAL: When user attaches images/videos (shown as "[Attached image/video: filename]"), you MUST extract the URL from the message and pass it to the posting tool. Look for lines starting with "http" in the Attached Media section and use that URL as image_url, video_url, or media_url parameter.
 8. MULTIPLE IMAGES AND STORY HANDLING:
    - If user says "story" or "as story" → set is_story: true
+   - If user says "post to both feed and story" or "both" → set post_to_both_feed_and_story: true
    - For Instagram with multiple images: Pass ALL image URLs as a comma-separated string in image_url (e.g., "url1,url2,url3")
    - For Facebook with multiple images: Pass ALL image URLs as a comma-separated string (system will create posts)
-   - LinkedIn/Twitter with multiple images → Use only ONE image
+   - For LinkedIn with multiple images: Pass ALL image URLs as a comma-separated string in media_url (creates carousel)
    - Default post type is FEED if user doesn't mention story
    - Example: "post to Instagram story" → is_story: true
+   - Example: "post to Instagram as story" → is_story: true
+   - Example: "post to Instagram and story" or "both" → post_to_both_feed_and_story: true
    - Example: "post to Instagram" (no story mentioned) → is_story: false (feed)
    - Example: 3 images to Instagram → image_url: "url1,url2,url3" (creates carousel)
+   - Example: 3 images to LinkedIn → media_url: "url1,url2,url3" (creates carousel)
 9. FACEBOOK PAGE SELECTION: When posting to Facebook, ALWAYS call get_facebook_pages first to get the user's pages. If they have multiple pages, ask which page to use. If they have one page, use that page automatically. Pass the page name or ID to the post_to_facebook tool as page_id parameter.
 
 When user asks about connected platforms -> call get_user_platforms
