@@ -85,11 +85,11 @@ function generateTools(): ChatCompletionTool[] {
       type: 'function',
       function: {
         name: 'post_to_instagram',
-        description: 'Post content to Instagram. REQUIRED: Must provide image_url or video_url. Instagram does NOT support text-only posts. Supports: single image, multiple images (carousel), videos/reels, and stories',
+        description: 'Post content to Instagram. REQUIRED: Must provide image_url(s) or video_url. Instagram does NOT support text-only posts. Supports: single image, multiple images (carousel), videos/reels, and stories. IMPORTANT: For carousel, pass ALL image URLs as a comma-separated string in image_url parameter.',
         parameters: {
           type: 'object',
           properties: {
-            image_url: { type: 'string', description: 'URL of image to post (required if no video_url)' },
+            image_url: { type: 'string', description: 'URL of image to post. For multiple images (carousel), separate URLs with commas (e.g., "url1,url2,url3")' },
             video_url: { type: 'string', description: 'URL of video/reel to post (required if no image_url)' },
             caption: { type: 'string', description: 'Caption for the post' },
             post_type: { type: 'string', enum: ['feed', 'reel', 'story'], description: 'Type of post: feed, reel, or story (default: feed)' },
@@ -319,17 +319,38 @@ async function handleToolCall(
         } catch { formData.append('media_url', video_url); }
       } else if (image_url) {
         formData.append('type', 'image');
-        try {
-          const imageResponse = await fetch(image_url);
-          if (imageResponse.ok) {
-            const imageBlob = await imageResponse.blob();
-            const urlParts = image_url.split('/');
-            const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'image.png');
-            formData.append('image', new File([imageBlob], fileName, { type: imageBlob.type }));
-          } else {
-            formData.append('media_url', image_url);
+        
+        // Handle multiple images (comma-separated URLs)
+        const imageUrls = image_url.split(',').map(url => url.trim()).filter(Boolean);
+        
+        if (imageUrls.length > 1) {
+          // Multiple images - append each as media[0], media[1], etc.
+          for (let i = 0; i < imageUrls.length; i++) {
+            const imgUrl = imageUrls[i];
+            try {
+              const imageResponse = await fetch(imgUrl);
+              if (imageResponse.ok) {
+                const imageBlob = await imageResponse.blob();
+                const urlParts = imgUrl.split('/');
+                const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || `image_${i}.png`);
+                formData.append(`media[${i}]`, new File([imageBlob], fileName, { type: imageBlob.type }));
+              }
+            } catch { /* Skip failed images */ }
           }
-        } catch { formData.append('media_url', image_url); }
+        } else {
+          // Single image
+          try {
+            const imageResponse = await fetch(image_url);
+            if (imageResponse.ok) {
+              const imageBlob = await imageResponse.blob();
+              const urlParts = image_url.split('/');
+              const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'image.png');
+              formData.append('image', new File([imageBlob], fileName, { type: imageBlob.type }));
+            } else {
+              formData.append('media_url', image_url);
+            }
+          } catch { formData.append('media_url', image_url); }
+        }
       } else {
         formData.append('type', 'none');
       }
@@ -405,18 +426,39 @@ async function handleToolCall(
         formData.append('instagram_post_types', JSON.stringify({ feed: false, reel: true, story: false }));
       } else {
         formData.append('type', 'image');
-        const imgUrl = image_url || '';
-        try {
-          const imageResponse = await fetch(imgUrl);
-          if (imageResponse.ok) {
-            const imageBlob = await imageResponse.blob();
-            const urlParts = imgUrl.split('/');
-            const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'image.png');
-            formData.append('image', new File([imageBlob], fileName, { type: imageBlob.type }));
-          } else {
-            formData.append('media_url', imgUrl);
+        
+        // Handle multiple images (comma-separated URLs for carousel)
+        const imageUrls = (image_url || '').split(',').map(url => url.trim()).filter(Boolean);
+        
+        if (imageUrls.length > 1) {
+          // Multiple images - append each as media[0], media[1], etc. for carousel
+          for (let i = 0; i < imageUrls.length; i++) {
+            const imgUrl = imageUrls[i];
+            try {
+              const imageResponse = await fetch(imgUrl);
+              if (imageResponse.ok) {
+                const imageBlob = await imageResponse.blob();
+                const urlParts = imgUrl.split('/');
+                const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || `image_${i}.png`);
+                formData.append(`media[${i}]`, new File([imageBlob], fileName, { type: imageBlob.type }));
+              }
+            } catch { /* Skip failed images */ }
           }
-        } catch { formData.append('media_url', imgUrl); }
+        } else if (imageUrls.length === 1) {
+          // Single image
+          const imgUrl = imageUrls[0];
+          try {
+            const imageResponse = await fetch(imgUrl);
+            if (imageResponse.ok) {
+              const imageBlob = await imageResponse.blob();
+              const urlParts = imgUrl.split('/');
+              const fileName = decodeURIComponent(urlParts[urlParts.length - 1] || 'image.png');
+              formData.append('image', new File([imageBlob], fileName, { type: imageBlob.type }));
+            } else {
+              formData.append('media_url', imgUrl);
+            }
+          } catch { formData.append('media_url', imgUrl); }
+        }
         
         const postTypes = post_type === 'story' 
           ? { feed: false, reel: false, story: true }
@@ -879,6 +921,15 @@ IMPORTANT RULES:
 5. If user asks to "post" without specifying platform - ask which platform OR post to all connected platforms
 6. Always confirm what you're posting before doing it
 7. CRITICAL: When user attaches images/videos (shown as "[Attached image/video: filename]"), you MUST extract the URL from the message and pass it to the posting tool. Look for lines starting with "http" in the Attached Media section and use that URL as image_url, video_url, or media_url parameter.
+8. MULTIPLE IMAGES AND STORY HANDLING:
+   - If user says "story" or "as story" → set is_story: true
+   - For Instagram with multiple images: Pass ALL image URLs as a comma-separated string in image_url (e.g., "url1,url2,url3")
+   - For Facebook with multiple images: Pass ALL image URLs as a comma-separated string (system will create posts)
+   - LinkedIn/Twitter with multiple images → Use only ONE image
+   - Default post type is FEED if user doesn't mention story
+   - Example: "post to Instagram story" → is_story: true
+   - Example: "post to Instagram" (no story mentioned) → is_story: false (feed)
+   - Example: 3 images to Instagram → image_url: "url1,url2,url3" (creates carousel)
 
 When user asks about connected platforms -> call get_user_platforms
 When user asks which Facebook pages they have -> call get_facebook_pages
@@ -941,11 +992,12 @@ Tools available:
     const toolCalls = responseMessage?.tool_calls || [];
     console.log('[CHAT] Tool calls:', toolCalls.length);
     
-    let toolResults: Record<string, unknown> = {};
+    const toolResultsArray: { name: string; result: unknown; tool_call_id: string }[] = [];
     
     if (toolCalls.length > 0) {
       for (const toolCall of toolCalls) {
         const toolName = (toolCall as { function?: { name?: string } }).function?.name || '';
+        const toolCallId = (toolCall as { id?: string }).id || '';
         const argsStr = (toolCall as { function?: { arguments?: string } }).function?.arguments || '{}';
         let args: ToolArgs = {};
         
@@ -958,7 +1010,7 @@ Tools available:
         console.log(`[TOOL] Calling tool: ${toolName}`, args);
         
         const result = await handleToolCall(toolName, args, userId, sendProgress);
-        toolResults[toolName] = result;
+        toolResultsArray.push({ name: toolName, result, tool_call_id: toolCallId });
         console.log(`[TOOL] Result:`, result);
       }
       
@@ -969,32 +1021,44 @@ Tools available:
           messages: [
             { role: 'system', content: systemMessage },
             ...historyMessages,
-            { role: 'user', content: message },
-            { role: 'assistant', content: responseText, tool_calls: toolCalls as any },
-            ...Object.entries(toolResults).map(([name, result], index) => ({
+            { role: 'user', content: userMessageContent },
+            { role: 'assistant', content: responseText || null, tool_calls: toolCalls as any },
+            ...toolResultsArray.map(({ name, result, tool_call_id }) => ({
               role: 'tool' as const,
               content: JSON.stringify(result),
               name: name,
-              tool_call_id: (toolCalls[index] as { id?: string })?.id || `call_${index}`,
+              tool_call_id: tool_call_id,
             })),
           ],
         });
         
-        const toolResultsTyped = toolResults as Record<string, { success?: boolean; error?: string; message?: string }>;
+        const anyFailed = toolResultsArray.some(t => {
+          const r = t.result as { success?: boolean; error?: string };
+          return r.success === false;
+        });
         
-        // Check for failures
-        const anyFailed = Object.values(toolResultsTyped).some(r => r.success === false);
         if (anyFailed) {
-          const errors = Object.entries(toolResultsTyped)
-            .filter(([_, r]) => r.success === false)
-            .map(([name, r]) => `⚠️ ${name}: ${r.error}`)
+          const errors = toolResultsArray
+            .filter(t => {
+              const r = t.result as { success?: boolean; error?: string };
+              return r.success === false;
+            })
+            .map(t => {
+              const r = t.result as { success?: boolean; error?: string };
+              return `⚠️ ${t.name}: ${r.error}`;
+            })
             .join('\n');
           responseText = `I encountered some issues:\n\n${errors}`;
         } else {
-          // Show success messages
-          const successes = Object.entries(toolResultsTyped)
-            .filter(([_, r]) => r.success === true)
-            .map(([_, r]) => r.message || '✅ Done!')
+          const successes = toolResultsArray
+            .filter(t => {
+              const r = t.result as { success?: boolean; message?: string };
+              return r.success === true;
+            })
+            .map(t => {
+              const r = t.result as { success?: boolean; message?: string };
+              return r.message || '✅ Done!';
+            })
             .join('\n');
           responseText = successes || finalCompletion.choices[0]?.message?.content || responseText;
         }
@@ -1009,7 +1073,7 @@ Tools available:
         }
         return acc;
       }, []),
-      toolResults
+      toolResultsArray.reduce((acc, t) => { acc[t.name] = t.result; return acc; }, {} as Record<string, unknown>)
     );
     
     sendSSE(JSON.stringify({ type: 'message', content: responseText }));
