@@ -294,11 +294,10 @@ async function executeToolCall(
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'instagram',
-            image_url,
-            caption,
-            access_token: accessToken,
-            account_id: accountId,
+            caption: caption || '',
+            platforms: ['instagram'],
+            post_mode: 'publish',
+            user_id: userId,
           }),
         });
         
@@ -375,11 +374,10 @@ async function executeToolCall(
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'facebook',
-            message,
-            image_url,
-            access_token: accessToken,
-            account_id: accountId,
+            caption: message,
+            platforms: ['facebook'],
+            post_mode: 'publish',
+            user_id: userId,
           }),
         });
         
@@ -477,11 +475,10 @@ async function executeToolCall(
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: 'linkedin',
-            content,
-            media_url,
-            access_token: accessToken,
-            author_urn: authorUrn,
+            caption: content,
+            platforms: ['linkedin'],
+            post_mode: 'publish',
+            user_id: userId,
           }),
         });
         
@@ -545,9 +542,11 @@ async function executeToolCall(
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            video_url,
-            caption,
-            access_token: accessToken,
+            caption: caption || '',
+            platforms: ['tiktok'],
+            post_mode: 'publish',
+            user_id: userId,
+            media_url: video_url,
           }),
         });
         
