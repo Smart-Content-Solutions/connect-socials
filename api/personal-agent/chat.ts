@@ -11,7 +11,8 @@ const openai = new OpenAI({
 
 const clerkSecretKey = process.env.VITE_CLERK_SECRET_KEY || 'sk_test_JjTqEC8zpcJlW2Y9wdTbMGevmLC81O6Ii7aw3YGWrL';
 
-const n8nWebhookUrl = process.env.VITE_N8N_WEBHOOK_URL || 'https://n8n.smartcontentsolutions.co.uk/webhook/';
+const n8nImageWebhook = 'https://n8n.smartcontentsolutions.co.uk/webhook/social-media';
+const n8nVideoWebhook = 'https://n8n.smartcontentsolutions.co.uk/webhook/social-media-video';
 
 async function verifyClerkToken(authHeader: string): Promise<string | null> {
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -22,18 +23,11 @@ async function verifyClerkToken(authHeader: string): Promise<string | null> {
   
   try {
     const decoded = jwt.decode(token) as { user_id?: string; sub?: string } | null;
-    if (!decoded) {
-      console.error('Token decode failed: token is invalid');
-      return null;
-    }
+    if (!decoded) return null;
     
     const userId = decoded.user_id || decoded.sub;
-    if (!userId) {
-      console.error('Token does not contain user_id or sub');
-      return null;
-    }
+    if (!userId) return null;
     
-    console.log('[TOKEN] Successfully extracted userId:', userId);
     return userId;
   } catch (error) {
     console.error('Token verification failed:', error);
@@ -41,7 +35,9 @@ async function verifyClerkToken(authHeader: string): Promise<string | null> {
   }
 }
 
-function generateTools() {
+import { ChatCompletionTool } from 'openai';
+
+function generateTools(): ChatCompletionTool[] {
   return [
     {
       type: 'function',
@@ -59,7 +55,7 @@ function generateTools() {
       type: 'function',
       function: {
         name: 'get_facebook_pages',
-        description: 'Get the Facebook pages the user has connected - use when user asks which Facebook pages they have',
+        description: 'Get the Facebook pages the user has connected',
         parameters: {
           type: 'object',
           properties: {},
@@ -70,28 +66,16 @@ function generateTools() {
     {
       type: 'function',
       function: {
-        name: 'post_to_instagram',
-        description: 'Post content to Instagram',
-        parameters: {
-          type: 'object',
-          properties: {
-            image_url: { type: 'string', description: 'URL of the image to post' },
-            caption: { type: 'string', description: 'Caption for the post' },
-          },
-          required: ['image_url', 'caption'],
-        },
-      },
-    },
-    {
-      type: 'function',
-      function: {
         name: 'post_to_facebook',
-        description: 'Post content to Facebook - will ask which page to post to if multiple pages connected',
+        description: 'Post content to Facebook (text, image, or video). Platform supports: text posts, single image, multiple images (carousel), videos, and stories',
         parameters: {
           type: 'object',
           properties: {
-            message: { type: 'string', description: 'Message content' },
-            page_id: { type: 'string', description: 'Facebook page ID to post to (optional - will ask user if not provided)' },
+            message: { type: 'string', description: 'The text content/caption of the post' },
+            image_url: { type: 'string', description: 'URL of image to post (optional)' },
+            video_url: { type: 'string', description: 'URL of video to post (optional - use instead of image_url for video posts)' },
+            page_id: { type: 'string', description: 'Specific Facebook page ID to post to (optional)' },
+            is_story: { type: 'boolean', description: 'Whether to post as a story (default: false)' },
           },
           required: ['message'],
         },
@@ -100,13 +84,31 @@ function generateTools() {
     {
       type: 'function',
       function: {
-        name: 'post_to_linkedin',
-        description: 'Post content to LinkedIn',
+        name: 'post_to_instagram',
+        description: 'Post content to Instagram. REQUIRED: Must provide image_url or video_url. Instagram does NOT support text-only posts. Supports: single image, multiple images (carousel), videos/reels, and stories',
         parameters: {
           type: 'object',
           properties: {
-            content: { type: 'string', description: 'Post content' },
-            media_url: { type: 'string', description: 'URL of media to attach (optional)' },
+            image_url: { type: 'string', description: 'URL of image to post (required if no video_url)' },
+            video_url: { type: 'string', description: 'URL of video/reel to post (required if no image_url)' },
+            caption: { type: 'string', description: 'Caption for the post' },
+            post_type: { type: 'string', enum: ['feed', 'reel', 'story'], description: 'Type of post: feed, reel, or story (default: feed)' },
+            is_story: { type: 'boolean', description: 'Whether to post as a story (default: false)' },
+          },
+          required: [],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'post_to_linkedin',
+        description: 'Post content to LinkedIn. Supports: text posts, single image, document/posts with multiple images (carousel), and videos',
+        parameters: {
+          type: 'object',
+          properties: {
+            content: { type: 'string', description: 'The text content of the post' },
+            media_url: { type: 'string', description: 'URL of image, video, or document to post (optional)' },
           },
           required: ['content'],
         },
@@ -116,14 +118,47 @@ function generateTools() {
       type: 'function',
       function: {
         name: 'post_to_tiktok',
-        description: 'Post content to TikTok',
+        description: 'Post a video to TikTok. REQUIRED: Must provide video_url. TikTok does NOT support text-only or image-only posts',
         parameters: {
           type: 'object',
           properties: {
-            video_url: { type: 'string', description: 'URL of the video' },
-            caption: { type: 'string', description: 'Caption for the video' },
+            video_url: { type: 'string', description: 'URL of the video to post (REQUIRED)' },
+            caption: { type: 'string', description: 'Caption for the TikTok video' },
           },
-          required: ['video_url', 'caption'],
+          required: ['video_url'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'post_to_youtube',
+        description: 'Post a video to YouTube. REQUIRED: Must provide video_url and title',
+        parameters: {
+          type: 'object',
+          properties: {
+            video_url: { type: 'string', description: 'URL of the video to upload (REQUIRED)' },
+            title: { type: 'string', description: 'Title of the YouTube video (REQUIRED)' },
+            description: { type: 'string', description: 'Description of the video (optional)' },
+            tags: { type: 'string', description: 'Comma-separated tags for the video (optional)' },
+            privacy: { type: 'string', enum: ['public', 'private', 'unlisted'], description: 'Privacy setting (default: private)' },
+          },
+          required: ['video_url', 'title'],
+        },
+      },
+    },
+    {
+      type: 'function',
+      function: {
+        name: 'post_to_twitter',
+        description: 'Post content to Twitter/X. Supports: text posts and images',
+        parameters: {
+          type: 'object',
+          properties: {
+            content: { type: 'string', description: 'Tweet content (required)' },
+            image_url: { type: 'string', description: 'URL of image to attach (optional)' },
+          },
+          required: ['content'],
         },
       },
     },
@@ -131,58 +166,17 @@ function generateTools() {
       type: 'function',
       function: {
         name: 'schedule_post',
-        description: 'Schedule a post for later',
+        description: 'Schedule a post to be published later. Supports: Facebook, Instagram, LinkedIn, TikTok, YouTube. For Instagram and TikTok, media is required',
         parameters: {
           type: 'object',
           properties: {
-            content: { type: 'string', description: 'Post content/caption' },
-            scheduled_time: { type: 'string', description: 'ISO datetime to schedule' },
-            platforms: { type: 'string', description: 'Comma-separated platforms (instagram,facebook,linkedin,tiktok)' },
-            media_url: { type: 'string', description: 'URL of media to post' },
+            content: { type: 'string', description: 'Text content/caption for the post' },
+            platforms: { type: 'string', description: 'Comma-separated platforms: facebook,instagram,linkedin,tiktok,youtube,twitter' },
+            scheduled_time: { type: 'string', description: 'Date and time to publish (ISO format, e.g., 2026-03-25T10:00:00Z)' },
+            image_url: { type: 'string', description: 'URL of image for Instagram/Facebook/LinkedIn (optional)' },
+            video_url: { type: 'string', description: 'URL of video for TikTok/YouTube (optional)' },
           },
-          required: ['content', 'scheduled_time', 'platforms'],
-        },
-      },
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'get_scheduled_posts',
-        description: 'Get the user\'s scheduled posts',
-        parameters: {
-          type: 'object',
-          properties: {},
-          required: [],
-        },
-      },
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'cancel_scheduled_post',
-        description: 'Cancel a scheduled post',
-        parameters: {
-          type: 'object',
-          properties: {
-            post_id: { type: 'string', description: 'ID of the scheduled post to cancel' },
-          },
-          required: ['post_id'],
-        },
-      },
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'wordpress_create_post',
-        description: 'Create a WordPress blog post',
-        parameters: {
-          type: 'object',
-          properties: {
-            title: { type: 'string', description: 'Blog post title' },
-            content: { type: 'string', description: 'Blog post content (HTML or markdown)' },
-            status: { type: 'string', description: 'Post status: draft or publish' },
-          },
-          required: ['title', 'content'],
+          required: ['content', 'platforms', 'scheduled_time'],
         },
       },
     },
@@ -190,76 +184,75 @@ function generateTools() {
       type: 'function',
       function: {
         name: 'enhance_caption',
-        description: 'Use AI to enhance a social media caption with better hashtags and engagement',
+        description: 'Use AI to improve/rewrite a social media caption',
         parameters: {
           type: 'object',
           properties: {
-            caption: { type: 'string', description: 'Original caption to enhance' },
-            platform: { type: 'string', description: 'Target platform: instagram, facebook, linkedin, tiktok' },
+            caption: { type: 'string', description: 'The original caption to enhance' },
+            platform: { type: 'string', description: 'Target platform: facebook, instagram, linkedin, twitter, tiktok, youtube' },
+            tone: { type: 'string', description: 'Desired tone: professional, casual, friendly, humorous, inspirational' },
           },
-          required: ['caption', 'platform'],
-        },
-      },
-    },
-    {
-      type: 'function',
-      function: {
-        name: 'get_user_info',
-        description: 'Get user profile information',
-        parameters: {
-          type: 'object',
-          properties: {},
-          required: [],
+          required: ['caption'],
         },
       },
     },
   ];
 }
 
+interface ToolArgs {
+  message?: string;
+  content?: string;
+  caption?: string;
+  image_url?: string;
+  video_url?: string;
+  media_url?: string;
+  page_id?: string;
+  post_type?: string;
+  is_story?: boolean;
+  platforms?: string;
+  scheduled_time?: string;
+  title?: string;
+  description?: string;
+  tags?: string;
+  privacy?: string;
+  tone?: string;
+  platform?: string;
+}
+
 async function getUserPlatforms(userId: string): Promise<string[]> {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
   
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('user_social_credentials')
     .select('platform')
     .eq('user_id', userId);
   
-  if (error || !data) {
-    return [];
-  }
+  if (!data) return [];
   
-  return [...new Set(data.map(d => d.platform))];
+  const platforms = [...new Set(data.map(d => d.platform))];
+  return platforms;
 }
 
-async function getUserInfo(userId: string): Promise<Record<string, unknown>> {
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  
-  const { data: userData } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', userId)
-    .single();
-  
-  return userData || {};
-}
-
-async function executeToolCall(
+async function handleToolCall(
   toolName: string,
-  args: Record<string, unknown>,
+  args: ToolArgs,
   userId: string,
   sendProgress: (msg: string) => void
 ): Promise<Record<string, unknown>> {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
   
-  console.log(`[TOOL CALL] ${toolName} called with args:`, JSON.stringify(args, null, 2));
-  console.log(`[USER ID] ${userId}`);
+  console.log(`[TOOL] ${toolName} called with args:`, args);
   
   switch (toolName) {
     case 'get_user_platforms': {
       sendProgress('Checking connected platforms...');
       const platforms = await getUserPlatforms(userId);
-      console.log(`[GET USER PLATFORMS] Result:`, platforms);
-      return { platforms, message: `Connected platforms: ${platforms.join(', ') || 'None'}` };
+      return { 
+        platforms, 
+        message: platforms.length > 0 
+          ? `Connected platforms: ${platforms.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ')}`
+          : 'No social media platforms connected yet.' 
+      };
     }
     
     case 'get_facebook_pages': {
@@ -272,606 +265,444 @@ async function executeToolCall(
         .single();
       
       const pages = fbData?.credentials?.pages || [];
-      console.log(`[GET FACEBOOK PAGES] Result:`, pages);
       
       if (pages.length === 0) {
         return { pages: [], message: 'No Facebook pages connected' };
       }
       
-      const pageList = pages.map((p: Record<string, unknown>, i: number) => `${i + 1}. ${p.name} (${p.category})`).join('\n');
+      const pageList = pages.map((p: Record<string, unknown>, i: number) => `${i + 1}. ${p.name} (${p.category || 'Page'})`).join('\n');
       return { 
         pages, 
         message: `You have ${pages.length} Facebook page(s):\n\n${pageList}` 
       };
     }
     
-    case 'get_user_info': {
-      sendProgress('Getting user info...');
-      const info = await getUserInfo(userId);
-      console.log(`[GET USER INFO] Result:`, info);
-      return { info, message: 'User information retrieved' };
-    }
-    
-    case 'post_to_instagram': {
-      console.log('[INSTAGRAM POST] Starting...');
-      sendProgress('Posting to Instagram...');
-      const { image_url, caption } = args;
-      
-      console.log('[INSTAGRAM POST] image_url:', image_url);
-      console.log('[INSTAGRAM POST] caption:', caption);
-      
-      const { data: credData, error: credError } = await supabase
-        .from('user_social_credentials')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('platform', 'instagram')
-        .single();
-      
-      console.log('[INSTAGRAM POST] credData:', credData);
-      console.log('[INSTAGRAM POST] credError:', credError);
-      
-      if (!credData || credError) {
-        console.log('[INSTAGRAM POST] No credentials found for user');
-        return { success: false, error: 'Instagram not connected' };
-      }
-      
-      const accessToken = credData.credentials?.access_token;
-      console.log('[INSTAGRAM POST] Full credentials:', JSON.stringify(credData.credentials, null, 2));
-      const accountId = credData.credentials?.instagram_user_id || credData.credentials?.pageId;
-      console.log('[INSTAGRAM POST] accountId:', accountId);
-      
-      console.log('[INSTAGRAM POST] accountId:', accountId);
-      console.log('[INSTAGRAM POST] accessToken exists:', !!accessToken);
-      
-      try {
-        console.log('[INSTAGRAM POST] Calling n8n webhook...');
-        
-        if (!image_url) {
-          return { success: false, error: 'Instagram requires an image. Please provide an image URL.' };
-        }
-        
-        const igFormData = new FormData();
-        igFormData.append('user_id', userId);
-        igFormData.append('caption', String(caption));
-        igFormData.append('platforms[]', 'instagram');
-        igFormData.append('post_mode', 'publish');
-        igFormData.append('use_ai', 'no');
-        igFormData.append('type', 'image');
-        igFormData.append('is_story', 'false');
-        
-        const n8nResponse = await fetch(`${n8nWebhookUrl}social-media`, {
-          method: 'POST',
-          body: igFormData,
-        });
-        
-        // If webhook not found (404), give helpful error
-        if (n8nResponse.status === 404) {
-          const errorText = await n8nResponse.text();
-          console.log('[INSTAGRAM POST] n8n 404 Error:', errorText);
-          return { 
-            success: false, 
-            error: 'Instagram posting webhook not found. Please activate the Instagram posting workflow in your n8n dashboard.' 
-          };
-        }
-        
-        const n8nResult = await n8nResponse.json();
-        console.log('[INSTAGRAM POST] n8n Response:', n8nResult);
-        
-        if (n8nResponse.status >= 400 || n8nResult?.error) {
-          console.log('[INSTAGRAM POST] n8n Error:', n8nResult?.error || n8nResult);
-          return { success: false, error: n8nResult?.error || n8nResult?.message || 'Failed to post via n8n' };
-        }
-        
-        sendProgress('Posted to Instagram! ✅');
-        console.log('[INSTAGRAM POST] Success!');
-        return { success: true, media_id: n8nResult?.id || 'sent' };
-      } catch (error: unknown) {
-        console.log('[INSTAGRAM POST] Catch error:', error);
-        const errMsg = error instanceof Error ? error.message : 'Failed to post';
-        return { success: false, error: errMsg };
-      }
-    }
-    
     case 'post_to_facebook': {
-      console.log('[FACEBOOK POST] Starting...');
-      sendProgress('Getting Facebook pages...');
-      const { message, page_id } = args;
+      const { message, image_url, video_url, page_id, is_story } = args;
+      sendProgress('Posting to Facebook...');
       
-      // First get Facebook credentials to check connected pages
-      const { data: fbCredData, error: fbCredError } = await supabase
+      const { data: fbData } = await supabase
         .from('user_social_credentials')
         .select('credentials')
         .eq('user_id', userId)
         .eq('platform', 'facebook')
         .single();
       
-      console.log('[FACEBOOK POST] credData:', fbCredData);
-      console.log('[FACEBOOK POST] credError:', fbCredError);
-      
-      if (!fbCredData || fbCredError) {
-        return { success: false, error: 'Facebook not connected' };
+      if (!fbData) {
+        return { success: false, error: 'Facebook not connected. Please connect Facebook in your dashboard.' };
       }
       
-      const pages = fbCredData.credentials?.pages || [];
-      console.log('[FACEBOOK POST] Available pages:', JSON.stringify(pages));
+      const pages = fbData?.credentials?.pages || [];
+      let selectedPage = page_id 
+        ? pages.find((p: Record<string, unknown>) => p.id === page_id || (p.name as string)?.toLowerCase() === (page_id as string)?.toLowerCase())
+        : pages[0];
       
-      // If no page_id specified and there are multiple pages, ask user to choose
-      if (!page_id && pages.length > 0) {
-        const pageOptions = pages.map((p: Record<string, unknown>, index: number) => `${index + 1}. ${p.name}`).join('\n');
-        return { 
-          success: false, 
-          needs_page_selection: true,
-          pages: pages,
-          message: `You have ${pages.length} Facebook page(s). Which one would you like to post to?\n\n${pageOptions}\n\nPlease reply with the page number or name.` 
-        };
+      const formData = new FormData();
+      formData.append('user_id', userId);
+      formData.append('caption', message || '');
+      formData.append('platforms[]', 'facebook');
+      formData.append('post_mode', 'publish');
+      formData.append('use_ai', 'no');
+      
+      if (video_url) {
+        formData.append('type', 'video');
+        formData.append('media_url', video_url);
+      } else if (image_url) {
+        formData.append('type', 'image');
+        formData.append('media_url', image_url);
+      } else {
+        formData.append('type', 'none');
       }
       
-      // If page_id provided (could be name or number), find the matching page
-      let selectedPage: Record<string, unknown> | undefined;
-      
-      if (page_id) {
-        // Try matching by id first
-        selectedPage = pages.find((p: Record<string, unknown>) => p.id === page_id);
-        // Then try matching by name
-        if (!selectedPage) {
-          selectedPage = pages.find((p: Record<string, unknown>) => (p.name as string)?.toLowerCase() === (page_id as string).toLowerCase());
-        }
-        // Then try matching by number
-        if (!selectedPage) {
-          const pageNum = parseInt(page_id as string);
-          if (!isNaN(pageNum) && pageNum > 0 && pageNum <= pages.length) {
-            selectedPage = pages[pageNum - 1];
-          }
-        }
-      } else if (pages.length === 1) {
-        selectedPage = pages[0];
+      if (is_story) {
+        formData.append('is_story', 'true');
       }
       
-      // Skip page selection for now - post to all pages (n8n needs update to support single page)
-      if (!selectedPage && pages.length > 0) {
-        // Default to first page if none selected
-        selectedPage = pages[0];
+      if (selectedPage?.id) {
+        formData.append('facebook_page_ids[]', String(selectedPage.id));
       }
-      
-      if (!selectedPage) {
-        return { success: false, error: 'No Facebook pages found. Please reconnect Facebook.' };
-      }
-      
-      sendProgress(`Posting to Facebook...`);
-      console.log('[FACEBOOK POST] Posting to Facebook...');
       
       try {
+        const response = await fetch(n8nImageWebhook, { method: 'POST', body: formData });
         
-        console.log('[FACEBOOK POST] Calling n8n webhook...');
-        
-        const fbFormData = new FormData();
-        fbFormData.append('user_id', userId);
-        fbFormData.append('caption', String(message));
-        fbFormData.append('platforms[]', 'facebook');
-        fbFormData.append('post_mode', 'publish');
-        fbFormData.append('use_ai', 'no');
-        fbFormData.append('type', 'none');
-        fbFormData.append('is_story', 'false');
-        // Send specific page info to n8n so it posts to only that page
-        if (selectedPage) {
-          fbFormData.append('facebook_page_ids[]', String(selectedPage.id));
+        if (response.status === 404) {
+          return { success: false, error: 'Facebook posting is not configured. Please contact support.' };
         }
         
-        const n8nResponse = await fetch(`${n8nWebhookUrl}social-media`, {
-          method: 'POST',
-          body: fbFormData,
-        });
+        const result = await response.json();
         
-        // If webhook not found (404), give helpful error
-        if (n8nResponse.status === 404) {
-          const errorText = await n8nResponse.text();
-          console.log('[FACEBOOK POST] n8n 404 Error:', errorText);
-          return { 
-            success: false, 
-            error: 'Facebook posting webhook not found. Please activate the Facebook posting workflow in your n8n dashboard.' 
-          };
-        }
-        
-        const n8nResult = await n8nResponse.json();
-        console.log('[FACEBOOK POST] n8n Response:', n8nResult);
-        
-        if (n8nResponse.status >= 400 || n8nResult?.error) {
-          console.log('[FACEBOOK POST] n8n Error:', n8nResult?.error || n8nResult);
-          return { success: false, error: n8nResult?.error || n8nResult?.message || 'Failed to post via n8n' };
+        if (response.status >= 400 || result?.error) {
+          return { success: false, error: result?.error || result?.message || 'Failed to post to Facebook' };
         }
         
         sendProgress('Posted to Facebook! ✅');
-        console.log('[FACEBOOK POST] Success!');
-        return { success: true, post_id: n8nResult?.id || 'sent' };
-      } catch (error: unknown) {
-        console.log('[FACEBOOK POST] Catch error:', error);
-        const errMsg = error instanceof Error ? error.message : 'Failed to post';
-        return { success: false, error: errMsg };
+        return { success: true, message: 'Successfully posted to Facebook!', result };
+      } catch (error) {
+        return { success: false, error: `Failed to post: ${error instanceof Error ? error.message : 'Unknown error'}` };
+      }
+    }
+    
+    case 'post_to_instagram': {
+      const { image_url, video_url, caption, post_type, is_story } = args;
+      
+      if (!image_url && !video_url) {
+        return { success: false, error: 'Instagram requires an image or video. Please provide image_url or video_url.' };
+      }
+      
+      sendProgress('Posting to Instagram...');
+      
+      const { data: igData } = await supabase
+        .from('user_social_credentials')
+        .select('credentials')
+        .eq('user_id', userId)
+        .eq('platform', 'instagram')
+        .single();
+      
+      if (!igData) {
+        return { success: false, error: 'Instagram not connected. Please connect Instagram in your dashboard.' };
+      }
+      
+      const formData = new FormData();
+      formData.append('user_id', userId);
+      formData.append('caption', caption || '');
+      formData.append('platforms[]', 'instagram');
+      formData.append('post_mode', 'publish');
+      formData.append('use_ai', 'no');
+      
+      if (video_url) {
+        formData.append('type', 'video');
+        formData.append('media_url', video_url);
+        formData.append('instagram_post_types', JSON.stringify({ feed: false, reel: true, story: false }));
+      } else {
+        formData.append('type', 'image');
+        formData.append('media_url', image_url || '');
+        
+        const postTypes = post_type === 'story' 
+          ? { feed: false, reel: false, story: true }
+          : post_type === 'reel'
+            ? { feed: false, reel: true, story: false }
+            : { feed: true, reel: false, story: false };
+        formData.append('instagram_post_types', JSON.stringify(postTypes));
+      }
+      
+      if (is_story || post_type === 'story') {
+        formData.append('is_story', 'true');
+      }
+      
+      try {
+        const response = await fetch(n8nImageWebhook, { method: 'POST', body: formData });
+        
+        if (response.status === 404) {
+          return { success: false, error: 'Instagram posting is not configured. Please contact support.' };
+        }
+        
+        const result = await response.json();
+        
+        if (response.status >= 400 || result?.error) {
+          return { success: false, error: result?.error || result?.message || 'Failed to post to Instagram' };
+        }
+        
+        sendProgress('Posted to Instagram! ✅');
+        return { success: true, message: 'Successfully posted to Instagram!', result };
+      } catch (error) {
+        return { success: false, error: `Failed to post: ${error instanceof Error ? error.message : 'Unknown error'}` };
       }
     }
     
     case 'post_to_linkedin': {
-      console.log('[LINKEDIN POST] Starting...');
-      sendProgress('Posting to LinkedIn...');
       const { content, media_url } = args;
+      sendProgress('Posting to LinkedIn...');
       
-      console.log('[LINKEDIN POST] content:', content);
-      console.log('[LINKEDIN POST] media_url:', media_url);
-      
-      const { data: credData, error: credError } = await supabase
+      const { data: liData } = await supabase
         .from('user_social_credentials')
         .select('credentials')
         .eq('user_id', userId)
         .eq('platform', 'linkedin')
         .single();
       
-      console.log('[LINKEDIN POST] credData:', credData);
-      console.log('[LINKEDIN POST] credError:', credError);
-      
-      if (!credData) {
-        console.log('[LINKEDIN POST] No credentials found for user');
-        return { success: false, error: 'LinkedIn not connected' };
+      if (!liData) {
+        return { success: false, error: 'LinkedIn not connected. Please connect LinkedIn in your dashboard.' };
       }
       
-      const accessToken = credData.credentials?.access_token;
-      const linkedinUserId = credData.credentials?.linkedin_user_id;
-      console.log('[LINKEDIN POST] accessToken exists:', !!accessToken);
-      console.log('[LINKEDIN POST] linkedin_user_id from credentials:', linkedinUserId);
+      const formData = new FormData();
+      formData.append('user_id', userId);
+      formData.append('caption', content || '');
+      formData.append('platforms[]', 'linkedin');
+      formData.append('post_mode', 'publish');
+      formData.append('use_ai', 'no');
       
-      if (!linkedinUserId) {
-        console.log('[LINKEDIN POST] No linkedin_user_id in credentials');
-        return { success: false, error: 'LinkedIn account ID not found. Please reconnect LinkedIn.' };
+      if (media_url) {
+        formData.append('type', 'image');
+        formData.append('media_url', media_url);
+      } else {
+        formData.append('type', 'none');
       }
-      
-      const authorUrn = `urn:li:person:${linkedinUserId}`;
-      console.log('[LINKEDIN POST] Using author URN:', authorUrn);
       
       try {
-        const postPayload: Record<string, unknown> = {
-          author: authorUrn,
-          lifecycleState: 'PUBLISHED',
-          specificContent: {
-            'com.linkedin.ugc.ShareContent': {
-              shareCommentary: { text: content },
-              shareMediaCategory: media_url ? 'IMAGE' : 'NONE',
-            },
-          },
-          visibility: {
-            'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC',
-          },
-        };
+        const response = await fetch(n8nImageWebhook, { method: 'POST', body: formData });
         
-        console.log('[LINKEDIN POST] Full payload:', JSON.stringify(postPayload));
-        
-        if (media_url) {
-          (postPayload.specificContent as Record<string, unknown>)['com.linkedin.ugc.ShareContent'] = {
-            shareCommentary: { text: content },
-            shareMediaCategory: 'IMAGE',
-            media: [{ status: 'READY', originalUrl: media_url }],
-          };
+        if (response.status === 404) {
+          return { success: false, error: 'LinkedIn posting is not configured. Please contact support.' };
         }
         
-        console.log('[LINKEDIN POST] Calling n8n webhook...');
+        const result = await response.json();
         
-        const formData = new FormData();
-        formData.append('user_id', userId);
-        formData.append('caption', String(content));
-        formData.append('platforms[]', 'linkedin');
-        formData.append('post_mode', 'publish');
-        formData.append('use_ai', 'no');
-        formData.append('type', 'none');
-        formData.append('is_story', 'false');
-        
-        const n8nResponse = await fetch(`${n8nWebhookUrl}social-media`, {
-          method: 'POST',
-          body: formData,
-        });
-        
-        // If webhook not found (404), give helpful error
-        if (n8nResponse.status === 404) {
-          const errorText = await n8nResponse.text();
-          console.log('[LINKEDIN POST] n8n 404 Error:', errorText);
-          return { 
-            success: false, 
-            error: 'LinkedIn posting webhook not found. Please activate the LinkedIn posting workflow in your n8n dashboard.' 
-          };
-        }
-        
-        const n8nResult = await n8nResponse.json();
-        console.log('[LINKEDIN POST] n8n Response:', n8nResult);
-        
-        if (n8nResponse.status >= 400 || n8nResult?.error) {
-          console.log('[LINKEDIN POST] n8n Error:', n8nResult?.error || n8nResult);
-          return { success: false, error: n8nResult?.error || n8nResult?.message || 'Failed to post via n8n' };
+        if (response.status >= 400 || result?.error) {
+          return { success: false, error: result?.error || result?.message || 'Failed to post to LinkedIn' };
         }
         
         sendProgress('Posted to LinkedIn! ✅');
-        console.log('[LINKEDIN POST] Success!');
-        return { success: true, post_id: n8nResult?.id || 'sent' };
-      } catch (error: unknown) {
-        console.log('[LINKEDIN POST] Catch error:', error);
-        const errMsg = error instanceof Error ? error.message : 'Failed to post';
-        return { success: false, error: errMsg };
+        return { success: true, message: 'Successfully posted to LinkedIn!', result };
+      } catch (error) {
+        return { success: false, error: `Failed to post: ${error instanceof Error ? error.message : 'Unknown error'}` };
       }
     }
     
     case 'post_to_tiktok': {
-      console.log('[TIKTOK POST] Starting...');
-      sendProgress('Posting to TikTok...');
       const { video_url, caption } = args;
       
-      console.log('[TIKTOK POST] video_url:', video_url);
-      console.log('[TIKTOK POST] caption:', caption);
+      if (!video_url) {
+        return { success: false, error: 'TikTok requires a video. Please provide video_url.' };
+      }
       
-      const { data: credData, error: credError } = await supabase
+      sendProgress('Posting to TikTok...');
+      
+      const { data: ttData } = await supabase
         .from('user_social_credentials')
         .select('credentials')
         .eq('user_id', userId)
         .eq('platform', 'tiktok')
         .single();
       
-      console.log('[TIKTOK POST] credData:', credData);
-      console.log('[TIKTOK POST] credError:', credError);
-      
-      if (!credData) {
-        console.log('[TIKTOK POST] No credentials found for user');
-        return { success: false, error: 'TikTok not connected' };
+      if (!ttData) {
+        return { success: false, error: 'TikTok not connected. Please connect TikTok in your dashboard.' };
       }
       
-      const accessToken = credData.credentials?.access_token;
-      console.log('[TIKTOK POST] accessToken exists:', !!accessToken);
+      const formData = new FormData();
+      formData.append('user_id', userId);
+      formData.append('caption', caption || '');
+      formData.append('platforms[]', 'tiktok');
+      formData.append('post_mode', 'publish');
+      formData.append('use_ai', 'no');
+      formData.append('media_url', video_url);
       
       try {
-        console.log('[TIKTOK POST] Calling n8n webhook...');
+        const response = await fetch(n8nVideoWebhook, { method: 'POST', body: formData });
         
-        if (!video_url) {
-          return { success: false, error: 'TikTok requires a video. Please provide a video URL.' };
+        if (response.status === 404) {
+          return { success: false, error: 'TikTok posting is not configured. Please contact support.' };
         }
         
-        const ttFormData = new FormData();
-        ttFormData.append('user_id', userId);
-        ttFormData.append('caption', String(caption));
-        ttFormData.append('platforms[]', 'tiktok');
-        ttFormData.append('post_mode', 'publish');
-        ttFormData.append('use_ai', 'no');
-        ttFormData.append('media_url', String(video_url));
+        const result = await response.json();
         
-        const n8nResponse = await fetch(`${n8nWebhookUrl}social-media-video`, {
-          method: 'POST',
-          body: ttFormData,
-        });
-        
-        const n8nResult = await n8nResponse.json();
-        console.log('[TIKTOK POST] n8n Response:', n8nResult);
-        
-        if (n8nResponse.status >= 400 || n8nResult?.error) {
-          console.log('[TIKTOK POST] n8n Error:', n8nResult?.error || n8nResult);
-          return { success: false, error: n8nResult?.error || n8nResult?.message || 'Failed to post via n8n' };
+        if (response.status >= 400 || result?.error) {
+          return { success: false, error: result?.error || result?.message || 'Failed to post to TikTok' };
         }
         
         sendProgress('Posted to TikTok! ✅');
-        console.log('[TIKTOK POST] Success!');
-        return { success: true, post_id: n8nResult?.post_id || 'sent' };
-      } catch (error: unknown) {
-        console.log('[TIKTOK POST] Catch error:', error);
-        const errMsg = error instanceof Error ? error.message : 'Failed to post';
-        return { success: false, error: errMsg };
+        return { success: true, message: 'Successfully posted to TikTok!', result };
+      } catch (error) {
+        return { success: false, error: `Failed to post: ${error instanceof Error ? error.message : 'Unknown error'}` };
+      }
+    }
+    
+    case 'post_to_youtube': {
+      const { video_url, title, description, tags, privacy } = args;
+      
+      if (!video_url) {
+        return { success: false, error: 'YouTube requires a video. Please provide video_url.' };
+      }
+      
+      if (!title) {
+        return { success: false, error: 'YouTube requires a title. Please provide title.' };
+      }
+      
+      sendProgress('Uploading to YouTube...');
+      
+      const formData = new FormData();
+      formData.append('user_id', userId);
+      formData.append('title', title);
+      formData.append('description', description || '');
+      formData.append('platforms[]', 'youtube');
+      formData.append('post_mode', 'publish');
+      formData.append('use_ai', 'no');
+      formData.append('media_url', video_url);
+      formData.append('privacy', privacy || 'private');
+      
+      if (tags) {
+        formData.append('tags', tags);
+      }
+      
+      try {
+        const response = await fetch(n8nVideoWebhook, { method: 'POST', body: formData });
+        
+        if (response.status === 404) {
+          return { success: false, error: 'YouTube posting is not configured. Please contact support.' };
+        }
+        
+        const result = await response.json();
+        
+        if (response.status >= 400 || result?.error) {
+          return { success: false, error: result?.error || result?.message || 'Failed to upload to YouTube' };
+        }
+        
+        sendProgress('Uploaded to YouTube! ✅');
+        return { success: true, message: 'Successfully uploaded to YouTube!', result };
+      } catch (error) {
+        return { success: false, error: `Failed to upload: ${error instanceof Error ? error.message : 'Unknown error'}` };
+      }
+    }
+    
+    case 'post_to_twitter': {
+      const { content, image_url } = args;
+      sendProgress('Posting to Twitter/X...');
+      
+      const { data: twData } = await supabase
+        .from('user_social_credentials')
+        .select('credentials')
+        .eq('user_id', userId)
+        .eq('platform', 'twitter')
+        .single();
+      
+      if (!twData) {
+        return { success: false, error: 'Twitter/X not connected. Please connect Twitter in your dashboard.' };
+      }
+      
+      const formData = new FormData();
+      formData.append('user_id', userId);
+      formData.append('caption', content || '');
+      formData.append('platforms[]', 'x');
+      formData.append('post_mode', 'publish');
+      formData.append('use_ai', 'no');
+      
+      if (image_url) {
+        formData.append('type', 'image');
+        formData.append('media_url', image_url);
+      } else {
+        formData.append('type', 'none');
+      }
+      
+      try {
+        const response = await fetch(n8nImageWebhook, { method: 'POST', body: formData });
+        
+        if (response.status === 404) {
+          return { success: false, error: 'Twitter posting is not configured. Please contact support.' };
+        }
+        
+        const result = await response.json();
+        
+        if (response.status >= 400 || result?.error) {
+          return { success: false, error: result?.error || result?.message || 'Failed to post to Twitter' };
+        }
+        
+        sendProgress('Posted to Twitter! ✅');
+        return { success: true, message: 'Successfully posted to Twitter!', result };
+      } catch (error) {
+        return { success: false, error: `Failed to post: ${error instanceof Error ? error.message : 'Unknown error'}` };
       }
     }
     
     case 'schedule_post': {
+      const { content, platforms, scheduled_time, image_url, video_url } = args;
+      
+      if (!platforms || !scheduled_time) {
+        return { success: false, error: 'Please provide platforms and scheduled_time' };
+      }
+      
       sendProgress('Scheduling post...');
-      const { content, scheduled_time, platforms, media_url } = args;
       
-      const { data, error } = await supabase
-        .from('scheduled_posts')
-        .insert({
-          user_id: userId,
-          content,
-          scheduled_time: new Date(scheduled_time as string).toISOString(),
-          platforms: (platforms as string).split(',').map(p => p.trim()),
-          media_url: media_url as string || null,
-          status: 'scheduled',
-        })
-        .select()
-        .single();
+      const platformList = platforms.split(',').map(p => p.trim().toLowerCase());
       
-      if (error) {
-        return { success: false, error: error.message };
+      // Check if any platform requires media
+      const requiresMedia = platformList.some(p => p === 'instagram' || p === 'tiktok' || p === 'youtube');
+      if (requiresMedia && !image_url && !video_url) {
+        return { success: false, error: 'Instagram, TikTok, and YouTube require media. Please provide image_url or video_url.' };
       }
       
-      sendProgress(`Post scheduled for ${new Date(scheduled_time as string).toLocaleString()}! ✅`);
-      return { success: true, post: data };
-    }
-    
-    case 'get_scheduled_posts': {
-      sendProgress('Fetching scheduled posts...');
+      const formData = new FormData();
+      formData.append('user_id', userId);
+      formData.append('caption', content || '');
+      platformList.forEach(p => formData.append('platforms[]', p));
+      formData.append('post_mode', 'schedule');
+      formData.append('scheduled_time', scheduled_time);
+      formData.append('use_ai', 'no');
       
-      const { data, error } = await supabase
-        .from('scheduled_posts')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'scheduled')
-        .gte('scheduled_time', new Date().toISOString())
-        .order('scheduled_time', { ascending: true });
-      
-      if (error) {
-        return { success: false, error: error.message };
+      if (video_url) {
+        formData.append('media_url', video_url);
+        formData.append('type', 'video');
+      } else if (image_url) {
+        formData.append('media_url', image_url);
+        formData.append('type', 'image');
+      } else {
+        formData.append('type', 'none');
       }
       
-      return { posts: data || [] };
-    }
-    
-    case 'cancel_scheduled_post': {
-      sendProgress('Cancelling scheduled post...');
-      const { post_id } = args;
-      
-      const { error } = await supabase
-        .from('scheduled_posts')
-        .update({ status: 'cancelled' })
-        .eq('id', post_id)
-        .eq('user_id', userId);
-      
-      if (error) {
-        return { success: false, error: error.message };
-      }
-      
-      sendProgress('Post cancelled! ✅');
-      return { success: true };
-    }
-    
-    case 'wordpress_create_post': {
-      sendProgress('Creating WordPress post...');
-      const { title, content, status } = args;
-      
-      const { data: wpData } = await supabase
-        .from('user_wordpress_settings')
-        .select('site_url, username, access_token')
-        .eq('user_id', userId)
-        .single();
-      
-      if (!wpData) {
-        return { success: false, error: 'WordPress not connected' };
-      }
+      const webhook = video_url ? n8nVideoWebhook : n8nImageWebhook;
       
       try {
-        const response = await fetch(`${wpData.site_url}/wp-json/wp/v2/posts`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Basic ${Buffer.from(`${wpData.username}:${wpData.access_token}`).toString('base64')}`,
-          },
-          body: JSON.stringify({
-            title,
-            content,
-            status: status === 'publish' ? 'publish' : 'draft',
-          }),
-        });
+        const response = await fetch(webhook, { method: 'POST', body: formData });
+        
+        if (response.status === 404) {
+          return { success: false, error: 'Scheduling is not configured. Please contact support.' };
+        }
         
         const result = await response.json();
         
-        if (result.code) {
-          return { success: false, error: result.message };
+        if (response.status >= 400 || result?.error) {
+          return { success: false, error: result?.error || result?.message || 'Failed to schedule post' };
         }
         
-        sendProgress('WordPress post created! ✅');
-        return { success: true, post_id: result.id, permalink: result.link };
-      } catch (error: unknown) {
-        const errMsg = error instanceof Error ? error.message : 'Failed to create post';
-        return { success: false, error: errMsg };
+        sendProgress('Post scheduled! ✅');
+        return { success: true, message: `Post scheduled for ${new Date(scheduled_time).toLocaleString()}!`, result };
+      } catch (error) {
+        return { success: false, error: `Failed to schedule: ${error instanceof Error ? error.message : 'Unknown error'}` };
       }
     }
     
     case 'enhance_caption': {
-      sendProgress('Enhancing caption with AI...');
-      const { caption, platform } = args;
+      const { caption, platform, tone } = args;
+      sendProgress('Enhancing caption...');
       
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a social media expert. Enhance the following ${platform} caption to increase engagement. 
-            Add relevant hashtags, emojis where appropriate, and make it more compelling. 
-            Keep the original meaning but improve readability and engagement.`,
-          },
-          {
-            role: 'user',
-            content: caption as string,
-          },
-        ],
-      });
-      
-      const enhanced = completion.choices[0]?.message?.content || caption;
-      sendProgress('Caption enhanced! ✨');
-      return { original: caption, enhanced, platform };
+      try {
+        const platformInfo = platform ? ` for ${platform}` : '';
+        const toneInfo = tone ? ` in a ${tone} tone` : '';
+        
+        const completion = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a social media caption expert. Rewrite the given caption to be more engaging and effective${platformInfo}${toneInfo}. Keep it natural, human-like, and suitable for social media. Do not add hashtags unless specifically asked. Do not mention that you are an AI.`
+            },
+            {
+              role: 'user',
+              content: `Please enhance this caption:\n\n"${caption}"`
+            }
+          ],
+        });
+        
+        const enhancedCaption = completion.choices[0]?.message?.content || caption;
+        
+        sendProgress('Caption enhanced! ✅');
+        return { 
+          success: true, 
+          original: caption,
+          enhanced: enhancedCaption,
+          message: `✨ **Enhanced Caption:**\n\n${enhancedCaption}`
+        };
+      } catch (error) {
+        return { success: false, error: `Failed to enhance caption: ${error instanceof Error ? error.message : 'Unknown error'}` };
+      }
     }
     
     default:
-      return { error: `Unknown tool: ${toolName}` };
+      return { success: false, error: `Unknown tool: ${toolName}` };
   }
-}
-
-async function getChatHistory(supabase: ReturnType<typeof createClient>, userId: string, sessionId: string, limit = 20) {
-  const { data, error } = await supabase
-    .from('personal_agent_chats')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('session_id', sessionId)
-    .order('created_at', { ascending: true })
-    .limit(limit);
-  
-  if (error) {
-    console.error('Error fetching chat history:', error);
-    return [];
-  }
-  
-  return data || [];
-}
-
-async function saveMessage(
-  supabase: ReturnType<typeof createClient>,
-  userId: string,
-  sessionId: string,
-  role: 'user' | 'assistant',
-  content: string,
-  toolCalls?: Record<string, unknown>,
-  toolResults?: Record<string, unknown>
-) {
-  const { error } = await supabase
-    .from('personal_agent_chats')
-    .insert({
-      user_id: userId,
-      session_id: sessionId,
-      role,
-      content,
-      tool_calls: toolCalls || null,
-      tool_results: toolResults || null,
-    });
-  
-  if (error) {
-    console.error('Error saving message:', error);
-  }
-}
-
-async function getOrCreateSession(supabase: ReturnType<typeof createClient>, userId: string, sessionId?: string) {
-  if (sessionId) {
-    const { data: existing } = await supabase
-      .from('personal_agent_sessions')
-      .select('*')
-      .eq('session_id', sessionId)
-      .eq('user_id', userId)
-      .single();
-    
-    if (existing) {
-      return existing;
-    }
-  }
-  
-  const newSessionId = sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
-  const { data, error } = await supabase
-    .from('personal_agent_sessions')
-    .insert({
-      user_id: userId,
-      session_id: newSessionId,
-      title: 'New Chat',
-      is_active: true,
-    })
-    .select()
-    .single();
-  
-  if (error) {
-    console.error('Error creating session:', error);
-    return { session_id: newSessionId };
-  }
-  
-  return data || { session_id: newSessionId };
 }
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   
   if (req.method === 'OPTIONS') {
@@ -897,21 +728,8 @@ export default async function handler(req: any, res: any) {
   const { message, session_id } = req.body;
   console.log('[CHAT] Message:', message);
   
-  if (!message) {
-    return res.status(400).json({ error: 'Message is required' });
-  }
-  
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  const session = await getOrCreateSession(supabase, userId, session_id);
-  const currentSessionId = session.session_id;
-  
-  const chatHistory = await getChatHistory(supabase, userId, currentSessionId);
-  
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-  });
+  const currentSessionId = session_id || `session_${Date.now()}`;
   
   const sendSSE = (data: string) => {
     res.write(`data: ${data}\n\n`);
@@ -927,43 +745,53 @@ export default async function handler(req: any, res: any) {
     sendSSE(JSON.stringify({ type: 'start', session_id: currentSessionId }));
     sendProgress('Starting...');
     
-    const systemMessage = `You are an AI agent for SmartContentSolutions. You MUST use tools to perform actions.
+    const systemMessage = `You are a helpful AI assistant for SmartContentSolutions. Your job is to help users manage their social media presence.
+
+PLATFORM CAPABILITIES - Remember these rules:
+- Facebook: Text posts ✅, Images ✅, Videos ✅, Stories ✅, Scheduling ✅
+- Instagram: REQUIRES media (image or video). No text-only posts ❌. Stories ✅, Reels ✅
+- LinkedIn: Text posts ✅, Images ✅, Videos ✅, Documents ✅, Scheduling ✅
+- TikTok: REQUIRES video ❌. No text-only or image-only ❌
+- YouTube: REQUIRES video and title ❌. Videos only ✅
+- Twitter/X: Text posts ✅, Images ✅
+
+IMPORTANT RULES:
+1. When user wants to post to Instagram - they MUST provide an image or video
+2. When user wants to post to TikTok - they MUST provide a video URL
+3. When user wants to post to YouTube - they MUST provide a video URL and title
+4. When user wants to post to Facebook - text is optional if they provide media
+5. If user asks to "post" without specifying platform - ask which platform OR post to all connected platforms
+6. Always confirm what you're posting before doing it
+
+When user asks about connected platforms -> call get_user_platforms
+When user asks which Facebook pages they have -> call get_facebook_pages
+When user wants to enhance/improve a caption -> call enhance_caption
+
+Tools available:
+- get_user_platforms() - Check what platforms user has connected
+- get_facebook_pages() - List Facebook pages
+- post_to_facebook(message, image_url?, video_url?, is_story?) - Post to Facebook
+- post_to_instagram(image_url?, video_url?, caption, post_type?) - Post to Instagram (needs media!)
+- post_to_linkedin(content, media_url?) - Post to LinkedIn  
+- post_to_tiktok(video_url, caption) - Post to TikTok (needs video!)
+- post_to_youtube(video_url, title, description?, tags?, privacy?) - Upload to YouTube
+- post_to_twitter(content, image_url?) - Post to Twitter/X
+- schedule_post(content, platforms, scheduled_time, image_url?, video_url?) - Schedule a post
+- enhance_caption(caption, platform?, tone?) - Improve a caption`;
+
+    // Get chat history
+    const { data: historyData } = await supabase
+      .from('personal_agent_chats')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('session_id', currentSessionId)
+      .order('created_at', { ascending: true })
+      .limit(20);
     
-    IMPORTANT PLATFORM LIMITATIONS:
-    - Instagram: REQUIRES an image/video. Cannot post text-only. User must provide an image URL.
-    - Facebook: When user asks to post to Facebook, ALWAYS ask "Which Facebook page would you like to post to?" and wait for their response. Do NOT post immediately. Present the available pages and let them choose.
-    - LinkedIn: Supports text-only posts
-    - TikTok: REQUIRES a video. Cannot post text-only. User must provide a video URL.
-    
-    STRICT RULES:
-    1. If user asks about connected platforms or what accounts they have, call get_user_platforms tool
-    2. If user asks specifically about "Facebook pages" or "which pages" for Facebook, call get_facebook_pages tool
-    3. If user asks to post to Instagram without providing an image, tell them Instagram requires an image
-    4. If user asks to post to TikTok without providing a video, tell them TikTok requires a video
-    5. If user asks to post to Facebook: FIRST ask which page, then call post_to_facebook with page_id
-    6. If user asks to post to social media, you MUST call the appropriate tool - not just talk about it
-    7. NEVER say "I've posted" or "Done" unless the tool actually ran and returned success
-    8. If the tool returns an error (like "not connected"), you must tell the user the truth
-    
-    EXACT TOOL CALL FORMAT:
-    When user asks "what platforms do I have connected" -> call get_user_platforms with {} (empty arguments)
-    When user asks "what Facebook pages do I have" or "which facebook pages" -> call get_facebook_pages with {} (empty arguments)
-    When user says "post hello to linkedin" -> call post_to_linkedin with {"content": "hello"}
-    When user asks "post to instagram" without image -> Tell user Instagram requires an image
-    
-    Available tools:
-    - get_user_platforms() - use when user asks about connected platforms
-    - post_to_linkedin(content: string) 
-    - post_to_facebook(message: string, image_url?: string)
-    - post_to_instagram(image_url: string, caption: string) - REQUIRES image_url
-    - post_to_tiktok(video_url: string, caption: string) - REQUIRES video_url`;
-    
-    const historyMessages = chatHistory.map((msg: Record<string, unknown>) => ({
-      role: msg.role,
+    const historyMessages = (historyData || []).map((msg: any) => ({
+      role: msg.role as 'user' | 'assistant',
       content: msg.content,
     }));
-    
-    sendProgress('Thinking...');
     
     console.log('[CHAT] Sending request to OpenAI with message:', message);
     
@@ -984,98 +812,120 @@ export default async function handler(req: any, res: any) {
     const toolCalls = responseMessage?.tool_calls || [];
     console.log('[CHAT] Tool calls:', toolCalls.length);
     
+    let toolResults: Record<string, unknown> = {};
+    
     if (toolCalls.length > 0) {
-      sendSSE(JSON.stringify({ type: 'tool_calls', tools: toolCalls.map((tc: Record<string, unknown>) => (tc as { function: { name: string } }).function.name) }));
-      
-      const toolResults: Record<string, unknown> = {};
-      
       for (const toolCall of toolCalls) {
-        const { name, arguments: argsStr } = (toolCall as { function: { name: string; arguments: string } }).function;
-        const args = JSON.parse(argsStr);
+        const toolName = (toolCall as { function?: { name?: string } }).function?.name || '';
+        const argsStr = (toolCall as { function?: { arguments?: string } }).function?.arguments || '{}';
+        let args: ToolArgs = {};
         
-        sendSSE(JSON.stringify({ type: 'tool_executing', tool: name }));
-        
-        const result = await executeToolCall(name, args, userId, sendProgress);
-        toolResults[name] = result;
-        
-        if (result.success === false) {
-          responseText += `\n\n⚠️ ${name}: ${result.error}`;
+        try {
+          args = JSON.parse(argsStr);
+        } catch (e) {
+          console.log('[TOOL] Failed to parse args:', argsStr);
         }
+        
+        console.log(`[TOOL] Calling tool: ${toolName}`, args);
+        
+        const result = await handleToolCall(toolName, args, userId, sendProgress);
+        toolResults[toolName] = result;
+        console.log(`[TOOL] Result:`, result);
       }
       
-      const finalCompletion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          { role: 'system', content: systemMessage },
-          ...historyMessages,
-          { role: 'user', content: message },
-          { role: 'assistant', content: responseText, tool_calls: toolCalls },
-          ...Object.entries(toolResults).map(([toolName, result], index) => ({
-            role: 'tool' as const,
-            content: JSON.stringify(result),
-            name: toolName,
-            tool_call_id: (toolCalls[index] as { id?: string })?.id || `call_${index}`,
-          })),
-        ],
-      });
-      
-      const toolResultsTyped = toolResults as Record<string, { success?: boolean; error?: string; post_id?: string }>;
-      const anyToolFailed = Object.values(toolResultsTyped).some(r => r.success === false);
-      if (anyToolFailed) {
-        const errors = Object.entries(toolResultsTyped)
-          .filter(([_, r]) => r.success === false)
-          .map(([name, r]) => `⚠️ ${name}: ${r.error}`)
-          .join('\n');
-        responseText = `I encountered some issues:\n\n${errors}\n\nPlease make sure your social media accounts are connected in your dashboard settings.`;
-      } else {
-        // Check for get_user_platforms first
-        const platformsResult = toolResultsTyped['get_user_platforms'] as { platforms?: string[] } | undefined;
-        if (platformsResult && platformsResult.platforms) {
-          const platforms = platformsResult.platforms;
-          if (platforms.length > 0) {
-            responseText = `You have ${platforms.length} platform(s) connected:\n\n${platforms.map(p => `• ${p.charAt(0).toUpperCase() + p.slice(1)}`).join('\n')}`;
-          } else {
-            responseText = `You don't have any social media platforms connected yet. Go to your dashboard to connect Facebook, Instagram, LinkedIn, or TikTok.`;
-          }
-        } else if (toolResultsTyped['get_facebook_pages']) {
-          // Handle get_facebook_pages result
-          const fbResult = toolResultsTyped['get_facebook_pages'] as { message?: string } | undefined;
-          if (fbResult?.message) {
-            responseText = fbResult.message;
-          }
+      // Get final response from AI after tool execution
+      if (toolCalls.length > 0) {
+        const finalCompletion = await openai.chat.completions.create({
+          model: 'gpt-4o-mini',
+          messages: [
+            { role: 'system', content: systemMessage },
+            ...historyMessages,
+            { role: 'user', content: message },
+            { role: 'assistant', content: responseText, tool_calls: toolCalls as any },
+            ...Object.entries(toolResults).map(([name, result], index) => ({
+              role: 'tool' as const,
+              content: JSON.stringify(result),
+              name: name,
+              tool_call_id: (toolCalls[index] as { id?: string })?.id || `call_${index}`,
+            })),
+          ],
+        });
+        
+        const toolResultsTyped = toolResults as Record<string, { success?: boolean; error?: string; message?: string }>;
+        
+        // Check for failures
+        const anyFailed = Object.values(toolResultsTyped).some(r => r.success === false);
+        if (anyFailed) {
+          const errors = Object.entries(toolResultsTyped)
+            .filter(([_, r]) => r.success === false)
+            .map(([name, r]) => `⚠️ ${name}: ${r.error}`)
+            .join('\n');
+          responseText = `I encountered some issues:\n\n${errors}`;
         } else {
-          // Handle posting tools
-          const successMessages = Object.entries(toolResultsTyped)
+          // Show success messages
+          const successes = Object.entries(toolResultsTyped)
             .filter(([_, r]) => r.success === true)
-            .map(([name, r]) => {
-              if (name === 'post_to_linkedin') return '✅ Successfully posted to your LinkedIn!';
-              if (name === 'post_to_facebook') return '✅ Successfully posted to your Facebook page!';
-              if (name === 'post_to_instagram') return '✅ Successfully posted to your Instagram!';
-              if (name === 'post_to_tiktok') return '✅ Successfully posted to your TikTok!';
-              return `✅ ${name} completed successfully`;
-            });
-          responseText = successMessages.join('\n');
+            .map(([_, r]) => r.message || '✅ Done!')
+            .join('\n');
+          responseText = successes || finalCompletion.choices[0]?.message?.content || responseText;
         }
       }
-      
-      await saveMessage(supabase, userId, currentSessionId, 'assistant', responseText, 
-        toolCalls.reduce((acc: Record<string, unknown>, tc: Record<string, unknown>) => {
-          const name = (tc as { function: { name: string } }).function.name;
-          acc[name] = tc;
-          return acc;
-        }, {}),
-        toolResults
-      );
-    } else {
-      await saveMessage(supabase, userId, currentSessionId, 'assistant', responseText);
     }
     
-    sendSSE(JSON.stringify({ type: 'complete', response: responseText, session_id: currentSessionId }));
+    await saveMessage(supabase, userId, currentSessionId, 'assistant', responseText, 
+      toolCalls.reduce((acc: Record<string, unknown>[], tc: any) => {
+        const name = tc.function?.name;
+        if (name) {
+          acc.push({ name, args: tc.function?.arguments });
+        }
+        return acc;
+      }, []),
+      toolResults
+    );
     
+    sendSSE(JSON.stringify({ type: 'message', content: responseText }));
+    sendSSE(JSON.stringify({ type: 'done' }));
+    
+    return res.end();
   } catch (error) {
-    console.error('Chat error:', error);
-    sendSSE(JSON.stringify({ type: 'error', message: error instanceof Error ? error.message : 'An error occurred' }));
+    console.error('[CHAT] Error:', error);
+    sendSSE(JSON.stringify({ type: 'error', error: 'An error occurred' }));
+    return res.status(500).json({ error: 'Internal server error' });
   }
-  
-  res.end();
+}
+
+async function saveMessage(
+  supabase: any,
+  userId: string,
+  sessionId: string,
+  role: 'user' | 'assistant',
+  content: string,
+  toolCalls: any = null,
+  toolResults: any = null
+) {
+  try {
+    // Ensure session exists
+    await supabase
+      .from('personal_agent_sessions')
+      .upsert({
+        user_id: userId,
+        session_id: sessionId,
+        title: sessionId.startsWith('session_') ? 'New Chat' : sessionId,
+        is_active: true,
+      }, { onConflict: 'session_id' });
+    
+    // Save message
+    await supabase
+      .from('personal_agent_chats')
+      .insert({
+        user_id: userId,
+        session_id: sessionId,
+        role,
+        content,
+        tool_calls: toolCalls,
+        tool_results: toolResults,
+      });
+  } catch (error) {
+    console.error('[SAVE MESSAGE] Error:', error);
+  }
 }
