@@ -840,19 +840,20 @@ export default async function handler(req: any, res: any) {
     const systemMessage = `You are an AI agent for SmartContentSolutions. You MUST use tools to perform actions.
     
     STRICT RULES:
-    1. If user asks to post to social media, you MUST call the tool - not just talk about it
-    2. NEVER say "I've posted" or "Done" unless the tool actually ran and returned success
-    3. If the tool returns an error (like "not connected"), you must tell the user the truth
+    1. If user asks about connected platforms or what accounts they have, you MUST call get_user_platforms tool
+    2. If user asks to post to social media, you MUST call the appropriate tool - not just talk about it
+    3. NEVER say "I've posted" or "Done" unless the tool actually ran and returned success
+    4. If the tool returns an error (like "not connected"), you must tell the user the truth
     
     EXACT TOOL CALL FORMAT:
-    When user says "post hello to linkedin", respond with ONLY a tool call, like:
-    {"name": "post_to_linkedin", "arguments": {"content": "hello"}}
+    When user asks "what platforms do I have connected" -> call get_user_platforms with {} (empty arguments)
+    When user says "post hello to linkedin" -> call post_to_linkedin with {"content": "hello"}
     
     Available tools:
+    - get_user_platforms() - use when user asks about connected platforms
     - post_to_linkedin(content: string) 
     - post_to_facebook(message: string, image_url?: string)
-    - post_to_instagram(image_url: string, caption: string)
-    - get_user_platforms()`;
+    - post_to_instagram(image_url: string, caption: string)`;
     
     const historyMessages = chatHistory.map((msg: Record<string, unknown>) => ({
       role: msg.role,
