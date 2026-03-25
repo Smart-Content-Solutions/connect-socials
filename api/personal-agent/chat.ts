@@ -925,16 +925,28 @@ export default async function handler(req: any, res: any) {
           .join('\n');
         responseText = `I encountered some issues:\n\n${errors}\n\nPlease make sure your social media accounts are connected in your dashboard settings.`;
       } else {
-        const successMessages = Object.entries(toolResultsTyped)
-          .filter(([_, r]) => r.success === true)
-          .map(([name, r]) => {
-            if (name === 'post_to_linkedin') return '✅ Successfully posted to your LinkedIn!';
-            if (name === 'post_to_facebook') return '✅ Successfully posted to your Facebook!';
-            if (name === 'post_to_instagram') return '✅ Successfully posted to your Instagram!';
-            if (name === 'post_to_tiktok') return '✅ Successfully posted to your TikTok!';
-            return `✅ ${name} completed successfully`;
-          });
-        responseText = successMessages.join('\n');
+        // Check for get_user_platforms first
+        const platformsResult = toolResultsTyped['get_user_platforms'] as { platforms?: string[] } | undefined;
+        if (platformsResult && platformsResult.platforms) {
+          const platforms = platformsResult.platforms;
+          if (platforms.length > 0) {
+            responseText = `You have ${platforms.length} platform(s) connected:\n\n${platforms.map(p => `• ${p.charAt(0).toUpperCase() + p.slice(1)}`).join('\n')}`;
+          } else {
+            responseText = `You don't have any social media platforms connected yet. Go to your dashboard to connect Facebook, Instagram, LinkedIn, or TikTok.`;
+          }
+        } else {
+          // Handle posting tools
+          const successMessages = Object.entries(toolResultsTyped)
+            .filter(([_, r]) => r.success === true)
+            .map(([name, r]) => {
+              if (name === 'post_to_linkedin') return '✅ Successfully posted to your LinkedIn!';
+              if (name === 'post_to_facebook') return '✅ Successfully posted to your Facebook!';
+              if (name === 'post_to_instagram') return '✅ Successfully posted to your Instagram!';
+              if (name === 'post_to_tiktok') return '✅ Successfully posted to your TikTok!';
+              return `✅ ${name} completed successfully`;
+            });
+          responseText = successMessages.join('\n');
+        }
       }
       
       await saveMessage(supabase, userId, currentSessionId, 'assistant', responseText, 
