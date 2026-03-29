@@ -371,8 +371,10 @@ async function handleToolCall(
         formData.append('facebook_page_ids[]', String(selectedPage.id));
       }
       
+      const fbWebhook = video_url ? n8nVideoWebhook : n8nImageWebhook;
+      
       try {
-        const response = await fetch(n8nImageWebhook, { method: 'POST', body: formData });
+        const response = await fetch(fbWebhook, { method: 'POST', body: formData });
         
         if (response.status === 404) {
           return { success: false, error: 'Facebook posting is not configured. Please contact support.' };
@@ -485,8 +487,10 @@ async function handleToolCall(
         formData.append('post_to_both_feed_and_story', 'true');
       }
       
+      const igWebhook = video_url ? n8nVideoWebhook : n8nImageWebhook;
+      
       try {
-        const response = await fetch(n8nImageWebhook, { method: 'POST', body: formData });
+        const response = await fetch(igWebhook, { method: 'POST', body: formData });
         
         if (response.status === 404) {
           return { success: false, error: 'Instagram posting is not configured. Please contact support.' };
@@ -570,8 +574,12 @@ async function handleToolCall(
         formData.append('type', 'none');
       }
       
+      const videoExtensions = ['.mp4', '.mov', '.avi', '.webm', '.mkv'];
+      const isVideoMedia = media_url && videoExtensions.some(ext => media_url.toLowerCase().includes(ext));
+      const liWebhook = isVideoMedia ? n8nVideoWebhook : n8nImageWebhook;
+      
       try {
-        const response = await fetch(n8nImageWebhook, { method: 'POST', body: formData });
+        const response = await fetch(liWebhook, { method: 'POST', body: formData });
         
         if (response.status === 404) {
           return { success: false, error: 'LinkedIn posting is not configured. Please contact support.' };
